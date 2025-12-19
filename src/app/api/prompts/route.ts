@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
         const variables = extractVariables(content)
 
         // Create prompt with initial version
-        const prompt = await prisma.$transaction(async (tx) => {
+        const prompt = await prisma.$transaction(async (tx: typeof prisma) => {
             const newPrompt = await tx.prompt.create({
                 data: {
                     title,
