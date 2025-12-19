@@ -58,7 +58,7 @@ export async function POST(
                 select: { rating: true },
             })
 
-            const avgRating = tests.reduce((sum, t) => sum + (t.rating || 0), 0) / tests.length
+            const avgRating = tests.reduce((sum: number, t: { rating: number | null }) => sum + (t.rating || 0), 0) / tests.length
 
             await prisma.prompt.update({
                 where: { id },
