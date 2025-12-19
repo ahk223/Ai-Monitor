@@ -13,6 +13,13 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
+interface PromptWithCategory {
+    id: string
+    title: string
+    rating: number | null
+    category: { id: string; name: string; color: string } | null
+}
+
 async function getDashboardStats(workspaceId: string) {
     const [promptsCount, tweetsCount, toolsCount, playbooksCount, recentPrompts, topRatedPrompts] = await Promise.all([
         prisma.prompt.count({ where: { workspaceId, isArchived: false } }),
@@ -40,8 +47,8 @@ async function getDashboardStats(workspaceId: string) {
             tools: toolsCount,
             playbooks: playbooksCount,
         },
-        recentPrompts,
-        topRatedPrompts,
+        recentPrompts: recentPrompts as PromptWithCategory[],
+        topRatedPrompts: topRatedPrompts as PromptWithCategory[],
     }
 }
 
@@ -117,7 +124,7 @@ export default async function DashboardPage() {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {recentPrompts.map((prompt) => (
+                                {recentPrompts.map((prompt: PromptWithCategory) => (
                                     <Link
                                         key={prompt.id}
                                         href={`/dashboard/prompts/${prompt.id}`}
@@ -160,16 +167,16 @@ export default async function DashboardPage() {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {topRatedPrompts.map((prompt, index) => (
+                                {topRatedPrompts.map((prompt: PromptWithCategory, index: number) => (
                                     <Link
                                         key={prompt.id}
                                         href={`/dashboard/prompts/${prompt.id}`}
                                         className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 transition-all hover:border-indigo-200 hover:bg-indigo-50/50 dark:border-slate-800 dark:hover:border-indigo-900 dark:hover:bg-indigo-900/10"
                                     >
                                         <div className={`flex h-8 w-8 items-center justify-center rounded-lg font-bold ${index === 0 ? "bg-amber-100 text-amber-700" :
-                                                index === 1 ? "bg-slate-100 text-slate-700" :
-                                                    index === 2 ? "bg-orange-100 text-orange-700" :
-                                                        "bg-slate-50 text-slate-500"
+                                            index === 1 ? "bg-slate-100 text-slate-700" :
+                                                index === 2 ? "bg-orange-100 text-orange-700" :
+                                                    "bg-slate-50 text-slate-500"
                                             }`}>
                                             {index + 1}
                                         </div>
