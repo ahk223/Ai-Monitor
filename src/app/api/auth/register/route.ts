@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Create user, workspace, and membership in a transaction
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: typeof prisma) => {
             const user = await tx.user.create({
                 data: {
                     email,
