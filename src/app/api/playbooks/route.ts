@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
         const { tagIds, steps, ...data } = parsed.data
 
-        const playbook = await prisma.$transaction(async (tx: typeof prisma) => {
+        const playbook = await prisma.$transaction(async (tx) => {
             const newPlaybook = await tx.playbook.create({
                 data: {
                     ...data,
