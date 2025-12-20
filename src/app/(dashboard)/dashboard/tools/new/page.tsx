@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
 import { collection, doc, setDoc, getDocs, query, where } from "firebase/firestore"
 import { Button, Input, Textarea, Card, CardContent, Select } from "@/components/ui"
-import { ArrowRight, Save, Wrench } from "lucide-react"
+import { ArrowRight, Save } from "lucide-react"
 import Link from "next/link"
 
 interface Category {
@@ -24,7 +24,6 @@ export default function NewToolPage() {
         description: "",
         officialUrl: "",
         categoryId: "",
-        pricing: "",
         notes: "",
     })
 
@@ -66,7 +65,6 @@ export default function NewToolPage() {
                 description: form.description || null,
                 officialUrl: form.officialUrl || null,
                 categoryId: form.categoryId || null,
-                pricing: form.pricing || null,
                 notes: form.notes || null,
                 isArchived: false,
                 createdAt: new Date(),
@@ -81,13 +79,6 @@ export default function NewToolPage() {
             setIsLoading(false)
         }
     }
-
-    const pricingOptions = [
-        { value: "free", label: "مجاني" },
-        { value: "freemium", label: "مجاني مع خطط مدفوعة" },
-        { value: "paid", label: "مدفوع" },
-        { value: "subscription", label: "اشتراك" },
-    ]
 
     return (
         <div className="mx-auto max-w-2xl space-y-6">
@@ -126,28 +117,19 @@ export default function NewToolPage() {
                         />
 
                         <Input
-                            label="الموقع الرسمي"
+                            label="الرابط"
                             placeholder="https://..."
                             value={form.officialUrl}
                             onChange={(e) => setForm({ ...form, officialUrl: e.target.value })}
                         />
 
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <Select
-                                label="التصنيف"
-                                placeholder="اختر تصنيفًا"
-                                value={form.categoryId}
-                                onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-                                options={categories.map((c) => ({ value: c.id, label: c.name }))}
-                            />
-                            <Select
-                                label="التسعير"
-                                placeholder="اختر نوع التسعير"
-                                value={form.pricing}
-                                onChange={(e) => setForm({ ...form, pricing: e.target.value })}
-                                options={pricingOptions}
-                            />
-                        </div>
+                        <Select
+                            label="التصنيف"
+                            placeholder="اختر تصنيفًا"
+                            value={form.categoryId}
+                            onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                            options={categories.map((c) => ({ value: c.id, label: c.name }))}
+                        />
 
                         <Textarea
                             label="ملاحظات (اختياري)"
