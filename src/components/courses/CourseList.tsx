@@ -133,10 +133,6 @@ export function CourseList({ categoryId, categoryName }: CourseListProps) {
                     <GraduationCap className="h-5 w-5 text-indigo-600" />
                     كورسات {categoryName}
                 </h3>
-                <Button onClick={() => { resetForm(); setShowAddModal(true) }}>
-                    <Plus className="h-4 w-4" />
-                    إضافة كورس
-                </Button>
             </div>
 
             {loading ? (
