@@ -184,7 +184,10 @@ export default function PlaybookDetailPage() {
         return match ? match[1] : null
     }
 
-    const getYouTubeThumbnail = (id: string) => `https://img.youtube.com/vi/${id}/mqdefault.jpg`
+    // Get YouTube thumbnail URL
+    function getYouTubeThumbnail(videoId: string): string {
+        return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+    }
 
     const syncNewContent = async () => {
         if (!newContent || !playbook) return
@@ -488,7 +491,7 @@ export default function PlaybookDetailPage() {
         return <Link2 className="h-5 w-5 text-indigo-500" />
     }
 
-    const completedCount = Object.values(progress).filter(Boolean).length
+    const completedCount = Object.values(progress).filter(p => p.completed).length
     const progressPercent = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0
 
     if (loading) {
@@ -671,14 +674,32 @@ export default function PlaybookDetailPage() {
                                 </div>
 
                                 {/* Video Embed */}
+                                {/* Video Embed */}
                                 {videoId && (
-                                    <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg bg-black">
-                                        <iframe
-                                            src={`https://www.youtube.com/embed/${videoId}`}
-                                            title={item.title}
-                                            className="absolute inset-0 h-full w-full"
-                                            allowFullScreen
-                                        />
+                                    <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg bg-slate-900 border border-slate-800">
+                                        {playingVideoId === item.id ? (
+                                            <iframe
+                                                src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+                                                title={item.title}
+                                                className="absolute inset-0 h-full w-full"
+                                                allowFullScreen
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            />
+                                        ) : (
+                                            <button
+                                                onClick={() => setPlayingVideoId(item.id)}
+                                                className="group absolute inset-0 flex h-full w-full items-center justify-center"
+                                            >
+                                                <img
+                                                    src={getYouTubeThumbnail(videoId)}
+                                                    alt={item.title}
+                                                    className="absolute inset-0 h-full w-full object-cover opacity-80 transition-opacity group-hover:opacity-100"
+                                                />
+                                                <div className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full bg-red-600/90 shadow-lg transition-transform group-hover:scale-110">
+                                                    <Play className="h-6 w-6 text-white ml-1 fill-current" />
+                                                </div>
+                                            </button>
+                                        )}
                                     </div>
                                 )}
 
