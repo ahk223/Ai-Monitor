@@ -227,11 +227,33 @@ export default function PlaybookDetailPage() {
         }
     }
 
+    // Helper functions
+    const normalizeUrl = (url: string) => {
+        try {
+            let cleanUrl = url.trim()
+            if (cleanUrl.endsWith('/')) {
+                cleanUrl = cleanUrl.slice(0, -1)
+            }
+
+            // Standardize YouTube URLs
+            const ytMatch = cleanUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/)
+            if (ytMatch && ytMatch[1]) {
+                return `https://www.youtube.com/watch?v=${ytMatch[1]}`
+            }
+
+            return cleanUrl
+        } catch (e) {
+            return url
+        }
+    }
+
     const checkDuplicateUrl = async (url: string): Promise<{ isDuplicate: boolean; location?: string; playbookTitle?: string }> => {
         if (!url || !userData?.workspaceId) return { isDuplicate: false }
 
-        // Check in current playbook
-        const existsInCurrent = items.some(item => item.url === url)
+        const cleanUrl = normalizeUrl(url)
+
+        // Check in current playbook (robust check)
+        const existsInCurrent = items.some(item => normalizeUrl(item.url) === cleanUrl)
         if (existsInCurrent) {
             return { isDuplicate: true, location: 'current', playbookTitle: playbook?.title }
         }
@@ -240,17 +262,22 @@ export default function PlaybookDetailPage() {
         try {
             const allItemsQuery = query(
                 collection(db, "playbookItems"),
-                where("url", "==", url)
+                where("url", "==", cleanUrl)
             )
             const snap = await getDocs(allItemsQuery)
 
             if (!snap.empty) {
                 const foundItem = snap.docs[0].data()
                 if (foundItem.playbookId !== playbookId) {
-                    // Get playbook title
+                    // Check ownership via playbook
                     const playbookDoc = await getDoc(doc(db, "playbooks", foundItem.playbookId))
-                    const pbData = playbookDoc.data()
-                    return { isDuplicate: true, location: 'other', playbookTitle: pbData?.title || 'Playbook آخر' }
+                    if (playbookDoc.exists()) {
+                        const pbData = playbookDoc.data()
+                        // Check workspace match (security/isolation)
+                        if (pbData.workspaceId === userData.workspaceId) {
+                            return { isDuplicate: true, location: 'other', playbookTitle: pbData?.title || 'Playbook آخر' }
+                        }
+                    }
                 }
             }
         } catch (error) {
@@ -263,10 +290,12 @@ export default function PlaybookDetailPage() {
     const handleAddItem = async (ignoreDuplicate = false) => {
         if (!newItem.title || !newItem.url) return
 
+        const cleanUrl = normalizeUrl(newItem.url)
+
         if (!ignoreDuplicate) {
             // Check for duplicates first
             setCheckingDuplicate(true)
-            const duplicateCheck = await checkDuplicateUrl(newItem.url)
+            const duplicateCheck = await checkDuplicateUrl(cleanUrl)
             setCheckingDuplicate(false)
 
             if (duplicateCheck.isDuplicate) {
@@ -291,7 +320,7 @@ export default function PlaybookDetailPage() {
                 id: itemId,
                 playbookId,
                 title: newItem.title,
-                url: newItem.url,
+                url: cleanUrl, // Save clean URL
                 description: newItem.description || null,
                 order: newOrder,
                 createdAt: new Date(),
