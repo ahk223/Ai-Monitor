@@ -24,6 +24,8 @@ import {
     BookOpen,
     Globe,
     Lock,
+    ChevronUp,
+    ChevronDown,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -191,6 +193,37 @@ export default function PlaybookDetailPage() {
             console.error("Error updating item:", error)
         } finally {
             setSavingItem(false)
+        }
+    }
+
+    const moveItem = async (index: number, direction: 'up' | 'down') => {
+        if (direction === 'up' && index === 0) return
+        if (direction === 'down' && index === items.length - 1) return
+
+        const newItems = [...items]
+        const targetIndex = direction === 'up' ? index - 1 : index + 1
+
+        // Swap items
+        const temp = newItems[index]
+        newItems[index] = newItems[targetIndex]
+        newItems[targetIndex] = temp
+
+        // Update order values
+        newItems[index] = { ...newItems[index], order: index + 1 }
+        newItems[targetIndex] = { ...newItems[targetIndex], order: targetIndex + 1 }
+
+        setItems(newItems)
+
+        // Save to Firestore
+        try {
+            await updateDoc(doc(db, "playbookItems", newItems[index].id), {
+                order: index + 1,
+            })
+            await updateDoc(doc(db, "playbookItems", newItems[targetIndex].id), {
+                order: targetIndex + 1,
+            })
+        } catch (error) {
+            console.error("Error reordering items:", error)
         }
     }
 
@@ -435,21 +468,43 @@ export default function PlaybookDetailPage() {
                                         </div>
 
                                         {/* Actions */}
-                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => openEditModal(item)}
-                                                className="rounded-lg p-2 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
-                                                title="تعديل"
-                                            >
-                                                <Edit2 className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteItem(item.id)}
-                                                className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                                                title="حذف"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
+                                        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {/* Reorder buttons */}
+                                            <div className="flex gap-1">
+                                                <button
+                                                    onClick={() => moveItem(index, 'up')}
+                                                    disabled={index === 0}
+                                                    className={`rounded-lg p-1.5 ${index === 0 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
+                                                    title="نقل للأعلى"
+                                                >
+                                                    <ChevronUp className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => moveItem(index, 'down')}
+                                                    disabled={index === items.length - 1}
+                                                    className={`rounded-lg p-1.5 ${index === items.length - 1 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
+                                                    title="نقل للأسفل"
+                                                >
+                                                    <ChevronDown className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                            {/* Edit/Delete buttons */}
+                                            <div className="flex gap-1">
+                                                <button
+                                                    onClick={() => openEditModal(item)}
+                                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
+                                                    title="تعديل"
+                                                >
+                                                    <Edit2 className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteItem(item.id)}
+                                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                                    title="حذف"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </CardContent>
