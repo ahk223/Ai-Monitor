@@ -242,7 +242,7 @@ export default function SharedPlaybookPage() {
                                         </a>
                                     )}
 
-                                    <CardContent className="pt-3">
+                                    <CardContent className="pt-3 text-center">
                                         {item.description && (
                                             <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
                                                 {item.description}
