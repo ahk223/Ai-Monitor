@@ -493,6 +493,14 @@ export default function PlaybookDetailPage() {
         return <Link2 className="h-5 w-5 text-indigo-500" />
     }
 
+    const getHostname = (url: string) => {
+        try {
+            return new URL(url).hostname.replace('www.', '')
+        } catch {
+            return url
+        }
+    }
+
     const completedCount = Object.values(progress).filter(p => p.completed).length
     const progressPercent = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0
 
@@ -682,49 +690,80 @@ export default function PlaybookDetailPage() {
                                 className="relative flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 transition-all dark:border-slate-800 dark:bg-slate-950"
                             >
                                 {/* Header with Title and Toggle */}
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex items-start gap-3 flex-1">
+                                <div className="flex flex-col sm:flex-row sm:items-start gap-4 justify-between">
+                                    <div className="flex items-start gap-3 flex-1 min-w-0">
                                         <button
                                             onClick={() => handleFeedbackChange(item.id, { completed: !isCompleted })}
                                             className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 hover:border-slate-400 dark:border-slate-600 transition-all hover:bg-slate-100 dark:hover:bg-slate-800"
                                             title="تحديد كمكتمل (نقل للأرشيف)"
                                         >
-                                            <div className="h-2 w-2 rounded-full bg-slate-300 opacity-0 transition-opacity hover:opacity-100" />
+                                            <div className={`h-3 w-3 rounded-full bg-slate-400 transition-opacity ${isCompleted ? 'opacity-100' : 'opacity-0'}`} />
                                         </button>
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-medium text-lg leading-snug text-slate-900 dark:text-white">
+                                        <div className="flex-1 min-w-0 space-y-2">
+                                            <h3 className="font-medium text-lg leading-snug text-slate-900 dark:text-white break-words">
                                                 {item.title}
                                             </h3>
                                             {item.description && (
-                                                <p className="mt-1 text-sm text-slate-500 line-clamp-2">
+                                                <p className="text-sm text-slate-500 line-clamp-3 leading-relaxed">
                                                     {item.description}
                                                 </p>
                                             )}
-                                            <a
-                                                href={item.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="mt-2 inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700 dir-ltr"
-                                            >
-                                                <ExternalLink className="h-3 w-3" />
-                                                {item.url}
-                                            </a>
+
+                                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                                                <a
+                                                    href={item.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
+                                                >
+                                                    {getUrlIcon(item.url)}
+                                                    <span className="dir-ltr text-xs sm:text-sm truncate max-w-[200px] sm:max-w-xs text-left">
+                                                        {getHostname(item.url)}
+                                                    </span>
+                                                    <ExternalLink className="h-3 w-3" />
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col gap-1">
-                                        <div className="flex gap-1">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => moveItem(index, 'up')} disabled={index === 0}>
+
+                                    {/* Actions Toolbar */}
+                                    <div className="flex items-center justify-end gap-2 border-t pt-3 sm:border-t-0 sm:pt-0 border-slate-100 dark:border-slate-800">
+                                        <div className="flex gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-7 w-7 p-0 text-slate-500 hover:bg-white hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300 disabled:opacity-30"
+                                                onClick={() => moveItem(index, 'up')}
+                                                disabled={index === 0}
+                                            >
                                                 <ArrowRight className="h-4 w-4 rotate-90" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => moveItem(index, 'down')} disabled={index === items.length - 1}>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-7 w-7 p-0 text-slate-500 hover:bg-white hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300 disabled:opacity-30"
+                                                onClick={() => moveItem(index, 'down')}
+                                                disabled={index === items.length - 1}
+                                            >
                                                 <ArrowRight className="h-4 w-4 -rotate-90" />
                                             </Button>
                                         </div>
+                                        <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block"></div>
                                         <div className="flex gap-1">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-indigo-600" onClick={() => openEditModal(item)}>
-                                                <MoreVertical className="h-4 w-4" />
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 w-8 p-0 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/20"
+                                                onClick={() => openEditModal(item)}
+                                            >
+                                                <Edit2 className="h-4 w-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDeleteItem(item.id)}>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 w-8 p-0 text-slate-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                                                onClick={() => handleDeleteItem(item.id)}
+                                            >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </div>
