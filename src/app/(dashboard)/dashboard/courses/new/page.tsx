@@ -129,6 +129,8 @@ export default function NewCoursePage() {
                                 onChange={e => setForm({ ...form, url: e.target.value })}
                                 placeholder="https://..."
                                 dir="ltr"
+                                autoComplete="off"
+                                name="course_url_field_random"
                             />
                         </div>
 
@@ -141,6 +143,8 @@ export default function NewCoursePage() {
                                 value={form.tool}
                                 onChange={e => setForm({ ...form, tool: e.target.value })}
                                 placeholder="مثلاً: Cursor, V0, ChatGPT"
+                                autoComplete="off"
+                                name="course_tool_field_random"
                             />
                         </div>
 
