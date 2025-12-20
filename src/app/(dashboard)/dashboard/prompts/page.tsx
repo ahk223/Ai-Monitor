@@ -236,14 +236,14 @@ export default function PromptsPage() {
                                 {/* Image Preview */}
                                 {images.length > 0 && (
                                     <Link href={`/dashboard/prompts/${prompt.id}`}>
-                                        <div className="relative h-40 bg-slate-100 dark:bg-slate-800">
+                                        <div className="relative h-44 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 p-3">
                                             <img
                                                 src={images[0].url}
                                                 alt=""
-                                                className="h-full w-full object-cover"
+                                                className="h-full w-full object-contain rounded-lg"
                                             />
                                             {images.length > 1 && (
-                                                <div className="absolute bottom-2 left-2 flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-xs text-white">
+                                                <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-lg bg-black/70 px-2 py-1 text-xs text-white backdrop-blur-sm">
                                                     <ImageIcon className="h-3 w-3" />
                                                     +{images.length - 1}
                                                 </div>
