@@ -1,4 +1,8 @@
-// Force dynamic rendering to avoid static generation without Firebase credentials
+"use client"
+
+import { AuthProvider } from "@/contexts/AuthContext"
+
+// Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
 export default function AuthLayout({
@@ -6,5 +10,9 @@ export default function AuthLayout({
 }: {
     children: React.ReactNode
 }) {
-    return children
+    return (
+        <AuthProvider>
+            {children}
+        </AuthProvider>
+    )
 }
