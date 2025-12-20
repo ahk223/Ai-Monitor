@@ -787,56 +787,6 @@ export default function PlaybookDetailPage() {
                 )}
             </div>
 
-            {/* Archived Items Section */}
-            {showArchived && items.some(item => progress[item.id]?.completed) && (
-                <div className="mt-8 border-t border-slate-200 pt-8 dark:border-slate-800 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                        <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        الأرشيف (مكتمل)
-                    </h2>
-                    <div className="space-y-2">
-                        {items
-                            .filter(item => progress[item.id]?.completed)
-                            .map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 opacity-75 transition-all hover:opacity-100 dark:border-slate-800 dark:bg-slate-900"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            onClick={() => handleFeedbackChange(item.id, { completed: false })}
-                                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-green-500 bg-green-500 text-white transition-all hover:bg-green-600"
-                                            title="استعادة للقائمة الرئيسية"
-                                        >
-                                            <Check size={14} />
-                                        </button>
-                                        <span className="font-medium text-slate-600 line-through dark:text-slate-400">
-                                            {item.title}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {progress[item.id]?.rating && (
-                                            <div className="flex items-center gap-1 text-xs text-amber-500">
-                                                <span>{progress[item.id]?.rating}</span>
-                                                <svg className="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" /></svg>
-                                            </div>
-                                        )}
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => handleFeedbackChange(item.id, { completed: false })}
-                                            className="text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
-                                        >
-                                            <RotateCcw className="mr-1 h-3 w-3" />
-                                            استعادة
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))}
-                    </div>
-                </div>
-            )}
-
             {/* Add Item Modal */}
             <Modal
                 isOpen={showAddModal}
