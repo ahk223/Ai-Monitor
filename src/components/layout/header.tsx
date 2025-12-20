@@ -1,18 +1,29 @@
 "use client"
 
-import { Search, Bell, Plus, User } from "lucide-react"
+import { Search, Bell, Plus, User, LogOut, Settings } from "lucide-react"
 import { Button } from "@/components/ui"
 import { useState } from "react"
 import Link from "next/link"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface HeaderProps {
     user?: { name: string | null; email: string }
 }
 
 export function Header({ user }: HeaderProps) {
+    const { signOut } = useAuth()
     const [searchQuery, setSearchQuery] = useState("")
     const [showQuickAdd, setShowQuickAdd] = useState(false)
+    const [showProfileMenu, setShowProfileMenu] = useState(false)
     const userName = user?.name || "مستخدم"
+
+    const handleLogout = async () => {
+        try {
+            await signOut()
+        } catch (error) {
+            console.error("Error logging out:", error)
+        }
+    }
 
     return (
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-4 lg:px-6 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
@@ -100,13 +111,48 @@ export function Header({ user }: HeaderProps) {
                 </button>
 
                 {/* User */}
-                <div className="flex items-center gap-2 lg:gap-3 rounded-xl border border-slate-200 bg-slate-50 py-1.5 pr-1.5 pl-2 lg:pl-4 dark:border-slate-700 dark:bg-slate-900">
-                    <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[80px] lg:max-w-none truncate">
-                        {userName}
-                    </span>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600">
-                        <User className="h-4 w-4 text-white" />
-                    </div>
+                <div className="relative">
+                    <button
+                        onClick={() => setShowProfileMenu(!showProfileMenu)}
+                        className="flex items-center gap-2 lg:gap-3 rounded-xl border border-slate-200 bg-slate-50 py-1.5 pr-1.5 pl-2 lg:pl-4 dark:border-slate-700 dark:bg-slate-900 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                        <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[80px] lg:max-w-none truncate">
+                            {userName}
+                        </span>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600">
+                            <User className="h-4 w-4 text-white" />
+                        </div>
+                    </button>
+
+                    {/* Profile Dropdown */}
+                    {showProfileMenu && (
+                        <>
+                            <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setShowProfileMenu(false)}
+                            />
+                            <div className="absolute left-0 top-full mt-2 z-50 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                                <Link
+                                    href="/dashboard/settings"
+                                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                                    onClick={() => setShowProfileMenu(false)}
+                                >
+                                    <Settings className="h-4 w-4" />
+                                    الإعدادات
+                                </Link>
+                                <button
+                                    onClick={() => {
+                                        setShowProfileMenu(false)
+                                        handleLogout()
+                                    }}
+                                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                                >
+                                    <LogOut className="h-4 w-4" />
+                                    تسجيل الخروج
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </header>
