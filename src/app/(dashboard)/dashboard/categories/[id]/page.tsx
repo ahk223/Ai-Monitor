@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { CourseList } from "@/components/courses/CourseList"
+import { LearningList } from "@/components/learning/LearningList"
 
 
 interface Category {
@@ -278,6 +279,8 @@ export default function CategoryDetailsPage() {
             {/* Content Grid */}
             {filter === 'course' ? (
                 <CourseList categoryId={categoryId} categoryName={category.name} />
+            ) : filter === 'learning_topic' ? (
+                <LearningList categoryId={categoryId} categoryName={category.name} />
             ) : (
                 <>
                     {filteredContent.length === 0 ? (
