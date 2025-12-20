@@ -20,7 +20,7 @@ export default function NewCoursePage() {
     const [isLoading, setIsLoading] = useState(false)
     const [categories, setCategories] = useState<Category[]>([])
     const [form, setForm] = useState({
-        name: "",
+        title: "",
         url: "",
         tool: "",
         notes: "",
@@ -62,7 +62,7 @@ export default function NewCoursePage() {
             await setDoc(doc(db, "courses", docId), {
                 id: docId,
                 workspaceId: userData.workspaceId,
-                name: form.name,
+                title: form.title,
                 url: form.url,
                 tool: form.tool,
                 notes: form.notes,
@@ -109,8 +109,8 @@ export default function NewCoursePage() {
                             </label>
                             <Input
                                 required
-                                value={form.name}
-                                onChange={e => setForm({ ...form, name: e.target.value })}
+                                value={form.title}
+                                onChange={e => setForm({ ...form, title: e.target.value })}
                                 placeholder="مثلاً: دورة تعلم React المتقدمة"
                             />
                         </div>

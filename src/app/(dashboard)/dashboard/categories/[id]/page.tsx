@@ -215,6 +215,7 @@ export default function CategoryDetailsPage() {
         { id: "prompt", label: "البرومبتات" },
         { id: "playbook", label: "Playbooks" },
         { id: "course", label: "الكورسات" },
+        { id: "learning_topic", label: "مواضيع للتعلم" },
         { id: "tweet", label: "محتوى" },
         { id: "tool", label: "الأدوات" },
         { id: "note", label: "الملاحظات" },

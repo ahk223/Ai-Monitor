@@ -90,6 +90,7 @@ export default function PlaybookDetailPage() {
     const [checkingDuplicate, setCheckingDuplicate] = useState(false)
     const [newContent, setNewContent] = useState<NewContentInfo | null>(null)
     const [syncingContent, setSyncingContent] = useState(false)
+    const [showArchived, setShowArchived] = useState(false)
 
     useEffect(() => {
         if (playbookId) {
@@ -566,6 +567,12 @@ export default function PlaybookDetailPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    {items.some(item => progress[item.id]?.completed) && (
+                        <Button variant={showArchived ? "secondary" : "ghost"} onClick={() => setShowArchived(!showArchived)}>
+                            <CheckCircle2 className={`h-4 w-4 mr-2 ${showArchived ? "text-green-600" : "text-slate-400"}`} />
+                            {showArchived ? "إخفاء الأرشيف" : "عرض الأرشيف"}
+                        </Button>
+                    )}
                     <Button variant="outline" onClick={() => setShowShareModal(true)}>
                         <Share2 className="h-4 w-4" />
                         مشاركة
@@ -726,8 +733,8 @@ export default function PlaybookDetailPage() {
             </div>
 
             {/* Archived Items Section */}
-            {items.some(item => progress[item.id]?.completed) && (
-                <div className="mt-8 border-t border-slate-200 pt-8 dark:border-slate-800">
+            {showArchived && items.some(item => progress[item.id]?.completed) && (
+                <div className="mt-8 border-t border-slate-200 pt-8 dark:border-slate-800 animate-in fade-in slide-in-from-top-2 duration-300">
                     <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                         <CheckCircle2 className="h-5 w-5 text-green-600" />
                         الأرشيف (مكتمل)
