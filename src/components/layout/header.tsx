@@ -11,12 +11,13 @@ interface HeaderProps {
 
 export function Header({ user }: HeaderProps) {
     const [searchQuery, setSearchQuery] = useState("")
+    const [showQuickAdd, setShowQuickAdd] = useState(false)
     const userName = user?.name || "مستخدم"
 
     return (
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-6 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
-            {/* Search */}
-            <div className="relative w-full max-w-md">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-4 lg:px-6 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
+            {/* Search - hidden on small mobile, show on medium+ */}
+            <div className="relative hidden sm:block w-full max-w-md">
                 <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                     type="text"
@@ -27,45 +28,71 @@ export function Header({ user }: HeaderProps) {
                 />
             </div>
 
+            {/* Mobile: Logo placeholder for spacing */}
+            <div className="sm:hidden w-10" />
+
             {/* Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 lg:gap-3">
+                {/* Mobile search link */}
+                <Link href="/dashboard/search" className="sm:hidden">
+                    <button className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-400">
+                        <Search className="h-5 w-5" />
+                    </button>
+                </Link>
+
                 {/* Quick Add */}
-                <div className="relative group">
-                    <Button size="icon" className="rounded-full">
+                <div className="relative">
+                    <Button
+                        size="icon"
+                        className="rounded-full"
+                        onClick={() => setShowQuickAdd(!showQuickAdd)}
+                    >
                         <Plus className="h-5 w-5" />
                     </Button>
 
                     {/* Dropdown */}
-                    <div className="absolute left-0 top-full mt-2 hidden w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl group-hover:block dark:border-slate-700 dark:bg-slate-900">
-                        <Link
-                            href="/dashboard/prompts/new"
-                            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                        >
-                            بروبمت جديد
-                        </Link>
-                        <Link
-                            href="/dashboard/tweets/new"
-                            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                        >
-                            تغريدة جديدة
-                        </Link>
-                        <Link
-                            href="/dashboard/tools/new"
-                            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                        >
-                            أداة جديدة
-                        </Link>
-                        <Link
-                            href="/dashboard/playbooks/new"
-                            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                        >
-                            Playbook جديد
-                        </Link>
-                    </div>
+                    {showQuickAdd && (
+                        <>
+                            <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setShowQuickAdd(false)}
+                            />
+                            <div className="absolute left-0 top-full mt-2 z-50 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                                <Link
+                                    href="/dashboard/prompts/new"
+                                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                                    onClick={() => setShowQuickAdd(false)}
+                                >
+                                    بروبمت جديد
+                                </Link>
+                                <Link
+                                    href="/dashboard/tweets/new"
+                                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                                    onClick={() => setShowQuickAdd(false)}
+                                >
+                                    تغريدة جديدة
+                                </Link>
+                                <Link
+                                    href="/dashboard/tools/new"
+                                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                                    onClick={() => setShowQuickAdd(false)}
+                                >
+                                    أداة جديدة
+                                </Link>
+                                <Link
+                                    href="/dashboard/playbooks/new"
+                                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                                    onClick={() => setShowQuickAdd(false)}
+                                >
+                                    Playbook جديد
+                                </Link>
+                            </div>
+                        </>
+                    )}
                 </div>
 
-                {/* Notifications */}
-                <button className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800">
+                {/* Notifications - hidden on very small screens */}
+                <button className="hidden xs:flex relative h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800">
                     <Bell className="h-5 w-5" />
                     <span className="absolute -top-1 -left-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
                         3
@@ -73,8 +100,8 @@ export function Header({ user }: HeaderProps) {
                 </button>
 
                 {/* User */}
-                <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 py-1.5 pr-1.5 pl-4 dark:border-slate-700 dark:bg-slate-900">
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                <div className="flex items-center gap-2 lg:gap-3 rounded-xl border border-slate-200 bg-slate-50 py-1.5 pr-1.5 pl-2 lg:pl-4 dark:border-slate-700 dark:bg-slate-900">
+                    <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[80px] lg:max-w-none truncate">
                         {userName}
                     </span>
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600">

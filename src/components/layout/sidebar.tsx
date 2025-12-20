@@ -14,8 +14,9 @@ import {
     LogOut,
     ChevronLeft,
     Menu,
+    X,
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 
 interface SidebarProps {
@@ -35,7 +36,24 @@ const navItems = [
 export function Sidebar({ workspaceName = "مساحة العمل" }: SidebarProps) {
     const pathname = usePathname()
     const [collapsed, setCollapsed] = useState(false)
+    const [mobileOpen, setMobileOpen] = useState(false)
     const { signOut } = useAuth()
+
+    // Close mobile menu on route change
+    useEffect(() => {
+        setMobileOpen(false)
+    }, [pathname])
+
+    // Close mobile menu on resize to desktop
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 1024) {
+                setMobileOpen(false)
+            }
+        }
+        window.addEventListener("resize", handleResize)
+        return () => window.removeEventListener("resize", handleResize)
+    }, [])
 
     const handleSignOut = async () => {
         await signOut()
@@ -43,14 +61,35 @@ export function Sidebar({ workspaceName = "مساحة العمل" }: SidebarProp
 
     return (
         <>
+            {/* Mobile menu button - fixed at top */}
+            <button
+                onClick={() => setMobileOpen(!mobileOpen)}
+                className="fixed top-4 right-4 z-[60] flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-lg lg:hidden dark:bg-slate-900"
+            >
+                {mobileOpen ? (
+                    <X className="h-5 w-5 text-slate-600" />
+                ) : (
+                    <Menu className="h-5 w-5 text-slate-600" />
+                )}
+            </button>
+
             {/* Mobile overlay */}
-            <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" style={{ display: "none" }} />
+            {mobileOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+                    onClick={() => setMobileOpen(false)}
+                />
+            )}
 
             {/* Sidebar */}
             <aside
                 className={cn(
                     "fixed right-0 top-0 z-50 flex h-full flex-col border-l border-slate-200 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-950",
-                    collapsed ? "w-20" : "w-64"
+                    // Desktop styles
+                    collapsed ? "lg:w-20" : "lg:w-64",
+                    // Mobile styles
+                    "w-64",
+                    mobileOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
                 )}
             >
                 {/* Logo */}
@@ -99,11 +138,11 @@ export function Sidebar({ workspaceName = "مساحة العمل" }: SidebarProp
                                     isActive
                                         ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25"
                                         : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800",
-                                    collapsed && "justify-center"
+                                    collapsed && "lg:justify-center"
                                 )}
                             >
                                 <item.icon className="h-5 w-5 flex-shrink-0" />
-                                {!collapsed && <span>{item.label}</span>}
+                                <span className={cn(collapsed && "lg:hidden")}>{item.label}</span>
                             </Link>
                         )
                     })}
@@ -115,11 +154,11 @@ export function Sidebar({ workspaceName = "مساحة العمل" }: SidebarProp
                         onClick={handleSignOut}
                         className={cn(
                             "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 transition-all hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20",
-                            collapsed && "justify-center"
+                            collapsed && "lg:justify-center"
                         )}
                     >
                         <LogOut className="h-5 w-5" />
-                        {!collapsed && <span>تسجيل الخروج</span>}
+                        <span className={cn(collapsed && "lg:hidden")}>تسجيل الخروج</span>
                     </button>
                 </div>
             </aside>
