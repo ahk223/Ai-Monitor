@@ -18,6 +18,8 @@ import {
     GraduationCap
 } from "lucide-react"
 import Link from "next/link"
+import { CourseList } from "@/components/courses/CourseList"
+
 
 interface Category {
     id: string
@@ -258,56 +260,62 @@ export default function CategoryDetailsPage() {
             </div>
 
             {/* Content Grid */}
-            {filteredContent.length === 0 ? (
-                <Card>
-                    <CardContent className="py-12 text-center">
-                        <p className="text-slate-500">لا يوجد محتوى في هذا التصنيف</p>
-                    </CardContent>
-                </Card>
+            {filter === 'course' ? (
+                <CourseList categoryId={categoryId} categoryName={category.name} />
             ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {filteredContent.map((item) => {
-                        const Icon = getTypeIcon(item.type)
-                        const imageUrl = getItemImage(item)
-                        const LinkComponent = isExternalLink(item) ? 'a' : Link
-                        const linkProps = isExternalLink(item)
-                            ? { href: getLink(item), target: '_blank', rel: 'noopener noreferrer' }
-                            : { href: getLink(item) }
+                <>
+                    {filteredContent.length === 0 ? (
+                        <Card>
+                            <CardContent className="py-12 text-center">
+                                <p className="text-slate-500">لا يوجد محتوى في هذا التصنيف</p>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {filteredContent.map((item) => {
+                                const Icon = getTypeIcon(item.type)
+                                const imageUrl = getItemImage(item)
+                                const LinkComponent = isExternalLink(item) ? 'a' : Link
+                                const linkProps = isExternalLink(item)
+                                    ? { href: getLink(item), target: '_blank', rel: 'noopener noreferrer' }
+                                    : { href: getLink(item) }
 
-                        return (
-                            <LinkComponent key={`${item.type}-${item.id}`} {...linkProps as any} className="block h-full">
-                                <Card hover className="relative flex flex-col h-full overflow-hidden transition-all hover:-translate-y-1 hover:shadow-md group">
-                                    {/* Image Preview */}
-                                    {imageUrl && (
-                                        <div className="h-32 w-full bg-slate-100 dark:bg-slate-800 relative">
-                                            <img
-                                                src={imageUrl}
-                                                alt={getTitle(item)}
-                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </div>
-                                    )}
+                                return (
+                                    <LinkComponent key={`${item.type}-${item.id}`} {...linkProps as any} className="block h-full">
+                                        <Card hover className="relative flex flex-col h-full overflow-hidden transition-all hover:-translate-y-1 hover:shadow-md group">
+                                            {/* Image Preview */}
+                                            {imageUrl && (
+                                                <div className="h-32 w-full bg-slate-100 dark:bg-slate-800 relative">
+                                                    <img
+                                                        src={imageUrl}
+                                                        alt={getTitle(item)}
+                                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                </div>
+                                            )}
 
-                                    <div className="flex-1 flex flex-col justify-between p-4 bg-white dark:bg-slate-950">
-                                        <div className="flex items-start justify-between mb-3 gap-2">
-                                            <Icon className="h-5 w-5 text-slate-400 flex-shrink-0 mt-0.5" />
-                                            <Badge variant="secondary" className={`${getTypeColor(item.type)} border-0 whitespace-nowrap`}>
-                                                {getTypeLabel(item.type)}
-                                            </Badge>
-                                        </div>
+                                            <div className="flex-1 flex flex-col justify-between p-4 bg-white dark:bg-slate-950">
+                                                <div className="flex items-start justify-between mb-3 gap-2">
+                                                    <Icon className="h-5 w-5 text-slate-400 flex-shrink-0 mt-0.5" />
+                                                    <Badge variant="secondary" className={`${getTypeColor(item.type)} border-0 whitespace-nowrap`}>
+                                                        {getTypeLabel(item.type)}
+                                                    </Badge>
+                                                </div>
 
-                                        <div>
-                                            <h3 className="font-bold text-lg text-slate-900 dark:text-white line-clamp-2 text-right leading-relaxed group-hover:text-indigo-600 transition-colors">
-                                                {getTitle(item)}
-                                            </h3>
-                                        </div>
-                                    </div>
-                                </Card>
-                            </LinkComponent>
-                        )
-                    })}
-                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-lg text-slate-900 dark:text-white line-clamp-2 text-right leading-relaxed group-hover:text-indigo-600 transition-colors">
+                                                        {getTitle(item)}
+                                                    </h3>
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    </LinkComponent>
+                                )
+                            })}
+                        </div>
+                    )}
+                </>
             )}
         </div>
     )

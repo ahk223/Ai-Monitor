@@ -599,43 +599,38 @@ export default function PlaybookDetailPage() {
 
             {/* Items List */}
             <div className="space-y-4">
-                {items.length === 0 ? (
+                {items.filter(item => !progress[item.id]?.completed).length === 0 ? (
                     <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center dark:border-slate-700">
                         <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
                         <h3 className="mt-4 font-medium text-slate-900 dark:text-white">
-                            لا توجد محتويات
+                            {items.length > 0 ? "كل المحتويات مكتملة! 🎉" : "لا توجد محتويات"}
                         </h3>
                         <p className="mt-1 text-slate-500">
-                            ابدأ بإضافة روابط ومحتوى تعليمي
+                            {items.length > 0 ? "يمكنك العثور على المحتوى المكتمل في الأرشيف أدناه" : "ابدأ بإضافة روابط ومحتوى تعليمي"}
                         </p>
                     </div>
                 ) : (
-                    items.map((item, index) => {
+                    items.filter(item => !progress[item.id]?.completed).map((item, index) => {
                         const videoId = getYouTubeId(item.url)
                         const isCompleted = progress[item.id]?.completed
 
                         return (
                             <div
                                 key={item.id}
-                                className={`relative flex flex-col gap-4 rounded-xl border p-4 transition-all ${isCompleted
-                                    ? "border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-900/10"
-                                    : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
-                                    }`}
+                                className="relative flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 transition-all dark:border-slate-800 dark:bg-slate-950"
                             >
                                 {/* Header with Title and Toggle */}
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex items-start gap-3 flex-1">
                                         <button
                                             onClick={() => handleFeedbackChange(item.id, { completed: !isCompleted })}
-                                            className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all ${isCompleted
-                                                ? "border-green-500 bg-green-500 text-white"
-                                                : "border-slate-300 hover:border-slate-400 dark:border-slate-600"
-                                                }`}
+                                            className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 hover:border-slate-400 dark:border-slate-600 transition-all hover:bg-slate-100 dark:hover:bg-slate-800"
+                                            title="تحديد كمكتمل (نقل للأرشيف)"
                                         >
-                                            {isCompleted && <Check size={14} />}
+                                            <div className="h-2 w-2 rounded-full bg-slate-300 opacity-0 transition-opacity hover:opacity-100" />
                                         </button>
                                         <div className="flex-1 min-w-0">
-                                            <h3 className={`font-medium text-lg leading-snug ${isCompleted ? "text-slate-500 line-through dark:text-slate-500" : "text-slate-900 dark:text-white"}`}>
+                                            <h3 className="font-medium text-lg leading-snug text-slate-900 dark:text-white">
                                                 {item.title}
                                             </h3>
                                             {item.description && (
@@ -675,7 +670,6 @@ export default function PlaybookDetailPage() {
                                 </div>
 
                                 {/* Video Embed */}
-                                {/* Video Embed */}
                                 {videoId && (
                                     <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg bg-slate-900 border border-slate-800">
                                         {playingVideoId === item.id ? (
@@ -705,7 +699,7 @@ export default function PlaybookDetailPage() {
                                 )}
 
                                 {/* Feedback Section */}
-                                <div className={`mt-2 flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-4 transition-all dark:border-slate-800 dark:bg-slate-900/30 ${isCompleted ? 'opacity-100' : 'opacity-80'}`}>
+                                <div className="mt-2 flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-4 transition-all dark:border-slate-800 dark:bg-slate-900/30">
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm font-medium text-slate-700 dark:text-slate-300">التقييم:</span>
                                         <StarRating
@@ -730,6 +724,56 @@ export default function PlaybookDetailPage() {
                     })
                 )}
             </div>
+
+            {/* Archived Items Section */}
+            {items.some(item => progress[item.id]?.completed) && (
+                <div className="mt-8 border-t border-slate-200 pt-8 dark:border-slate-800">
+                    <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        الأرشيف (مكتمل)
+                    </h2>
+                    <div className="space-y-2">
+                        {items
+                            .filter(item => progress[item.id]?.completed)
+                            .map((item) => (
+                                <div
+                                    key={item.id}
+                                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 opacity-75 transition-all hover:opacity-100 dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => handleFeedbackChange(item.id, { completed: false })}
+                                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-green-500 bg-green-500 text-white transition-all hover:bg-green-600"
+                                            title="استعادة للقائمة الرئيسية"
+                                        >
+                                            <Check size={14} />
+                                        </button>
+                                        <span className="font-medium text-slate-600 line-through dark:text-slate-400">
+                                            {item.title}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {progress[item.id]?.rating && (
+                                            <div className="flex items-center gap-1 text-xs text-amber-500">
+                                                <span>{progress[item.id]?.rating}</span>
+                                                <svg className="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" /></svg>
+                                            </div>
+                                        )}
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleFeedbackChange(item.id, { completed: false })}
+                                            className="text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                                        >
+                                            <RotateCcw className="mr-1 h-3 w-3" />
+                                            استعادة
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                    </div>
+                </div>
+            )}
 
             {/* Add Item Modal */}
             <Modal
