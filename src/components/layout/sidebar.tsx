@@ -9,6 +9,7 @@ import {
     Twitter,
     Wrench,
     BookOpen,
+    StickyNote,
     Search,
     Settings,
     LogOut,
@@ -29,6 +30,7 @@ const navItems = [
     { icon: Twitter, label: "التغريدات", href: "/dashboard/tweets" },
     { icon: Wrench, label: "الأدوات", href: "/dashboard/tools" },
     { icon: BookOpen, label: "Playbooks", href: "/dashboard/playbooks" },
+    { icon: StickyNote, label: "الملاحظات", href: "/dashboard/notes" },
     { icon: Search, label: "البحث", href: "/dashboard/search" },
     { icon: Settings, label: "الإعدادات", href: "/dashboard/settings" },
 ]
