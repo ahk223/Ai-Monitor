@@ -172,7 +172,15 @@ export default function SharedPlaybookPage() {
     }
 
     const handleCloneToMyAccount = async () => {
-        if (!user || !userData?.workspaceId || !playbook) return
+        if (!user) return
+
+        if (!userData?.workspaceId) {
+            console.error("Missing workspaceId", userData)
+            alert("عذراً، لا يمكن نسخ الـ Playbook لأنه لا توجد مساحة عمل مرتبطة بحسابك.")
+            return
+        }
+
+        if (!playbook) return
 
         setIsCloning(true)
         try {

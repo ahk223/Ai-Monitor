@@ -201,23 +201,19 @@ export default function CategoryDetailsPage() {
                         const Icon = getTypeIcon(item.type)
                         return (
                             <Link key={`${item.type}-${item.id}`} href={getLink(item)}>
-                                <Card hover className="h-full cursor-pointer transition-all hover:-translate-y-1">
-                                    <CardContent className="flex h-full flex-col gap-4">
-                                        <div className="flex items-start justify-between">
-                                            <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${getTypeColor(item.type)}`}>
-                                                <Icon className="h-5 w-5" />
-                                            </div>
-                                            <Badge variant="secondary" className={getTypeColor(item.type)}>
-                                                {getTypeLabel(item.type)}
-                                            </Badge>
-                                        </div>
+                                <Card hover className="relative flex h-40 flex-col justify-between p-4 transition-all hover:-translate-y-1 hover:shadow-md">
+                                    <div className="flex items-start justify-between">
+                                        <Icon className="h-5 w-5 text-slate-400" />
+                                        <Badge variant="secondary" className={`${getTypeColor(item.type)} border-0`}>
+                                            {getTypeLabel(item.type)}
+                                        </Badge>
+                                    </div>
 
-                                        <div>
-                                            <h3 className="font-medium text-slate-900 dark:text-white line-clamp-2">
-                                                {getTitle(item)}
-                                            </h3>
-                                        </div>
-                                    </CardContent>
+                                    <div>
+                                        <h3 className="font-bold text-lg text-slate-900 dark:text-white line-clamp-2 text-right">
+                                            {getTitle(item)}
+                                        </h3>
+                                    </div>
                                 </Card>
                             </Link>
                         )
