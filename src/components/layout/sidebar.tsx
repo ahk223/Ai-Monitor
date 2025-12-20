@@ -17,6 +17,9 @@ import {
     Menu,
     X,
     GraduationCap,
+    LayoutGrid,
+    FolderKanban,
+    ListTodo,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
@@ -26,15 +29,15 @@ interface SidebarProps {
 }
 
 const navItems = [
-    { icon: LayoutDashboard, label: "لوحة التحكم", href: "/dashboard" },
-    { icon: MessageSquareText, label: "البرومبتات", href: "/dashboard/prompts" },
-    { icon: Twitter, label: "السوشيال ميديا", href: "/dashboard/tweets" },
-    { icon: Wrench, label: "الأدوات", href: "/dashboard/tools" },
-    { icon: GraduationCap, label: "الكورسات", href: "/dashboard/courses" },
-    { icon: BookOpen, label: "Playbooks", href: "/dashboard/playbooks" },
-    { icon: StickyNote, label: "الملاحظات", href: "/dashboard/notes" },
-    { icon: Search, label: "البحث", href: "/dashboard/search" },
-    { icon: Settings, label: "الإعدادات", href: "/dashboard/settings" },
+    { name: "الرئيسية", href: "/dashboard", icon: LayoutGrid },
+    { name: "التصنيفات", href: "/dashboard/categories", icon: FolderKanban },
+    { name: "البروبمتات", href: "/dashboard/prompts", icon: MessageSquareText },
+    { name: "الكورسات", href: "/dashboard/courses", icon: GraduationCap },
+    { name: "أشياء للتعلم", href: "/dashboard/learning", icon: ListTodo },
+    { name: "Playbooks", href: "/dashboard/playbooks", icon: BookOpen },
+    { name: "السوشيال ميديا", href: "/dashboard/tweets", icon: Twitter },
+    { name: "الأدوات", href: "/dashboard/tools", icon: Wrench },
+    { name: "الملاحظات", href: "/dashboard/notes", icon: StickyNote },
 ]
 
 export function Sidebar({ workspaceName = "مساحة العمل" }: SidebarProps) {
@@ -146,7 +149,7 @@ export function Sidebar({ workspaceName = "مساحة العمل" }: SidebarProp
                                 )}
                             >
                                 <item.icon className="h-5 w-5 flex-shrink-0" />
-                                <span className={cn(collapsed && "lg:hidden")}>{item.label}</span>
+                                <span className={cn(collapsed && "lg:hidden")}>{item.name}</span>
                             </Link>
                         )
                     })}

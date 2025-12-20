@@ -567,10 +567,24 @@ export default function PlaybookDetailPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    {items.some(item => progress[item.id]?.completed) && (
-                        <Button variant={showArchived ? "secondary" : "ghost"} onClick={() => setShowArchived(!showArchived)}>
-                            <CheckCircle2 className={`h-4 w-4 mr-2 ${showArchived ? "text-green-600" : "text-slate-400"}`} />
-                            {showArchived ? "إخفاء الأرشيف" : "عرض الأرشيف"}
+                    {/* Only show archive toggle if there are archived items OR if we are currently viewing archive */}
+                    {(items.some(item => progress[item.id]?.completed) || showArchived) && (
+                        <Button
+                            variant={showArchived ? "secondary" : "ghost"}
+                            onClick={() => setShowArchived(!showArchived)}
+                            className={showArchived ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-300" : ""}
+                        >
+                            {showArchived ? (
+                                <>
+                                    <ArrowRight className="h-4 w-4 mr-2" />
+                                    عرض القائمة النشطة
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle2 className="h-4 w-4 mr-2 text-slate-400" />
+                                    عرض الأرشيف
+                                </>
+                            )}
                         </Button>
                     )}
                     <Button variant="outline" onClick={() => setShowShareModal(true)}>
@@ -606,15 +620,56 @@ export default function PlaybookDetailPage() {
 
             {/* Items List */}
             <div className="space-y-4">
-                {items.filter(item => !progress[item.id]?.completed).length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center dark:border-slate-700">
-                        <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
-                        <h3 className="mt-4 font-medium text-slate-900 dark:text-white">
-                            {items.length > 0 ? "كل المحتويات مكتملة! 🎉" : "لا توجد محتويات"}
-                        </h3>
-                        <p className="mt-1 text-slate-500">
-                            {items.length > 0 ? "يمكنك العثور على المحتوى المكتمل في الأرشيف أدناه" : "ابدأ بإضافة روابط ومحتوى تعليمي"}
-                        </p>
+                {showArchived ? (
+                    // Archived View
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="mb-4 flex items-center justify-between rounded-lg bg-indigo-50 p-4 text-indigo-900 dark:bg-indigo-950/30 dark:text-indigo-200 border border-indigo-100 dark:border-indigo-900/50">
+                            <div className="flex items-center gap-2">
+                                <CheckCircle2 className="h-5 w-5" />
+                                <span className="font-medium">أرشيف العناصر المكتملة</span>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={() => setShowArchived(false)}>
+                                العودة للقائمة النشطة
+                            </Button>
+                        </div>
+
+                        <div className="space-y-2">
+                            {items.filter(item => progress[item.id]?.completed).length === 0 ? (
+                                <div className="text-center py-10 text-slate-500">
+                                    لا توجد عناصر في الأرشيف
+                                </div>
+                            ) : (
+                                items
+                                    .filter(item => progress[item.id]?.completed)
+                                    .map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-4 opacity-75 transition-all hover:opacity-100 dark:border-slate-800 dark:bg-slate-900"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => handleFeedbackChange(item.id, { completed: false })}
+                                                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-green-500 bg-green-500 text-white transition-all hover:bg-green-600"
+                                                    title="استعادة للقائمة الرئيسية"
+                                                >
+                                                    <Check size={14} />
+                                                </button>
+                                                <span className="font-medium text-slate-600 line-through dark:text-slate-400">
+                                                    {item.title}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {progress[item.id]?.rating && (
+                                                    <div className="flex items-center gap-1 text-xs text-amber-500 bg-amber-50 px-2 py-1 rounded-full dark:bg-amber-900/10">
+                                                        <span>{progress[item.id]?.rating}</span>
+                                                        <svg className="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" /></svg>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                            )}
+                        </div>
                     </div>
                 ) : (
                     items.filter(item => !progress[item.id]?.completed).map((item, index) => {

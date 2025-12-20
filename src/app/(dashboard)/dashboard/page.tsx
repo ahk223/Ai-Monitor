@@ -16,6 +16,8 @@ import {
     AlertCircle,
     ChevronDown,
     ChevronUp,
+    GraduationCap,
+    ListTodo,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -24,7 +26,7 @@ interface ContentItem {
     title?: string
     content?: string
     url?: string
-    type: "prompt" | "tweet" | "tool" | "playbook" | "note"
+    type: "prompt" | "tweet" | "tool" | "playbook" | "note" | "course" | "learning_topic"
     categoryId?: string | null
 }
 
@@ -40,11 +42,13 @@ interface Stats {
     tools: number
     playbooks: number
     notes: number
+    courses: number
+    learningTopics: number
 }
 
 export default function DashboardPage() {
     const { userData } = useAuth()
-    const [stats, setStats] = useState<Stats>({ prompts: 0, tweets: 0, tools: 0, playbooks: 0, notes: 0 })
+    const [stats, setStats] = useState<Stats>({ prompts: 0, tweets: 0, tools: 0, playbooks: 0, notes: 0, courses: 0, learningTopics: 0 })
     const [categories, setCategories] = useState<Category[]>([])
     const [contentByCategory, setContentByCategory] = useState<Record<string, ContentItem[]>>({})
     const [uncategorized, setUncategorized] = useState<ContentItem[]>([])
@@ -171,6 +175,38 @@ export default function DashboardPage() {
                 })
             })
 
+            // Courses
+            const coursesQuery = query(
+                collection(db, "courses"),
+                where("workspaceId", "==", userData.workspaceId)
+            )
+            const coursesSnap = await getDocs(coursesQuery)
+            coursesSnap.docs.forEach(doc => {
+                const data = doc.data()
+                allContent.push({
+                    id: data.id,
+                    title: data.title,
+                    type: "course",
+                    categoryId: data.categoryId,
+                })
+            })
+
+            // Learning Topics
+            const topicsQuery = query(
+                collection(db, "learningTopics"),
+                where("workspaceId", "==", userData.workspaceId)
+            )
+            const topicsSnap = await getDocs(topicsQuery)
+            topicsSnap.docs.forEach(doc => {
+                const data = doc.data()
+                allContent.push({
+                    id: data.id,
+                    title: data.title,
+                    type: "learning_topic",
+                    categoryId: data.categoryId,
+                })
+            })
+
             // Set stats
             setStats({
                 prompts: promptsSnap.size,
@@ -178,6 +214,8 @@ export default function DashboardPage() {
                 tools: toolsSnap.size,
                 playbooks: playbooksSnap.size,
                 notes: notesSnap.size,
+                courses: coursesSnap.size,
+                learningTopics: topicsSnap.size,
             })
 
             // Group by category
@@ -217,6 +255,8 @@ export default function DashboardPage() {
             case "tool": return `/dashboard/tools`
             case "playbook": return `/dashboard/playbooks/${item.id}`
             case "note": return `/dashboard/notes`
+            case "course": return `/dashboard/courses`
+            case "learning_topic": return `/dashboard/learning`
             default: return "#"
         }
     }
@@ -228,6 +268,8 @@ export default function DashboardPage() {
             case "tool": return <Wrench className="h-4 w-4 text-emerald-500" />
             case "playbook": return <BookOpen className="h-4 w-4 text-orange-500" />
             case "note": return <StickyNote className="h-4 w-4 text-amber-500" />
+            case "course": return <GraduationCap className="h-4 w-4 text-blue-500" />
+            case "learning_topic": return <ListTodo className="h-4 w-4 text-pink-500" />
             default: return null
         }
     }
@@ -239,16 +281,18 @@ export default function DashboardPage() {
             case "tool": return "أداة"
             case "playbook": return "Playbook"
             case "note": return "ملاحظة"
+            case "course": return "كورس"
+            case "learning_topic": return "للتعلم"
             default: return ""
         }
     }
 
     const statsCards = [
         { title: "البروبمتات", value: stats.prompts, icon: MessageSquareText, color: "from-indigo-500 to-purple-500", href: "/dashboard/prompts" },
-        { title: "السوشيال ميديا", value: stats.tweets, icon: Twitter, color: "from-cyan-500 to-blue-500", href: "/dashboard/tweets" },
-        { title: "الأدوات", value: stats.tools, icon: Wrench, color: "from-emerald-500 to-teal-500", href: "/dashboard/tools" },
         { title: "Playbooks", value: stats.playbooks, icon: BookOpen, color: "from-orange-500 to-red-500", href: "/dashboard/playbooks" },
-        { title: "الملاحظات", value: stats.notes, icon: StickyNote, color: "from-amber-500 to-yellow-500", href: "/dashboard/notes" },
+        { title: "الكورسات", value: stats.courses, icon: GraduationCap, color: "from-blue-500 to-cyan-500", href: "/dashboard/courses" },
+        { title: "للتعلم", value: stats.learningTopics, icon: ListTodo, color: "from-pink-500 to-rose-500", href: "/dashboard/learning" },
+        { title: "الأدوات", value: stats.tools, icon: Wrench, color: "from-emerald-500 to-teal-500", href: "/dashboard/tools" },
     ]
 
     if (!loading && userData && !userData.workspaceId) {
