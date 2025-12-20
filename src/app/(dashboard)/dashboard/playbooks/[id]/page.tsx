@@ -70,6 +70,8 @@ export default function PlaybookDetailPage() {
     const [editingItem, setEditingItem] = useState<PlaybookItem | null>(null)
     const [savingItem, setSavingItem] = useState(false)
     const [copied, setCopied] = useState(false)
+    const [duplicateWarning, setDuplicateWarning] = useState<{ message: string; playbookTitle?: string } | null>(null)
+    const [checkingDuplicate, setCheckingDuplicate] = useState(false)
 
     useEffect(() => {
         if (playbookId) {
@@ -119,8 +121,58 @@ export default function PlaybookDetailPage() {
         }
     }
 
+    const checkDuplicateUrl = async (url: string): Promise<{ isDuplicate: boolean; location?: string; playbookTitle?: string }> => {
+        if (!url || !userData?.workspaceId) return { isDuplicate: false }
+
+        // Check in current playbook
+        const existsInCurrent = items.some(item => item.url === url)
+        if (existsInCurrent) {
+            return { isDuplicate: true, location: 'current', playbookTitle: playbook?.title }
+        }
+
+        // Check in other playbooks
+        try {
+            const allItemsQuery = query(
+                collection(db, "playbookItems"),
+                where("url", "==", url)
+            )
+            const snap = await getDocs(allItemsQuery)
+
+            if (!snap.empty) {
+                const foundItem = snap.docs[0].data()
+                if (foundItem.playbookId !== playbookId) {
+                    // Get playbook title
+                    const playbookDoc = await getDoc(doc(db, "playbooks", foundItem.playbookId))
+                    const pbData = playbookDoc.data()
+                    return { isDuplicate: true, location: 'other', playbookTitle: pbData?.title || 'Playbook آخر' }
+                }
+            }
+        } catch (error) {
+            console.error("Error checking duplicate:", error)
+        }
+
+        return { isDuplicate: false }
+    }
+
     const handleAddItem = async () => {
         if (!newItem.title || !newItem.url) return
+
+        // Check for duplicates first
+        setCheckingDuplicate(true)
+        const duplicateCheck = await checkDuplicateUrl(newItem.url)
+        setCheckingDuplicate(false)
+
+        if (duplicateCheck.isDuplicate) {
+            const locationText = duplicateCheck.location === 'current'
+                ? 'هذا الـ Playbook'
+                : `Playbook "${duplicateCheck.playbookTitle}"`
+            setDuplicateWarning({
+                message: `هذا الرابط موجود مسبقاً في ${locationText}`,
+                playbookTitle: duplicateCheck.playbookTitle
+            })
+            return // Don't add if duplicate
+        }
+
         setSavingItem(true)
 
         try {
@@ -147,6 +199,7 @@ export default function PlaybookDetailPage() {
             }])
 
             setNewItem({ title: "", url: "", description: "" })
+            setDuplicateWarning(null)
             setShowAddModal(false)
         } catch (error) {
             console.error("Error adding item:", error)
@@ -514,13 +567,24 @@ export default function PlaybookDetailPage() {
                 </div>
             )}
 
-            {/* Add Item Modal */}
             <Modal
                 isOpen={showAddModal}
-                onClose={() => setShowAddModal(false)}
+                onClose={() => {
+                    setShowAddModal(false)
+                    setDuplicateWarning(null)
+                }}
                 title="إضافة محتوى جديد"
             >
                 <div className="space-y-4">
+                    {/* Duplicate Warning */}
+                    {duplicateWarning && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+                            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                ⚠️ {duplicateWarning.message}
+                            </p>
+                        </div>
+                    )}
+
                     <Input
                         label="العنوان"
                         placeholder="مثال: المقطع الأول - مقدمة"
@@ -532,7 +596,10 @@ export default function PlaybookDetailPage() {
                         label="الرابط"
                         placeholder="رابط YouTube أو PDF أو أي رابط آخر"
                         value={newItem.url}
-                        onChange={(e) => setNewItem({ ...newItem, url: e.target.value })}
+                        onChange={(e) => {
+                            setNewItem({ ...newItem, url: e.target.value })
+                            setDuplicateWarning(null) // Clear warning when URL changes
+                        }}
                         required
                     />
                     <Textarea
@@ -543,12 +610,15 @@ export default function PlaybookDetailPage() {
                         className="min-h-[80px]"
                     />
                     <div className="flex justify-end gap-3">
-                        <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                        <Button variant="outline" onClick={() => {
+                            setShowAddModal(false)
+                            setDuplicateWarning(null)
+                        }}>
                             إلغاء
                         </Button>
-                        <Button onClick={handleAddItem} isLoading={savingItem}>
+                        <Button onClick={handleAddItem} isLoading={savingItem || checkingDuplicate}>
                             <Plus className="h-4 w-4" />
-                            إضافة
+                            {checkingDuplicate ? "جاري الفحص..." : "إضافة"}
                         </Button>
                     </div>
                 </div>
