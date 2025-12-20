@@ -48,8 +48,8 @@ export default function DashboardLayoutWrapper({
     children: React.ReactNode
 }) {
     return (
-        <AuthProvider>
-            <DashboardContent>{children}</DashboardContent>
-        </AuthProvider>
+        <DashboardContent>
+            {children}
+        </DashboardContent>
     )
 }
