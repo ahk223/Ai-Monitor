@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { db, auth } from "@/lib/firebase"
+import { useAuth } from "@/contexts/AuthContext"
+import { db } from "@/lib/firebase"
 import { collection, query, where, getDocs, doc, setDoc, getDoc } from "firebase/firestore"
-import { onAuthStateChanged, User } from "firebase/auth"
 import { Card, CardContent, Badge, Button } from "@/components/ui"
 import {
     BookOpen,
@@ -62,8 +62,7 @@ export default function SharedPlaybookPage() {
     const router = useRouter()
     const shareCode = params.code as string
 
-    const [user, setUser] = useState<User | null>(null)
-    const [userData, setUserData] = useState<{ workspaceId: string } | null>(null)
+    const { user, userData } = useAuth()
     const [playbook, setPlaybook] = useState<Playbook | null>(null)
     const [items, setItems] = useState<PlaybookItem[]>([])
     const [loading, setLoading] = useState(true)
@@ -72,21 +71,6 @@ export default function SharedPlaybookPage() {
     const [isCloning, setIsCloning] = useState(false)
     const [alreadyCloned, setAlreadyCloned] = useState(false)
     const [clonedPlaybookId, setClonedPlaybookId] = useState<string | null>(null)
-
-    // Check auth state
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            setUser(firebaseUser)
-            if (firebaseUser) {
-                // Get user data
-                const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
-                if (userDoc.exists()) {
-                    setUserData(userDoc.data() as { workspaceId: string })
-                }
-            }
-        })
-        return () => unsubscribe()
-    }, [])
 
     useEffect(() => {
         if (shareCode) {
