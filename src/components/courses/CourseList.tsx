@@ -10,12 +10,9 @@ import { useAuth } from "@/contexts/AuthContext"
 interface Course {
     id: string
     title: string
-    description?: string
     url: string
-    platform?: string
-    duration?: string
-    price?: string
-    instructor?: string
+    tool?: string
+    notes?: string
     categoryId: string
     workspaceId: string
     createdAt: any
@@ -38,11 +35,8 @@ export function CourseList({ categoryId, categoryName }: CourseListProps) {
     const [formData, setFormData] = useState<Partial<Course>>({
         title: "",
         url: "",
-        description: "",
-        platform: "",
-        duration: "",
-        price: "",
-        instructor: ""
+        tool: "",
+        notes: ""
     })
     const [editingId, setEditingId] = useState<string | null>(null)
 
@@ -73,11 +67,8 @@ export function CourseList({ categoryId, categoryName }: CourseListProps) {
         setFormData({
             title: "",
             url: "",
-            description: "",
-            platform: "",
-            duration: "",
-            price: "",
-            instructor: ""
+            tool: "",
+            notes: ""
         })
         setEditingId(null)
     }
@@ -128,11 +119,8 @@ export function CourseList({ categoryId, categoryName }: CourseListProps) {
         setFormData({
             title: course.title,
             url: course.url,
-            description: course.description,
-            platform: course.platform,
-            duration: course.duration,
-            price: course.price,
-            instructor: course.instructor
+            tool: course.tool,
+            notes: course.notes
         })
         setEditingId(course.id)
         setShowEditModal(true)
@@ -170,7 +158,7 @@ export function CourseList({ categoryId, categoryName }: CourseListProps) {
                                             {course.title}
                                         </h4>
                                         <div className="text-sm text-slate-500 line-clamp-2 min-h-[40px]">
-                                            {course.description || "لا يوجد وصف"}
+                                            {course.notes || "لا توجد ملاحظات"}
                                         </div>
                                     </div>
                                     <div className="flex -mt-1 -mr-2">
@@ -184,22 +172,10 @@ export function CourseList({ categoryId, categoryName }: CourseListProps) {
                                 </div>
 
                                 <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
-                                    {course.platform && (
+                                    {course.tool && (
                                         <Badge variant="secondary" className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300">
-                                            {course.platform}
+                                            {course.tool}
                                         </Badge>
-                                    )}
-                                    {course.duration && (
-                                        <div className="flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300">
-                                            <Clock className="h-3 w-3" />
-                                            {course.duration}
-                                        </div>
-                                    )}
-                                    {course.instructor && (
-                                        <div className="flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
-                                            <Video className="h-3 w-3" />
-                                            {course.instructor}
-                                        </div>
                                     )}
                                 </div>
 
@@ -232,6 +208,8 @@ export function CourseList({ categoryId, categoryName }: CourseListProps) {
                         placeholder="مثال: دورة React المتقدمة"
                         value={formData.title}
                         onChange={e => setFormData({ ...formData, title: e.target.value })}
+                        autoComplete="off"
+                        name="course_title_modal"
                     />
                     <Input
                         label="رابط الكورس"
@@ -239,40 +217,22 @@ export function CourseList({ categoryId, categoryName }: CourseListProps) {
                         value={formData.url}
                         onChange={e => setFormData({ ...formData, url: e.target.value })}
                         dir="ltr"
+                        autoComplete="off"
+                        name="course_url_modal"
                     />
-                    <div className="grid grid-cols-2 gap-4">
-                        <Input
-                            label="المنصة"
-                            placeholder="Udemy, Coursera..."
-                            value={formData.platform}
-                            onChange={e => setFormData({ ...formData, platform: e.target.value })}
-                        />
-                        <Input
-                            label="المدة"
-                            placeholder="مثال: 10 ساعات"
-                            value={formData.duration}
-                            onChange={e => setFormData({ ...formData, duration: e.target.value })}
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <Input
-                            label="المدرب/المؤلف"
-                            placeholder="اسم المدرب"
-                            value={formData.instructor}
-                            onChange={e => setFormData({ ...formData, instructor: e.target.value })}
-                        />
-                        <Input
-                            label="السعر"
-                            placeholder="مجاني / $10"
-                            value={formData.price}
-                            onChange={e => setFormData({ ...formData, price: e.target.value })}
-                        />
-                    </div>
+                    <Input
+                        label="الأداة المستخدمة"
+                        placeholder="مثلاً: Cursor, V0, ChatGPT"
+                        value={formData.tool}
+                        onChange={e => setFormData({ ...formData, tool: e.target.value })}
+                        autoComplete="off"
+                        name="course_tool_modal"
+                    />
                     <Textarea
-                        label="وصف الكورس"
-                        placeholder="نبذة مختصرة..."
-                        value={formData.description}
-                        onChange={e => setFormData({ ...formData, description: e.target.value })}
+                        label="ملاحظات"
+                        placeholder="أي تفاصيل أو ملاحظات..."
+                        value={formData.notes}
+                        onChange={e => setFormData({ ...formData, notes: e.target.value })}
                     />
                     <div className="flex justify-end gap-2 mt-4">
                         <Button variant="outline" onClick={() => { setShowAddModal(false); setShowEditModal(false) }}>

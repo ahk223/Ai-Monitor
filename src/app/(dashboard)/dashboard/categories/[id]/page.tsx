@@ -244,6 +244,21 @@ export default function CategoryDetailsPage() {
                 </div>
             </div>
 
+            {/* Actions for current filter */}
+            {filter !== 'all' && filter !== 'learning_topic' && (
+                <div className="flex justify-end">
+                    <Link
+                        href={`/dashboard/${filter}s/new?categoryId=${categoryId}`}
+                        className="inline-flex"
+                    >
+                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                            <ArrowRight className="h-4 w-4 ml-2" />
+                            إضافة {getTypeLabel(filter)} جديد
+                        </Button>
+                    </Link>
+                </div>
+            )}
+
             {/* Filters */}
             <div className="flex flex-wrap gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
                 {filters.map(f => (

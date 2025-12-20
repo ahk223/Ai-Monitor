@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
 import { db, storage } from "@/lib/firebase"
 import { collection, doc, setDoc, getDocs, query, where } from "firebase/firestore"
@@ -24,6 +24,7 @@ interface Attachment {
 
 export default function NewPromptPage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const { userData } = useAuth()
     const [isLoading, setIsLoading] = useState(false)
     const [categories, setCategories] = useState<Category[]>([])
@@ -33,7 +34,7 @@ export default function NewPromptPage() {
         title: "",
         description: "",
         content: "",
-        categoryId: "",
+        categoryId: searchParams.get("categoryId") || "",
     })
 
     useEffect(() => {

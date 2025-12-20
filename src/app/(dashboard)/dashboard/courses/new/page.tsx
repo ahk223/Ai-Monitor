@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
 import { collection, doc, setDoc, getDocs, query, where } from "firebase/firestore"
@@ -16,6 +16,7 @@ interface Category {
 
 export default function NewCoursePage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const { userData } = useAuth()
     const [isLoading, setIsLoading] = useState(false)
     const [categories, setCategories] = useState<Category[]>([])
@@ -24,7 +25,7 @@ export default function NewCoursePage() {
         url: "",
         tool: "",
         notes: "",
-        categoryId: "",
+        categoryId: searchParams.get("categoryId") || "",
     })
 
     useEffect(() => {
