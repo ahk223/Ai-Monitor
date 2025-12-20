@@ -51,11 +51,19 @@ export function LearningList({ categoryId, categoryName }: LearningListProps) {
             const q = query(
                 collection(db, "learningTopics"),
                 where("categoryId", "==", categoryId),
-                where("workspaceId", "==", userData?.workspaceId),
-                orderBy("createdAt", "desc")
+                where("workspaceId", "==", userData?.workspaceId)
             )
             const snap = await getDocs(q)
-            setTopics(snap.docs.map(d => ({ ...d.data(), id: d.id } as LearningTopic)))
+            const loadedTopics = snap.docs.map(d => ({ ...d.data(), id: d.id } as LearningTopic))
+
+            // Sort client-side to avoid need for composite index
+            loadedTopics.sort((a, b) => {
+                const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt)
+                const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt)
+                return dateB.getTime() - dateA.getTime()
+            })
+
+            setTopics(loadedTopics)
         } catch (error) {
             console.error("Error fetching topics:", error)
         } finally {
