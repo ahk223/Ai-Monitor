@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
 import { collection, doc, setDoc, getDocs, query, where } from "firebase/firestore"
 import { Button, Input, Textarea, Card, CardContent, Select } from "@/components/ui"
-import { ArrowRight, Save, Twitter } from "lucide-react"
+import { ArrowRight, Save, Sparkles } from "lucide-react"
 import Link from "next/link"
 
 interface Category {
@@ -19,13 +19,11 @@ export default function NewTweetPage() {
     const { userData } = useAuth()
     const [isLoading, setIsLoading] = useState(false)
     const [categories, setCategories] = useState<Category[]>([])
+    const [extractedHandle, setExtractedHandle] = useState("")
     const [form, setForm] = useState({
-        content: "",
-        authorHandle: "",
-        authorName: "",
+        tweetUrl: "",
         importance: "",
         categoryId: "",
-        tweetUrl: "",
     })
 
     useEffect(() => {
@@ -33,6 +31,21 @@ export default function NewTweetPage() {
             fetchCategories()
         }
     }, [userData?.workspaceId])
+
+    // Extract username from Twitter/X URL
+    useEffect(() => {
+        const url = form.tweetUrl.trim()
+        if (url) {
+            const match = url.match(/(?:twitter\.com|x\.com)\/([^\/]+)\/status/)
+            if (match && match[1]) {
+                setExtractedHandle("@" + match[1])
+            } else {
+                setExtractedHandle("")
+            }
+        } else {
+            setExtractedHandle("")
+        }
+    }, [form.tweetUrl])
 
     const fetchCategories = async () => {
         if (!userData?.workspaceId) return
@@ -62,12 +75,12 @@ export default function NewTweetPage() {
             await setDoc(doc(db, "tweets", tweetId), {
                 id: tweetId,
                 workspaceId: userData.workspaceId,
-                content: form.content,
-                authorHandle: form.authorHandle || null,
-                authorName: form.authorName || null,
+                content: null, // Will be fetched later or left empty
+                authorHandle: extractedHandle || null,
+                authorName: null,
                 importance: form.importance || null,
                 categoryId: form.categoryId || null,
-                tweetUrl: form.tweetUrl || null,
+                tweetUrl: form.tweetUrl,
                 isArchived: false,
                 createdAt: new Date(),
                 updatedAt: new Date(),
@@ -102,45 +115,34 @@ export default function NewTweetPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <Card>
                     <CardContent className="space-y-5">
-                        <Textarea
-                            label="محتوى التغريدة"
-                            placeholder="نص التغريدة..."
-                            value={form.content}
-                            onChange={(e) => setForm({ ...form, content: e.target.value })}
-                            className="min-h-[150px]"
-                            required
-                        />
-
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        {/* Tweet URL */}
+                        <div>
                             <Input
-                                label="اسم الحساب"
-                                placeholder="@username"
-                                value={form.authorHandle}
-                                onChange={(e) => setForm({ ...form, authorHandle: e.target.value })}
+                                label="رابط التغريدة"
+                                placeholder="https://twitter.com/... أو https://x.com/..."
+                                value={form.tweetUrl}
+                                onChange={(e) => setForm({ ...form, tweetUrl: e.target.value })}
+                                required
                             />
-                            <Input
-                                label="اسم المستخدم"
-                                placeholder="الاسم الظاهر"
-                                value={form.authorName}
-                                onChange={(e) => setForm({ ...form, authorName: e.target.value })}
-                            />
+                            {extractedHandle && (
+                                <div className="mt-2 flex items-center gap-2 text-sm text-emerald-600">
+                                    <Sparkles className="h-4 w-4" />
+                                    <span>الحساب: <strong>{extractedHandle}</strong></span>
+                                </div>
+                            )}
                         </div>
 
-                        <Input
-                            label="رابط التغريدة (اختياري)"
-                            placeholder="https://twitter.com/..."
-                            value={form.tweetUrl}
-                            onChange={(e) => setForm({ ...form, tweetUrl: e.target.value })}
-                        />
-
+                        {/* Importance */}
                         <Textarea
                             label="أهمية التغريدة"
                             placeholder="لماذا هذه التغريدة مهمة؟"
                             value={form.importance}
                             onChange={(e) => setForm({ ...form, importance: e.target.value })}
-                            className="min-h-[80px]"
+                            className="min-h-[100px]"
+                            required
                         />
 
+                        {/* Category */}
                         <Select
                             label="التصنيف"
                             placeholder="اختر تصنيفًا"
