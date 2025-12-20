@@ -158,8 +158,8 @@ export default function PromptDetailPage() {
             })
 
             // Calculate new average rating
-            const allRatings = [...tests.map(t => t.rating).filter(Boolean), testRating]
-            const avgRating = allRatings.reduce((a, b) => (a || 0) + (b || 0), 0) / allRatings.length
+            const allRatings = [...tests.map(t => t.rating).filter((r): r is number => r !== null), testRating]
+            const avgRating = allRatings.reduce((a, b) => a + b, 0) / allRatings.length
 
             await updateDoc(doc(db, "prompts", promptId), { rating: avgRating })
 
@@ -250,8 +250,8 @@ export default function PromptDetailPage() {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${activeTab === tab.id
-                                ? "bg-white text-indigo-600 shadow dark:bg-slate-900"
-                                : "text-slate-600 hover:text-slate-900 dark:text-slate-400"
+                            ? "bg-white text-indigo-600 shadow dark:bg-slate-900"
+                            : "text-slate-600 hover:text-slate-900 dark:text-slate-400"
                             }`}
                     >
                         <tab.icon className="h-4 w-4" />
