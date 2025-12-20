@@ -32,7 +32,11 @@ import {
     Loader2,
     BookOpen,
     Edit2,
+    Upload,
+    FileSpreadsheet,
+    Download,
 } from "lucide-react"
+import * as XLSX from "xlsx"
 import { StarRating } from "@/components/ui/star-rating"
 import Link from "next/link"
 
@@ -91,6 +95,9 @@ export default function PlaybookDetailPage() {
     const [newContent, setNewContent] = useState<NewContentInfo | null>(null)
     const [syncingContent, setSyncingContent] = useState(false)
     const [showArchived, setShowArchived] = useState(false)
+    const [isPlaylist, setIsPlaylist] = useState(false)
+    const [importingPlaylist, setImportingPlaylist] = useState(false)
+    const [importingExcel, setImportingExcel] = useState(false)
 
     useEffect(() => {
         if (playbookId) {
@@ -186,6 +193,13 @@ export default function PlaybookDetailPage() {
         return match ? match[1] : null
     }
 
+    // Extract YouTube Playlist ID
+    function getYouTubePlaylistId(url: string): string | null {
+        if (!url) return null
+        const match = url.match(/[?&]list=([^#\&\?]+)/)
+        return match ? match[1] : null
+    }
+
     // Get YouTube thumbnail URL
     function getYouTubeThumbnail(videoId: string): string {
         return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
@@ -235,6 +249,90 @@ export default function PlaybookDetailPage() {
             alert("حدث خطأ أثناء المزامنة")
         } finally {
             setSyncingContent(false)
+        }
+    }
+
+
+
+    const downloadTemplate = () => {
+        const data = [
+            { Title: "عنوان الدرس 1", URL: "https://www.youtube.com/watch?v=...", Description: "شرح الدرس الأول" },
+            { Title: "عنوان الدرس 2", URL: "https://example.com/file.pdf", Description: "ملف PDF" },
+        ]
+        const ws = XLSX.utils.json_to_sheet(data)
+        const wb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(wb, ws, "Template")
+        XLSX.writeFile(wb, "playbook-template.xlsx")
+    }
+
+    const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return
+
+        const file = e.target.files[0]
+        setImportingExcel(true)
+
+        try {
+            const data = await file.arrayBuffer()
+            const workbook = XLSX.read(data)
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+            const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[]
+
+            if (jsonData.length === 0) {
+                alert("الملف فارغ!")
+                setImportingExcel(false)
+                return
+            }
+
+            const currentMaxOrder = items.length
+            const newItemsToAdd: PlaybookItem[] = []
+            const batchPromises = []
+
+            for (let i = 0; i < jsonData.length; i++) {
+                const row = jsonData[i]
+                const title = row["Title"] || row["title"] || row["العنوان"]
+                const url = row["URL"] || row["url"] || row["الرابط"]
+                const description = row["Description"] || row["description"] || row["الوصف"]
+
+                if (!title || !url) continue
+
+                const itemId = doc(collection(db, "playbookItems")).id
+                const order = currentMaxOrder + i + 1
+
+                const playbookItem: any = {
+                    id: itemId,
+                    playbookId,
+                    title: String(title),
+                    url: String(url),
+                    order: order,
+                    createdAt: new Date(),
+                }
+
+                if (description) {
+                    playbookItem.description = String(description)
+                }
+
+                batchPromises.push(setDoc(doc(db, "playbookItems", itemId), playbookItem))
+
+                newItemsToAdd.push(playbookItem as PlaybookItem)
+            }
+
+            if (newItemsToAdd.length === 0) {
+                alert("لم يتم العثور على بيانات صالحة. تأكد من استخدام القالب الصحيح (Title, URL).")
+                setImportingExcel(false)
+                return
+            }
+
+            await Promise.all(batchPromises)
+            setItems([...items, ...newItemsToAdd])
+            alert(`تم استيراد ${newItemsToAdd.length} عنصر بنجاح`)
+
+        } catch (error) {
+            console.error("Error parsing Excel:", error)
+            alert("حدث خطأ أثناء قراءة الملف")
+        } finally {
+            setImportingExcel(false)
+            // Reset input
+            e.target.value = ""
         }
     }
 
@@ -299,9 +397,75 @@ export default function PlaybookDetailPage() {
     }
 
     const handleAddItem = async (ignoreDuplicate = false) => {
-        if (!newItem.title || !newItem.url) return
+        if (!newItem.title && !isPlaylist) return // Title req for single item
+        if (!newItem.url) return
 
         const cleanUrl = normalizeUrl(newItem.url)
+
+        if (isPlaylist) {
+            const playlistId = getYouTubePlaylistId(cleanUrl)
+            if (!playlistId) {
+                alert("رابط قائمة التشغيل غير صحيح")
+                return
+            }
+
+            setImportingPlaylist(true)
+            try {
+                const res = await fetch(`/api/youtube/playlist?playlistId=${playlistId}`)
+                const data = await res.json()
+
+                if (!res.ok) {
+                    throw new Error(data.error || "Failed to fetch playlist")
+                }
+
+                if (!data.items || data.items.length === 0) {
+                    alert("لم يتم العثور على مقاطع فيديو في هذه القائمة")
+                    return
+                }
+
+                const currentMaxOrder = items.length
+                const newItemsToAdd: PlaybookItem[] = []
+                const batchPromises = []
+
+                for (let i = 0; i < data.items.length; i++) {
+                    const item = data.items[i]
+                    const itemId = doc(collection(db, "playbookItems")).id
+                    const order = currentMaxOrder + i + 1
+
+                    const playbookItem = {
+                        id: itemId,
+                        playbookId,
+                        title: item.title,
+                        url: item.url,
+                        description: item.description || null,
+                        order: order,
+                        createdAt: new Date(),
+                    }
+
+                    // Prepare db write
+                    batchPromises.push(setDoc(doc(db, "playbookItems", itemId), playbookItem))
+
+                    // Prepare local state
+                    newItemsToAdd.push(playbookItem)
+                }
+
+                await Promise.all(batchPromises)
+
+                setItems([...items, ...newItemsToAdd])
+                setNewItem({ title: "", url: "", description: "" })
+                setIsPlaylist(false)
+                setShowAddModal(false)
+
+            } catch (error) {
+                console.error("Error importing playlist:", error)
+                alert("حدث خطأ أثناء استيراد القائمة. تأكد من أن القائمة عامة (Public) وأن مفتاح API صالح.")
+            } finally {
+                setImportingPlaylist(false)
+            }
+            return
+        }
+
+        if (!newItem.title) return;
 
         if (!ignoreDuplicate) {
             // Check for duplicates first
@@ -612,8 +776,38 @@ export default function PlaybookDetailPage() {
                         <Plus className="h-4 w-4" />
                         إضافة محتوى
                     </Button>
+                    <div className="relative">
+                        <input
+                            type="file"
+                            accept=".xlsx, .xls, .csv"
+                            onChange={handleExcelUpload}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                            disabled={importingExcel}
+                        />
+                        <Button variant="outline" isLoading={importingExcel} className="gap-2">
+                            <FileSpreadsheet className="h-4 w-4" />
+                            {importingExcel ? "جاري الاستيراد..." : "استيراد Excel"}
+                        </Button>
+                    </div>
                 </div>
             </div>
+
+            {/* Template Info Alert when Items are Empty */}
+            {items.length === 0 && (
+                <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center dark:border-slate-700 dark:bg-slate-900/50">
+                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-900/30">
+                        <FileSpreadsheet className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <h3 className="mb-2 text-lg font-medium">ابدأ بإضافة محتوى</h3>
+                    <p className="mb-4 text-sm text-slate-500 max-w-md mx-auto">
+                        يمكنك إضافة عناصر يدويًا أو استيراد قائمة جاهزة من ملف Excel لإنشاء دليلك التعليمي بسرعة.
+                    </p>
+                    <Button variant="outline" size="sm" onClick={downloadTemplate}>
+                        <Download className="h-4 w-4 mr-2" />
+                        تحميل قالب Excel
+                    </Button>
+                </div>
+            )}
 
             {/* Progress Bar */}
             <Card>
@@ -745,7 +939,7 @@ export default function PlaybookDetailPage() {
                                                 onClick={() => moveItem(item.id, 'up')}
                                                 disabled={index === 0}
                                             >
-                                                <ArrowRight className="h-4 w-4 rotate-90" />
+                                                <ArrowRight className="h-4 w-4 -rotate-90" />
                                             </Button>
                                             <Button
                                                 variant="ghost"
@@ -754,7 +948,7 @@ export default function PlaybookDetailPage() {
                                                 onClick={() => moveItem(item.id, 'down')}
                                                 disabled={index === items.filter(i => !progress[i.id]?.completed).length - 1}
                                             >
-                                                <ArrowRight className="h-4 w-4 -rotate-90" />
+                                                <ArrowRight className="h-4 w-4 rotate-90" />
                                             </Button>
                                         </div>
                                         <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block"></div>
@@ -842,22 +1036,43 @@ export default function PlaybookDetailPage() {
                 title="إضافة محتوى"
             >
                 <div className="space-y-4">
-                    <Input
-                        label="العنوان"
-                        placeholder="مثال: مقدمة في React"
-                        value={newItem.title}
-                        onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
-                    />
+                    {!isPlaylist && (
+                        <Input
+                            label="العنوان"
+                            placeholder="مثال: مقدمة في React"
+                            value={newItem.title}
+                            onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
+                        />
+                    )}
                     <div>
                         <Input
                             label="الرابط"
                             placeholder="https://..."
                             value={newItem.url}
                             onChange={(e) => {
-                                setNewItem({ ...newItem, url: e.target.value })
+                                const url = e.target.value
+                                const hasPlaylistId = !!getYouTubePlaylistId(url)
+                                setNewItem({ ...newItem, url })
                                 setDuplicateWarning(null) // Clear warning on change
+                                if (hasPlaylistId && !isPlaylist) {
+                                    // Suggest playlist mode if not already on? Or just show the option
+                                }
                             }}
                         />
+                        {getYouTubePlaylistId(newItem.url) && (
+                            <div className="mt-3 flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="isPlaylist"
+                                    checked={isPlaylist}
+                                    onChange={(e) => setIsPlaylist(e.target.checked)}
+                                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600 dark:border-slate-700 dark:bg-slate-900"
+                                />
+                                <label htmlFor="isPlaylist" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                                    إضافة كقائمة تشغيل كاملة ({isPlaylist ? 'سيتم تجاهل العنوان' : 'إضافة فيديو واحد فقط'})
+                                </label>
+                            </div>
+                        )}
                         {duplicateWarning && (
                             <div className="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                                 <div className="flex gap-2 items-start">
@@ -888,10 +1103,10 @@ export default function PlaybookDetailPage() {
                         </Button>
                         <Button
                             onClick={() => handleAddItem(false)}
-                            isLoading={savingItem || checkingDuplicate}
+                            isLoading={savingItem || checkingDuplicate || importingPlaylist}
                             disabled={!!duplicateWarning && !savingItem} // Disable if warning exists, user must click "Add Anyway" or change URL
                         >
-                            {checkingDuplicate ? "جاري الفحص..." : "إضافة"}
+                            {checkingDuplicate ? "جاري الفحص..." : importingPlaylist ? "جاري الاستيراد..." : "إضافة"}
                         </Button>
                     </div>
                 </div>
