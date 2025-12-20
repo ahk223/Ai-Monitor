@@ -83,6 +83,7 @@ export default function PlaybookDetailPage() {
     const [showEditModal, setShowEditModal] = useState(false)
     const [newItem, setNewItem] = useState({ title: "", url: "", description: "" })
     const [editingItem, setEditingItem] = useState<PlaybookItem | null>(null)
+    const [playingVideoId, setPlayingVideoId] = useState<string | null>(null)
     const [savingItem, setSavingItem] = useState(false)
     const [copied, setCopied] = useState(false)
     const [duplicateWarning, setDuplicateWarning] = useState<{ message: string; playbookTitle?: string } | null>(null)
