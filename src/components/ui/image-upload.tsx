@@ -1,11 +1,11 @@
-"use client"
-
-import { useState, useRef } from "react"
-import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
+import { Upload, X, Image as ImageIcon, Loader2, Link2, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { storage, db } from "@/lib/firebase"
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage"
 import { doc, collection } from "firebase/firestore"
+import { Input } from "./input"
+import { Button } from "./button"
 
 interface Attachment {
     id: string
@@ -35,10 +35,22 @@ export function ImageUpload({
 }: ImageUploadProps) {
     const [uploading, setUploading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [urlInput, setUrlInput] = useState("")
+    const [urlLoading, setUrlLoading] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null)
 
-    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files
+    // Handle Paste Event
+    useEffect(() => {
+        const handlePaste = (e: ClipboardEvent) => {
+            if (e.clipboardData?.files.length) {
+                processFiles(Array.from(e.clipboardData.files))
+            }
+        }
+        window.addEventListener("paste", handlePaste)
+        return () => window.removeEventListener("paste", handlePaste)
+    }, [attachments.length, maxFiles])
+
+    const processFiles = async (files: File[]) => {
         if (!files || files.length === 0) return
 
         if (attachments.length + files.length > maxFiles) {
@@ -49,7 +61,7 @@ export function ImageUpload({
         setUploading(true)
         setError(null)
 
-        for (const file of Array.from(files)) {
+        for (const file of files) {
             try {
                 // Validate file size (5MB max)
                 if (file.size > 5 * 1024 * 1024) {
@@ -64,7 +76,7 @@ export function ImageUpload({
 
                 // Generate unique ID
                 const attachmentId = doc(collection(db, "attachments")).id
-                const fileExtension = file.name.split('.').pop()
+                const fileExtension = file.name.split('.').pop() || "png"
                 const storagePath = `attachments/${workspaceId || 'default'}/${attachmentId}.${fileExtension}`
 
                 // Upload to Firebase Storage
@@ -92,6 +104,39 @@ export function ImageUpload({
         }
     }
 
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files
+        if (files) {
+            processFiles(Array.from(files))
+        }
+    }
+
+    const handleUrlUpload = async () => {
+        if (!urlInput.trim()) return
+
+        setUrlLoading(true)
+        setError(null)
+
+        try {
+            const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(urlInput.trim())}`)
+            if (!res.ok) throw new Error("فشل تحميل الصورة")
+
+            const blob = await res.blob()
+            const contentType = res.headers.get("Content-Type") || "image/jpeg"
+            const extension = contentType.split("/")[1] || "jpg"
+            const filename = `url-image-${Date.now()}.${extension}`
+
+            const file = new File([blob], filename, { type: contentType })
+            await processFiles([file])
+            setUrlInput("")
+        } catch (error) {
+            console.error("Url upload error:", error)
+            setError("لم نتمكن من جلب الصورة من الرابط")
+        } finally {
+            setUrlLoading(false)
+        }
+    }
+
     const handleRemove = async (id: string) => {
         try {
             // Find the attachment
@@ -113,7 +158,7 @@ export function ImageUpload({
     }
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-4">
             {/* Upload Area */}
             <div
                 onClick={() => inputRef.current?.click()}
@@ -139,15 +184,32 @@ export function ImageUpload({
                     <Upload className="h-8 w-8 text-slate-400" />
                 )}
 
-                <p className="mt-2 text-sm text-slate-500">
-                    {uploading ? "جاري الرفع..." : "اضغط لرفع صور أو ملفات"}
+                <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                    {uploading ? "جاري الرفع..." : "اضغط للرفع أو الصق الصورة (Ctrl+V)"}
                 </p>
                 <p className="text-xs text-slate-400">
-                    JPG, PNG, GIF, WebP, PDF - حد أقصى 5MB
+                    يمكنك أيضاً سحب الملفات وإفلاتها هنا
                 </p>
             </div>
 
-            {/* Error */}
+            {/* URL Upload */}
+            <div className="flex gap-2">
+                <Input
+                    placeholder="أو ألصق رابط صورة..."
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleUrlUpload()}
+                    className="text-sm"
+                />
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleUrlUpload}
+                    disabled={!urlInput || urlLoading || uploading}
+                >
+                    {urlLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                </Button>
+            </div>
             {error && (
                 <p className="text-sm text-red-500">{error}</p>
             )}

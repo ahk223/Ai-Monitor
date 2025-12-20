@@ -337,28 +337,35 @@ export default function DashboardPage() {
                         {/* Categories */}
                         {categories.map(cat => (
                             <Card key={cat.id}>
-                                <button
-                                    onClick={() => toggleCategory(cat.id)}
-                                    className="w-full flex items-center justify-between p-4 text-right hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                                <div
+                                    className="w-full flex items-center justify-between p-4 text-right transition-colors"
                                 >
                                     <div className="flex items-center gap-3">
                                         <div
                                             className="h-4 w-4 rounded-full"
                                             style={{ backgroundColor: cat.color }}
                                         />
-                                        <span className="font-semibold text-slate-900 dark:text-white">
+                                        <Link
+                                            href={`/dashboard/categories/${cat.id}`}
+                                            className="font-semibold text-slate-900 dark:text-white hover:underline"
+                                        >
                                             {cat.name}
-                                        </span>
+                                        </Link>
                                         <Badge variant="secondary">
                                             {contentByCategory[cat.id]?.length || 0}
                                         </Badge>
                                     </div>
-                                    {expandedCategories[cat.id] ? (
-                                        <ChevronUp className="h-5 w-5 text-slate-400" />
-                                    ) : (
-                                        <ChevronDown className="h-5 w-5 text-slate-400" />
-                                    )}
-                                </button>
+                                    <button
+                                        onClick={() => toggleCategory(cat.id)}
+                                        className="p-1 hover:bg-slate-100 rounded-full dark:hover:bg-slate-700"
+                                    >
+                                        {expandedCategories[cat.id] ? (
+                                            <ChevronUp className="h-5 w-5 text-slate-400" />
+                                        ) : (
+                                            <ChevronDown className="h-5 w-5 text-slate-400" />
+                                        )}
+                                    </button>
+                                </div>
 
                                 {expandedCategories[cat.id] && contentByCategory[cat.id]?.length > 0 && (
                                     <CardContent className="border-t pt-0">
