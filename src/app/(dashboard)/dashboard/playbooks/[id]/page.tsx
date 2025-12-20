@@ -143,6 +143,13 @@ export default function PlaybookDetailPage() {
         }
     }
 
+    // Update Page Title
+    useEffect(() => {
+        if (playbook) {
+            document.title = `${playbook.title} | AI Knowledge Hub`
+        }
+    }, [playbook])
+
     const checkForNewContent = async (originalPlaybookId: string, currentItems: PlaybookItem[]) => {
         try {
             // Get items from original playbook

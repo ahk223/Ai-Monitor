@@ -44,6 +44,10 @@ export default function SocialMediaPage() {
     const [search, setSearch] = useState("")
 
     useEffect(() => {
+        document.title = "محتوى السوشيال ميديا | AI Knowledge Hub"
+    }, [])
+
+    useEffect(() => {
         if (userData?.workspaceId) {
             fetchData()
         }

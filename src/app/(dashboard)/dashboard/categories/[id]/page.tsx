@@ -49,6 +49,13 @@ export default function CategoryDetailsPage() {
         }
     }, [userData?.workspaceId, categoryId])
 
+    // Update Page Title
+    useEffect(() => {
+        if (category) {
+            document.title = `${category.name} | AI Knowledge Hub`
+        }
+    }, [category])
+
     const fetchData = async () => {
         setLoading(true)
         try {

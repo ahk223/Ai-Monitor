@@ -143,6 +143,15 @@ export default function SharedPlaybookPage() {
         }
     }
 
+    // Update Page Title
+    useEffect(() => {
+        if (playbook) {
+            document.title = `${playbook.title} | AI Knowledge Hub`
+        } else {
+            document.title = "Playbook | AI Knowledge Hub"
+        }
+    }, [playbook])
+
     const checkIfCloned = async () => {
         if (!userData?.workspaceId || !playbook) return
 
