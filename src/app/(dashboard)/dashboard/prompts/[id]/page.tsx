@@ -232,6 +232,12 @@ export default function PromptDetailPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    <Link href={`/dashboard/prompts/${promptId}/edit`}>
+                        <Button variant="outline">
+                            <Edit2 className="h-4 w-4" />
+                            تعديل
+                        </Button>
+                    </Link>
                     <Button variant="outline" onClick={handleCopy}>
                         <Copy className="h-4 w-4" />
                         نسخ
