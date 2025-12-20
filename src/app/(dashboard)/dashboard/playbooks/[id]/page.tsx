@@ -400,33 +400,42 @@ export default function PlaybookDetailPage() {
         }
     }
 
-    const moveItem = async (index: number, direction: 'up' | 'down') => {
+    const moveItem = async (itemId: string, direction: 'up' | 'down') => {
+        // Get currently visible items (sorted by order)
+        const visibleItems = items
+            .filter(item => !progress[item.id]?.completed)
+            .sort((a, b) => a.order - b.order)
+
+        const currentIndex = visibleItems.findIndex(item => item.id === itemId)
+        if (currentIndex === -1) return
+
         if (
-            (direction === 'up' && index === 0) ||
-            (direction === 'down' && index === items.length - 1)
+            (direction === 'up' && currentIndex === 0) ||
+            (direction === 'down' && currentIndex === visibleItems.length - 1)
         ) return
 
-        const newItems = [...items]
-        const targetIndex = direction === 'up' ? index - 1 : index + 1
+        const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+        const targetItem = visibleItems[targetIndex]
+        const currentItem = visibleItems[currentIndex]
 
-        // Swap
-        const temp = newItems[index]
-        newItems[index] = newItems[targetIndex]
-        newItems[targetIndex] = temp
+        // Swap orders in the full list
+        const newItems = items.map(item => {
+            if (item.id === currentItem.id) return { ...item, order: targetItem.order }
+            if (item.id === targetItem.id) return { ...item, order: currentItem.order }
+            return item
+        })
 
-        // Update orders in state
-        newItems[index].order = index + 1
-        newItems[targetIndex].order = targetIndex + 1
-
+        // Sort items by new orders to keep state consistent
+        newItems.sort((a, b) => a.order - b.order)
         setItems(newItems)
 
         // Save to Firestore
         try {
-            await updateDoc(doc(db, "playbookItems", newItems[index].id), {
-                order: index + 1,
+            await updateDoc(doc(db, "playbookItems", currentItem.id), {
+                order: targetItem.order,
             })
-            await updateDoc(doc(db, "playbookItems", newItems[targetIndex].id), {
-                order: targetIndex + 1,
+            await updateDoc(doc(db, "playbookItems", targetItem.id), {
+                order: currentItem.order,
             })
         } catch (error) {
             console.error("Error reordering items:", error)
@@ -733,7 +742,7 @@ export default function PlaybookDetailPage() {
                                                 variant="ghost"
                                                 size="sm"
                                                 className="h-7 w-7 p-0 text-slate-500 hover:bg-white hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300 disabled:opacity-30"
-                                                onClick={() => moveItem(index, 'up')}
+                                                onClick={() => moveItem(item.id, 'up')}
                                                 disabled={index === 0}
                                             >
                                                 <ArrowRight className="h-4 w-4 rotate-90" />
@@ -742,8 +751,8 @@ export default function PlaybookDetailPage() {
                                                 variant="ghost"
                                                 size="sm"
                                                 className="h-7 w-7 p-0 text-slate-500 hover:bg-white hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300 disabled:opacity-30"
-                                                onClick={() => moveItem(index, 'down')}
-                                                disabled={index === items.length - 1}
+                                                onClick={() => moveItem(item.id, 'down')}
+                                                disabled={index === items.filter(i => !progress[i.id]?.completed).length - 1}
                                             >
                                                 <ArrowRight className="h-4 w-4 -rotate-90" />
                                             </Button>
