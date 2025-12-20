@@ -9,6 +9,7 @@ import {
     onAuthStateChanged,
     updateProfile
 } from "firebase/auth"
+import { auth, db } from "@/lib/firebase"
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 
@@ -37,81 +38,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [userData, setUserData] = useState<UserData | null>(null)
     const [loading, setLoading] = useState(true)
-    const [firebaseReady, setFirebaseReady] = useState(false)
     const router = useRouter()
 
-    // Initialize Firebase only on client
     useEffect(() => {
-        const init = async () => {
-            // Dynamic import to ensure client-side only
-            const { auth, db } = await import("@/lib/firebase")
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            setUser(firebaseUser)
 
-            if (!auth || !db) {
-                console.error("Firebase not initialized")
-                setLoading(false)
-                return
-            }
+            if (firebaseUser) {
+                try {
+                    // Fetch user data from Firestore
+                    const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
 
-            setFirebaseReady(true)
+                    if (userDoc.exists()) {
+                        const data = userDoc.data()
 
-            const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-                setUser(firebaseUser)
+                        // Get workspace membership
+                        const membershipsQuery = query(
+                            collection(db, "workspaceMembers"),
+                            where("userId", "==", firebaseUser.uid)
+                        )
+                        const memberships = await getDocs(membershipsQuery)
 
-                if (firebaseUser) {
-                    try {
-                        // Fetch user data from Firestore
-                        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
+                        let workspaceId = null
+                        let workspaceName = null
+                        let role = "MEMBER"
 
-                        if (userDoc.exists()) {
-                            const data = userDoc.data()
+                        if (!memberships.empty) {
+                            const membership = memberships.docs[0].data()
+                            workspaceId = membership.workspaceId
+                            role = membership.role
 
-                            // Get workspace membership
-                            const membershipsQuery = query(
-                                collection(db, "workspaceMembers"),
-                                where("userId", "==", firebaseUser.uid)
-                            )
-                            const memberships = await getDocs(membershipsQuery)
-
-                            let workspaceId = null
-                            let workspaceName = null
-                            let role = "MEMBER"
-
-                            if (!memberships.empty) {
-                                const membership = memberships.docs[0].data()
-                                workspaceId = membership.workspaceId
-                                role = membership.role
-
-                                // Get workspace name
-                                const workspaceDoc = await getDoc(doc(db, "workspaces", workspaceId))
-                                if (workspaceDoc.exists()) {
-                                    workspaceName = workspaceDoc.data().name
-                                }
+                            // Get workspace name
+                            const workspaceDoc = await getDoc(doc(db, "workspaces", workspaceId))
+                            if (workspaceDoc.exists()) {
+                                workspaceName = workspaceDoc.data().name
                             }
-
-                            setUserData({
-                                id: firebaseUser.uid,
-                                email: firebaseUser.email || "",
-                                name: data.name || firebaseUser.displayName,
-                                avatar: data.avatar || firebaseUser.photoURL,
-                                workspaceId,
-                                workspaceName,
-                                role,
-                            })
-                        } else {
-                            // User exists in Auth but not in Firestore - create basic userData
-                            setUserData({
-                                id: firebaseUser.uid,
-                                email: firebaseUser.email || "",
-                                name: firebaseUser.displayName,
-                                avatar: firebaseUser.photoURL,
-                                workspaceId: null,
-                                workspaceName: null,
-                                role: "MEMBER",
-                            })
                         }
-                    } catch (error) {
-                        console.error("Error fetching user data:", error)
-                        // Set minimal user data on error
+
+                        setUserData({
+                            id: firebaseUser.uid,
+                            email: firebaseUser.email || "",
+                            name: data.name || firebaseUser.displayName,
+                            avatar: data.avatar || firebaseUser.photoURL,
+                            workspaceId,
+                            workspaceName,
+                            role,
+                        })
+                    } else {
+                        // User exists in Auth but not in Firestore
                         setUserData({
                             id: firebaseUser.uid,
                             email: firebaseUser.email || "",
@@ -122,31 +96,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             role: "MEMBER",
                         })
                     }
-                } else {
-                    setUserData(null)
+                } catch (error) {
+                    console.error("Error fetching user data:", error)
+                    setUserData({
+                        id: firebaseUser.uid,
+                        email: firebaseUser.email || "",
+                        name: firebaseUser.displayName,
+                        avatar: firebaseUser.photoURL,
+                        workspaceId: null,
+                        workspaceName: null,
+                        role: "MEMBER",
+                    })
                 }
+            } else {
+                setUserData(null)
+            }
 
-                setLoading(false)
-            })
+            setLoading(false)
+        })
 
-            return () => unsubscribe()
-        }
-
-        init()
+        return () => unsubscribe()
     }, [])
 
     const signIn = async (email: string, password: string) => {
-        const { auth } = await import("@/lib/firebase")
-        if (!auth) throw new Error("Firebase not initialized")
-
         await signInWithEmailAndPassword(auth, email, password)
         router.push("/dashboard")
     }
 
     const signUp = async (email: string, password: string, name: string, workspaceName: string) => {
-        const { auth, db } = await import("@/lib/firebase")
-        if (!auth || !db) throw new Error("Firebase not initialized")
-
         // Create Firebase Auth user
         const userCredential = await createUserWithEmailAndPassword(auth, email, password)
         const firebaseUser = userCredential.user
@@ -215,9 +192,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const signOut = async () => {
-        const { auth } = await import("@/lib/firebase")
-        if (!auth) return
-
         await firebaseSignOut(auth)
         setUserData(null)
         router.push("/login")
