@@ -33,6 +33,7 @@ import {
     BookOpen,
     Edit2,
 } from "lucide-react"
+import { StarRating } from "@/components/ui/star-rating"
 import Link from "next/link"
 
 interface Playbook {
@@ -612,8 +613,8 @@ export default function PlaybookDetailPage() {
                             <div
                                 key={item.id}
                                 className={`relative flex flex-col gap-4 rounded-xl border p-4 transition-all ${isCompleted
-                                        ? "border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-900/10"
-                                        : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
+                                    ? "border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-900/10"
+                                    : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
                                     }`}
                             >
                                 {/* Header with Title and Toggle */}
@@ -622,8 +623,8 @@ export default function PlaybookDetailPage() {
                                         <button
                                             onClick={() => handleFeedbackChange(item.id, { completed: !isCompleted })}
                                             className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all ${isCompleted
-                                                    ? "border-green-500 bg-green-500 text-white"
-                                                    : "border-slate-300 hover:border-slate-400 dark:border-slate-600"
+                                                ? "border-green-500 bg-green-500 text-white"
+                                                : "border-slate-300 hover:border-slate-400 dark:border-slate-600"
                                                 }`}
                                         >
                                             {isCompleted && <Check size={14} />}
