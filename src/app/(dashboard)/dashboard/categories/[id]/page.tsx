@@ -33,7 +33,7 @@ interface ContentItem {
     title?: string
     content?: string
     name?: string
-    type: "prompt" | "tweet" | "tool" | "playbook" | "note" | "course"
+    type: "prompt" | "tweet" | "tool" | "playbook" | "note" | "course" | "learning_topic"
     createdAt?: any
     images?: string[] // For prompts
     image?: string // For generic use
@@ -98,6 +98,8 @@ export default function CategoryDetailsPage() {
                 getDocs(query(collection(db, "notes"), where("categoryId", "==", categoryId), where("workspaceId", "==", userData?.workspaceId))),
                 // Courses
                 getDocs(query(collection(db, "courses"), where("categoryId", "==", categoryId), where("workspaceId", "==", userData?.workspaceId))),
+                // Learning Topics
+                getDocs(query(collection(db, "learningTopics"), where("categoryId", "==", categoryId), where("workspaceId", "==", userData?.workspaceId))),
             ]
 
             const results = await Promise.all(promises)
@@ -115,6 +117,8 @@ export default function CategoryDetailsPage() {
             results[4].docs.forEach(d => allContent.push({ ...d.data(), id: d.id, type: "note" } as any))
             // Courses
             results[5].docs.forEach(d => allContent.push({ ...d.data(), id: d.id, type: "course" } as any))
+            // Learning Topics
+            results[6].docs.forEach(d => allContent.push({ ...d.data(), id: d.id, type: "learning_topic" } as any))
 
             // Sort by createdAt desc
             allContent.sort((a, b) => {
@@ -140,6 +144,7 @@ export default function CategoryDetailsPage() {
             case "playbook": return BookOpen
             case "note": return StickyNote
             case "course": return GraduationCap
+            case "learning_topic": return BookOpen
             default: return MessageSquareText
         }
     }
@@ -152,6 +157,7 @@ export default function CategoryDetailsPage() {
             case "playbook": return "Playbook"
             case "note": return "ملاحظة"
             case "course": return "كورس"
+            case "learning_topic": return "موضوع للتعلم"
             default: return type
         }
     }
@@ -164,6 +170,7 @@ export default function CategoryDetailsPage() {
             case "playbook": return "bg-orange-100 text-orange-700"
             case "note": return "bg-amber-100 text-amber-700"
             case "course": return "bg-violet-100 text-violet-700"
+            case "learning_topic": return "bg-teal-100 text-teal-700"
             default: return "bg-gray-100 text-gray-700"
         }
     }
@@ -175,7 +182,8 @@ export default function CategoryDetailsPage() {
             case "tool": return `/dashboard/tools`
             case "tweet": return `/dashboard/tweets`
             case "note": return `/dashboard/notes`
-            case "course": return item.url || "#" // Courses link externally primarily, or maybe we want a details page? For now external.
+            case "course": return item.url || "#"
+            case "learning_topic": return `/dashboard/learning`
             default: return "#"
         }
     }
