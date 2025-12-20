@@ -14,11 +14,18 @@ export const metadata: Metadata = {
   title: "AI Knowledge Hub | إدارة المعرفة التشغيلية",
   description: "نظام SaaS لإدارة البروبمتات والأدوات والمعرفة التشغيلية في التعامل مع الذكاء الاصطناعي",
   keywords: ["AI", "prompts", "knowledge management", "SaaS", "productivity"],
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "AI Hub",
+  },
 }
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#6366f1",
 }
 
 export default function RootLayout({
@@ -34,8 +41,27 @@ export default function RootLayout({
             {children}
           </AuthProvider>
         </ThemeProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(
+                    function(registration) {
+                      console.log('Service Worker registration successful with scope: ', registration.scope);
+                    },
+                    function(err) {
+                      console.log('Service Worker registration failed: ', err);
+                    }
+                  );
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   )
 }
+
 
