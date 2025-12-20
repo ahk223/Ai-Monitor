@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Button, Input, Textarea, Card, CardContent, Select } from "@/components/ui"
-import { ArrowRight, Save, Loader2, Wand2 } from "lucide-react"
+import { Button, Input, Textarea, Card, CardContent, Select, ImageUpload } from "@/components/ui"
+import { ArrowRight, Save, Loader2, Wand2, Image } from "lucide-react"
 import Link from "next/link"
 
 interface Category {
@@ -11,10 +11,19 @@ interface Category {
     name: string
 }
 
+interface Attachment {
+    id: string
+    url: string
+    originalName: string
+    mimeType: string
+}
+
 export default function NewPromptPage() {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [categories, setCategories] = useState<Category[]>([])
+    const [attachments, setAttachments] = useState<Attachment[]>([])
+    const [showUpload, setShowUpload] = useState(false)
     const [form, setForm] = useState({
         title: "",
         description: "",
@@ -58,7 +67,10 @@ export default function NewPromptPage() {
             const res = await fetch("/api/prompts", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
+                body: JSON.stringify({
+                    ...form,
+                    attachmentIds: attachments.map(a => a.id),
+                }),
             })
 
             if (res.ok) {
@@ -74,6 +86,14 @@ export default function NewPromptPage() {
         } finally {
             setIsLoading(false)
         }
+    }
+
+    const handleUpload = (attachment: Attachment) => {
+        setAttachments(prev => [...prev, attachment])
+    }
+
+    const handleRemoveAttachment = (id: string) => {
+        setAttachments(prev => prev.filter(a => a.id !== id))
     }
 
     const variables = detectVariables()
@@ -158,6 +178,54 @@ export default function NewPromptPage() {
                                             </span>
                                         ))}
                                     </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Image Upload Section */}
+                        <div>
+                            <div className="mb-2 flex items-center justify-between">
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    نماذج وصور (اختياري)
+                                </label>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowUpload(!showUpload)}
+                                >
+                                    <Image className="h-4 w-4" />
+                                    {showUpload ? "إخفاء" : "إضافة صور"}
+                                </Button>
+                            </div>
+
+                            {showUpload && (
+                                <ImageUpload
+                                    attachments={attachments}
+                                    onUpload={handleUpload}
+                                    onRemove={handleRemoveAttachment}
+                                    entityType="prompt"
+                                />
+                            )}
+
+                            {/* Show uploaded images even when upload area is hidden */}
+                            {!showUpload && attachments.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                    {attachments.map((a) => (
+                                        <div
+                                            key={a.id}
+                                            className="relative h-16 w-16 overflow-hidden rounded-lg border"
+                                        >
+                                            <img
+                                                src={a.url}
+                                                alt={a.originalName}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        </div>
+                                    ))}
+                                    <span className="self-center text-xs text-slate-500">
+                                        {attachments.length} صورة
+                                    </span>
                                 </div>
                             )}
                         </div>
