@@ -345,8 +345,8 @@ export default function PlaybookDetailPage() {
                                             {getUrlIcon(item.url)}
                                             <h3
                                                 className={`font-medium ${progress[item.id]
-                                                        ? "text-slate-400 line-through"
-                                                        : "text-slate-900 dark:text-white"
+                                                    ? "text-slate-400 line-through"
+                                                    : "text-slate-900 dark:text-white"
                                                     }`}
                                             >
                                                 {item.title}
@@ -448,7 +448,7 @@ export default function PlaybookDetailPage() {
                             </div>
                         </div>
                         <Button
-                            variant={playbook.isPublic ? "outline" : "primary"}
+                            variant={playbook.isPublic ? "outline" : "default"}
                             size="sm"
                             onClick={handleTogglePublic}
                         >
