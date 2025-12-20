@@ -1,0 +1,482 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/AuthContext"
+import { db } from "@/lib/firebase"
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, setDoc, deleteDoc, orderBy } from "firebase/firestore"
+import { Button, Input, Textarea, Card, CardContent, Badge, Modal } from "@/components/ui"
+import {
+    ArrowRight,
+    Plus,
+    Trash2,
+    GripVertical,
+    CheckCircle2,
+    Circle,
+    Youtube,
+    FileText,
+    Link2,
+    ExternalLink,
+    Share2,
+    Copy,
+    Loader2,
+    Edit2,
+    BookOpen,
+    Globe,
+    Lock,
+} from "lucide-react"
+import Link from "next/link"
+
+interface Playbook {
+    id: string
+    title: string
+    description: string | null
+    toolUrl: string | null
+    shareCode: string
+    isPublic: boolean
+    categoryId: string | null
+}
+
+interface PlaybookItem {
+    id: string
+    playbookId: string
+    title: string
+    url: string
+    description: string | null
+    order: number
+}
+
+interface ItemProgress {
+    itemId: string
+    completed: boolean
+}
+
+export default function PlaybookDetailPage() {
+    const params = useParams()
+    const router = useRouter()
+    const { userData } = useAuth()
+    const playbookId = params.id as string
+
+    const [playbook, setPlaybook] = useState<Playbook | null>(null)
+    const [items, setItems] = useState<PlaybookItem[]>([])
+    const [progress, setProgress] = useState<Record<string, boolean>>({})
+    const [loading, setLoading] = useState(true)
+    const [showAddModal, setShowAddModal] = useState(false)
+    const [showShareModal, setShowShareModal] = useState(false)
+    const [newItem, setNewItem] = useState({ title: "", url: "", description: "" })
+    const [savingItem, setSavingItem] = useState(false)
+    const [copied, setCopied] = useState(false)
+
+    useEffect(() => {
+        if (playbookId) {
+            fetchData()
+        }
+    }, [playbookId])
+
+    const fetchData = async () => {
+        try {
+            // Fetch playbook
+            const playbookDoc = await getDoc(doc(db, "playbooks", playbookId))
+            if (!playbookDoc.exists()) {
+                router.push("/dashboard/playbooks")
+                return
+            }
+            setPlaybook(playbookDoc.data() as Playbook)
+
+            // Fetch items
+            const itemsQuery = query(
+                collection(db, "playbookItems"),
+                where("playbookId", "==", playbookId)
+            )
+            const itemsSnap = await getDocs(itemsQuery)
+            const itemsList = itemsSnap.docs.map(doc => doc.data() as PlaybookItem)
+            itemsList.sort((a, b) => a.order - b.order)
+            setItems(itemsList)
+
+            // Fetch user progress
+            if (userData?.id) {
+                const progressQuery = query(
+                    collection(db, "playbookProgress"),
+                    where("playbookId", "==", playbookId),
+                    where("userId", "==", userData.id)
+                )
+                const progressSnap = await getDocs(progressQuery)
+                const progressMap: Record<string, boolean> = {}
+                progressSnap.docs.forEach(doc => {
+                    const data = doc.data()
+                    progressMap[data.itemId] = data.completed
+                })
+                setProgress(progressMap)
+            }
+        } catch (error) {
+            console.error("Error fetching playbook:", error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleAddItem = async () => {
+        if (!newItem.title || !newItem.url) return
+        setSavingItem(true)
+
+        try {
+            const itemId = doc(collection(db, "playbookItems")).id
+            const newOrder = items.length + 1
+
+            await setDoc(doc(db, "playbookItems", itemId), {
+                id: itemId,
+                playbookId,
+                title: newItem.title,
+                url: newItem.url,
+                description: newItem.description || null,
+                order: newOrder,
+                createdAt: new Date(),
+            })
+
+            setItems([...items, {
+                id: itemId,
+                playbookId,
+                title: newItem.title,
+                url: newItem.url,
+                description: newItem.description || null,
+                order: newOrder,
+            }])
+
+            setNewItem({ title: "", url: "", description: "" })
+            setShowAddModal(false)
+        } catch (error) {
+            console.error("Error adding item:", error)
+        } finally {
+            setSavingItem(false)
+        }
+    }
+
+    const handleDeleteItem = async (itemId: string) => {
+        if (!confirm("هل أنت متأكد من حذف هذا العنصر؟")) return
+
+        try {
+            await deleteDoc(doc(db, "playbookItems", itemId))
+            setItems(items.filter(i => i.id !== itemId))
+        } catch (error) {
+            console.error("Error deleting item:", error)
+        }
+    }
+
+    const handleToggleProgress = async (itemId: string) => {
+        if (!userData?.id) return
+
+        const newCompleted = !progress[itemId]
+        setProgress({ ...progress, [itemId]: newCompleted })
+
+        try {
+            const progressId = `${userData.id}_${itemId}`
+            await setDoc(doc(db, "playbookProgress", progressId), {
+                id: progressId,
+                userId: userData.id,
+                playbookId,
+                itemId,
+                completed: newCompleted,
+                updatedAt: new Date(),
+            })
+        } catch (error) {
+            console.error("Error updating progress:", error)
+        }
+    }
+
+    const handleTogglePublic = async () => {
+        if (!playbook) return
+
+        try {
+            await updateDoc(doc(db, "playbooks", playbookId), {
+                isPublic: !playbook.isPublic,
+            })
+            setPlaybook({ ...playbook, isPublic: !playbook.isPublic })
+        } catch (error) {
+            console.error("Error toggling public:", error)
+        }
+    }
+
+    const getShareUrl = () => {
+        if (typeof window !== "undefined") {
+            return `${window.location.origin}/shared/playbook/${playbook?.shareCode}`
+        }
+        return ""
+    }
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(getShareUrl())
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+    }
+
+    const getUrlIcon = (url: string) => {
+        if (url.includes("youtube.com") || url.includes("youtu.be")) {
+            return <Youtube className="h-5 w-5 text-red-500" />
+        }
+        if (url.includes(".pdf")) {
+            return <FileText className="h-5 w-5 text-orange-500" />
+        }
+        return <Link2 className="h-5 w-5 text-indigo-500" />
+    }
+
+    const completedCount = Object.values(progress).filter(Boolean).length
+    const progressPercent = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+            </div>
+        )
+    }
+
+    if (!playbook) return null
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-4">
+                    <Link href="/dashboard/playbooks">
+                        <Button variant="ghost" size="icon">
+                            <ArrowRight className="h-5 w-5" />
+                        </Button>
+                    </Link>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                            {playbook.title}
+                        </h1>
+                        {playbook.description && (
+                            <p className="mt-1 text-slate-500">{playbook.description}</p>
+                        )}
+                        {playbook.toolUrl && (
+                            <a
+                                href={playbook.toolUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-2 inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline"
+                            >
+                                <ExternalLink className="h-4 w-4" />
+                                رابط الأداة
+                            </a>
+                        )}
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setShowShareModal(true)}>
+                        <Share2 className="h-4 w-4" />
+                        مشاركة
+                    </Button>
+                    <Button onClick={() => setShowAddModal(true)}>
+                        <Plus className="h-4 w-4" />
+                        إضافة محتوى
+                    </Button>
+                </div>
+            </div>
+
+            {/* Progress */}
+            {items.length > 0 && (
+                <Card>
+                    <CardContent>
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                التقدم
+                            </span>
+                            <span className="text-sm text-slate-500">
+                                {completedCount} / {items.length}
+                            </span>
+                        </div>
+                        <div className="h-3 w-full rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div
+                                className="h-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
+                                style={{ width: `${progressPercent}%` }}
+                            />
+                        </div>
+                        <p className="mt-2 text-center text-lg font-bold text-indigo-600">
+                            {progressPercent}%
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Items */}
+            {items.length === 0 ? (
+                <Card>
+                    <CardContent className="py-12 text-center">
+                        <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
+                        <h3 className="mt-4 font-medium text-slate-900 dark:text-white">
+                            لا توجد محتويات بعد
+                        </h3>
+                        <p className="mt-1 text-slate-500">
+                            ابدأ بإضافة مقاطع أو ملفات لهذا الـ Playbook
+                        </p>
+                        <Button className="mt-4" onClick={() => setShowAddModal(true)}>
+                            <Plus className="h-4 w-4" />
+                            إضافة أول محتوى
+                        </Button>
+                    </CardContent>
+                </Card>
+            ) : (
+                <div className="space-y-3">
+                    {items.map((item, index) => (
+                        <Card key={item.id} className="group">
+                            <CardContent>
+                                <div className="flex items-start gap-4">
+                                    {/* Checkbox */}
+                                    <button
+                                        onClick={() => handleToggleProgress(item.id)}
+                                        className="mt-1 flex-shrink-0"
+                                    >
+                                        {progress[item.id] ? (
+                                            <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                                        ) : (
+                                            <Circle className="h-6 w-6 text-slate-300 hover:text-slate-400" />
+                                        )}
+                                    </button>
+
+                                    {/* Order number */}
+                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-sm font-bold text-indigo-600 dark:bg-indigo-900/30">
+                                        {index + 1}
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            {getUrlIcon(item.url)}
+                                            <h3
+                                                className={`font-medium ${progress[item.id]
+                                                        ? "text-slate-400 line-through"
+                                                        : "text-slate-900 dark:text-white"
+                                                    }`}
+                                            >
+                                                {item.title}
+                                            </h3>
+                                        </div>
+                                        {item.description && (
+                                            <p className="mt-1 text-sm text-slate-500">
+                                                {item.description}
+                                            </p>
+                                        )}
+                                        <a
+                                            href={item.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="mt-2 inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline"
+                                        >
+                                            <ExternalLink className="h-3 w-3" />
+                                            فتح الرابط
+                                        </a>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <button
+                                        onClick={() => handleDeleteItem(item.id)}
+                                        className="rounded-lg p-2 text-slate-400 opacity-0 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
+
+            {/* Add Item Modal */}
+            <Modal
+                isOpen={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                title="إضافة محتوى جديد"
+            >
+                <div className="space-y-4">
+                    <Input
+                        label="العنوان"
+                        placeholder="مثال: المقطع الأول - مقدمة"
+                        value={newItem.title}
+                        onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
+                        required
+                    />
+                    <Input
+                        label="الرابط"
+                        placeholder="رابط YouTube أو PDF أو أي رابط آخر"
+                        value={newItem.url}
+                        onChange={(e) => setNewItem({ ...newItem, url: e.target.value })}
+                        required
+                    />
+                    <Textarea
+                        label="شرح (اختياري)"
+                        placeholder="شرح مختصر عن هذا المحتوى..."
+                        value={newItem.description}
+                        onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                        className="min-h-[80px]"
+                    />
+                    <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                            إلغاء
+                        </Button>
+                        <Button onClick={handleAddItem} isLoading={savingItem}>
+                            <Plus className="h-4 w-4" />
+                            إضافة
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Share Modal */}
+            <Modal
+                isOpen={showShareModal}
+                onClose={() => setShowShareModal(false)}
+                title="مشاركة الـ Playbook"
+            >
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                        <div className="flex items-center gap-3">
+                            {playbook.isPublic ? (
+                                <Globe className="h-5 w-5 text-emerald-500" />
+                            ) : (
+                                <Lock className="h-5 w-5 text-slate-400" />
+                            )}
+                            <div>
+                                <p className="font-medium text-slate-900 dark:text-white">
+                                    {playbook.isPublic ? "مشاركة عامة" : "خاص"}
+                                </p>
+                                <p className="text-sm text-slate-500">
+                                    {playbook.isPublic
+                                        ? "أي شخص لديه الرابط يمكنه المشاهدة"
+                                        : "أنت فقط تستطيع المشاهدة"}
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            variant={playbook.isPublic ? "outline" : "primary"}
+                            size="sm"
+                            onClick={handleTogglePublic}
+                        >
+                            {playbook.isPublic ? "إيقاف المشاركة" : "تفعيل المشاركة"}
+                        </Button>
+                    </div>
+
+                    {playbook.isPublic && (
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                رابط المشاركة
+                            </label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    readOnly
+                                    value={getShareUrl()}
+                                    className="flex-1 rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800"
+                                />
+                                <Button variant="outline" onClick={handleCopyLink}>
+                                    <Copy className="h-4 w-4" />
+                                    {copied ? "تم النسخ!" : "نسخ"}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </Modal>
+        </div>
+    )
+}

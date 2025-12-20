@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
 import { collection, doc, setDoc, getDocs, query, where } from "firebase/firestore"
 import { Button, Input, Textarea, Card, CardContent, Select } from "@/components/ui"
-import { ArrowRight, Save, BookOpen } from "lucide-react"
+import { ArrowRight, Save } from "lucide-react"
 import Link from "next/link"
 
 interface Category {
@@ -22,7 +22,7 @@ export default function NewPlaybookPage() {
     const [form, setForm] = useState({
         title: "",
         description: "",
-        content: "",
+        toolUrl: "",
         categoryId: "",
     })
 
@@ -48,6 +48,11 @@ export default function NewPlaybookPage() {
         }
     }
 
+    // Generate a random share code
+    const generateShareCode = () => {
+        return Math.random().toString(36).substring(2, 10)
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!userData?.workspaceId) return
@@ -56,20 +61,24 @@ export default function NewPlaybookPage() {
 
         try {
             const playbookId = doc(collection(db, "playbooks")).id
+            const shareCode = generateShareCode()
 
             await setDoc(doc(db, "playbooks", playbookId), {
                 id: playbookId,
                 workspaceId: userData.workspaceId,
                 title: form.title,
                 description: form.description || null,
-                content: form.content,
+                toolUrl: form.toolUrl || null,
                 categoryId: form.categoryId || null,
+                shareCode: shareCode,
+                isPublic: false,
                 isArchived: false,
                 createdAt: new Date(),
                 updatedAt: new Date(),
             })
 
-            router.push("/dashboard/playbooks")
+            // Redirect to playbook detail to add items
+            router.push(`/dashboard/playbooks/${playbookId}`)
         } catch (error) {
             console.error("Failed to create playbook:", error)
             alert("حدث خطأ")
@@ -89,9 +98,9 @@ export default function NewPlaybookPage() {
                 </Link>
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                        إضافة Playbook جديد
+                        إنشاء Playbook جديد
                     </h1>
-                    <p className="text-slate-500">أنشئ دليل عمل خطوة بخطوة</p>
+                    <p className="text-slate-500">أنشئ دليل تعليمي خطوة بخطوة</p>
                 </div>
             </div>
 
@@ -99,19 +108,27 @@ export default function NewPlaybookPage() {
                 <Card>
                     <CardContent className="space-y-5">
                         <Input
-                            label="العنوان"
-                            placeholder="عنوان الـ Playbook"
+                            label="اسم الـ Playbook"
+                            placeholder="مثال: تعلم صناعة المحتوى بالذكاء الاصطناعي"
                             value={form.title}
                             onChange={(e) => setForm({ ...form, title: e.target.value })}
                             required
                         />
 
                         <Textarea
-                            label="الوصف (اختياري)"
-                            placeholder="وصف مختصر للـ Playbook"
+                            label="الوصف"
+                            placeholder="وش بتتعلم من هذا الـ Playbook؟"
                             value={form.description}
                             onChange={(e) => setForm({ ...form, description: e.target.value })}
-                            className="min-h-[80px]"
+                            className="min-h-[100px]"
+                            required
+                        />
+
+                        <Input
+                            label="رابط الأداة (اختياري)"
+                            placeholder="https://..."
+                            value={form.toolUrl}
+                            onChange={(e) => setForm({ ...form, toolUrl: e.target.value })}
                         />
 
                         <Select
@@ -121,25 +138,6 @@ export default function NewPlaybookPage() {
                             onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
                             options={categories.map((c) => ({ value: c.id, label: c.name }))}
                         />
-
-                        <div>
-                            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                المحتوى
-                            </label>
-                            <textarea
-                                value={form.content}
-                                onChange={(e) => setForm({ ...form, content: e.target.value })}
-                                placeholder={`اكتب خطوات الـ Playbook هنا...
-
-مثال:
-1. افتح ChatGPT
-2. اكتب البروبمت التالي: ...
-3. راجع الناتج وعدّل حسب الحاجة
-4. ...`}
-                                className="min-h-[300px] w-full rounded-xl border-2 border-slate-200 bg-white p-4 font-mono text-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-900"
-                                required
-                            />
-                        </div>
                     </CardContent>
                 </Card>
 
@@ -151,7 +149,7 @@ export default function NewPlaybookPage() {
                     </Link>
                     <Button type="submit" isLoading={isLoading}>
                         <Save className="h-4 w-4" />
-                        حفظ الـ Playbook
+                        إنشاء وإضافة المحتويات
                     </Button>
                 </div>
             </form>
