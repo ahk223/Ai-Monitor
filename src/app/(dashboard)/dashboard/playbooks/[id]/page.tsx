@@ -318,67 +318,102 @@ export default function PlaybookDetailPage() {
                 </Card>
             ) : (
                 <div className="space-y-3">
-                    {items.map((item, index) => (
-                        <Card key={item.id} className="group">
-                            <CardContent>
-                                <div className="flex items-start gap-4">
-                                    {/* Checkbox */}
-                                    <button
-                                        onClick={() => handleToggleProgress(item.id)}
-                                        className="mt-1 flex-shrink-0"
+                    {items.map((item, index) => {
+                        // Extract YouTube ID
+                        const youtubeMatch = item.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/)
+                        const youtubeId = youtubeMatch ? youtubeMatch[1] : null
+
+                        return (
+                            <Card key={item.id} className="group overflow-hidden">
+                                {/* YouTube Preview */}
+                                {youtubeId && (
+                                    <a
+                                        href={item.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="relative block aspect-video bg-slate-900 sm:aspect-[21/9]"
                                     >
-                                        {progress[item.id] ? (
-                                            <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                                        ) : (
-                                            <Circle className="h-6 w-6 text-slate-300 hover:text-slate-400" />
-                                        )}
-                                    </button>
-
-                                    {/* Order number */}
-                                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-sm font-bold text-indigo-600 dark:bg-indigo-900/30">
-                                        {index + 1}
-                                    </div>
-
-                                    {/* Content */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            {getUrlIcon(item.url)}
-                                            <h3
-                                                className={`font-medium ${progress[item.id]
-                                                    ? "text-slate-400 line-through"
-                                                    : "text-slate-900 dark:text-white"
-                                                    }`}
-                                            >
-                                                {item.title}
-                                            </h3>
+                                        <img
+                                            src={`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
+                                            alt={item.title}
+                                            className="h-full w-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-all hover:bg-black/40">
+                                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-600 shadow-lg">
+                                                <svg className="h-7 w-7 text-white mr-[-2px]" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
                                         </div>
-                                        {item.description && (
-                                            <p className="mt-1 text-sm text-slate-500">
-                                                {item.description}
-                                            </p>
+                                        {/* Progress overlay */}
+                                        {progress[item.id] && (
+                                            <div className="absolute top-3 right-3">
+                                                <CheckCircle2 className="h-8 w-8 text-emerald-500 drop-shadow-lg" />
+                                            </div>
                                         )}
-                                        <a
-                                            href={item.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="mt-2 inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline"
-                                        >
-                                            <ExternalLink className="h-3 w-3" />
-                                            فتح الرابط
-                                        </a>
-                                    </div>
+                                    </a>
+                                )}
 
-                                    {/* Actions */}
-                                    <button
-                                        onClick={() => handleDeleteItem(item.id)}
-                                        className="rounded-lg p-2 text-slate-400 opacity-0 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                                <CardContent>
+                                    <div className="flex items-start gap-4">
+                                        {/* Checkbox */}
+                                        <button
+                                            onClick={() => handleToggleProgress(item.id)}
+                                            className="mt-1 flex-shrink-0"
+                                        >
+                                            {progress[item.id] ? (
+                                                <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                                            ) : (
+                                                <Circle className="h-6 w-6 text-slate-300 hover:text-slate-400" />
+                                            )}
+                                        </button>
+
+                                        {/* Order number */}
+                                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-sm font-bold text-indigo-600 dark:bg-indigo-900/30">
+                                            {index + 1}
+                                        </div>
+
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                {getUrlIcon(item.url)}
+                                                <h3
+                                                    className={`font-medium ${progress[item.id]
+                                                        ? "text-slate-400 line-through"
+                                                        : "text-slate-900 dark:text-white"
+                                                        }`}
+                                                >
+                                                    {item.title}
+                                                </h3>
+                                            </div>
+                                            {item.description && (
+                                                <p className="mt-1 text-sm text-slate-500">
+                                                    {item.description}
+                                                </p>
+                                            )}
+                                            <a
+                                                href={item.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="mt-2 inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline"
+                                            >
+                                                <ExternalLink className="h-3 w-3" />
+                                                فتح الرابط
+                                            </a>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <button
+                                            onClick={() => handleDeleteItem(item.id)}
+                                            className="rounded-lg p-2 text-slate-400 opacity-0 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )
+                    })}
                 </div>
             )}
 

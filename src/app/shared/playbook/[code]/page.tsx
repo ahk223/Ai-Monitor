@@ -13,6 +13,7 @@ import {
     ExternalLink,
     Loader2,
     Lock,
+    Play,
 } from "lucide-react"
 
 interface Playbook {
@@ -31,6 +32,23 @@ interface PlaybookItem {
     url: string
     description: string | null
     order: number
+}
+
+// Extract YouTube video ID from URL
+function getYouTubeId(url: string): string | null {
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    ]
+    for (const pattern of patterns) {
+        const match = url.match(pattern)
+        if (match) return match[1]
+    }
+    return null
+}
+
+// Get YouTube thumbnail URL
+function getYouTubeThumbnail(videoId: string): string {
+    return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
 }
 
 export default function SharedPlaybookPage() {
@@ -101,6 +119,10 @@ export default function SharedPlaybookPage() {
         return <Link2 className="h-5 w-5 text-indigo-500" />
     }
 
+    const isYouTube = (url: string) => {
+        return url.includes("youtube.com") || url.includes("youtu.be")
+    }
+
     if (loading) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
@@ -111,7 +133,7 @@ export default function SharedPlaybookPage() {
 
     if (notFound) {
         return (
-            <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
+            <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 p-4 text-center">
                 <BookOpen className="h-16 w-16 text-slate-300" />
                 <h1 className="mt-4 text-xl font-bold text-slate-900 dark:text-white">
                     Playbook غير موجود
@@ -125,7 +147,7 @@ export default function SharedPlaybookPage() {
 
     if (isPrivate) {
         return (
-            <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
+            <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 p-4 text-center">
                 <Lock className="h-16 w-16 text-slate-300" />
                 <h1 className="mt-4 text-xl font-bold text-slate-900 dark:text-white">
                     Playbook خاص
@@ -145,11 +167,11 @@ export default function SharedPlaybookPage() {
                 {/* Header */}
                 <div className="text-center">
                     <Badge className="mb-4">Playbook</Badge>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
                         {playbook.title}
                     </h1>
                     {playbook.description && (
-                        <p className="mt-3 text-lg text-slate-600 dark:text-slate-400">
+                        <p className="mt-3 text-base sm:text-lg text-slate-600 dark:text-slate-400">
                             {playbook.description}
                         </p>
                     )}
@@ -185,42 +207,67 @@ export default function SharedPlaybookPage() {
                     </Card>
                 ) : (
                     <div className="space-y-4">
-                        {items.map((item, index) => (
-                            <Card key={item.id} className="overflow-hidden">
-                                <CardContent>
-                                    <div className="flex items-start gap-4">
-                                        {/* Order number */}
-                                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 text-lg font-bold text-white">
-                                            {index + 1}
-                                        </div>
+                        {items.map((item, index) => {
+                            const youtubeId = getYouTubeId(item.url)
 
-                                        {/* Content */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                {getUrlIcon(item.url)}
-                                                <h3 className="font-semibold text-slate-900 dark:text-white">
-                                                    {item.title}
-                                                </h3>
+                            return (
+                                <Card key={item.id} className="overflow-hidden">
+                                    {/* YouTube Preview */}
+                                    {youtubeId && (
+                                        <a
+                                            href={item.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="relative block aspect-video bg-slate-900"
+                                        >
+                                            <img
+                                                src={getYouTubeThumbnail(youtubeId)}
+                                                alt={item.title}
+                                                className="h-full w-full object-cover"
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-all hover:bg-black/40">
+                                                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-600 shadow-lg">
+                                                    <Play className="h-8 w-8 text-white fill-white mr-[-4px]" />
+                                                </div>
                                             </div>
-                                            {item.description && (
-                                                <p className="mt-2 text-slate-600 dark:text-slate-400">
-                                                    {item.description}
-                                                </p>
-                                            )}
-                                            <a
-                                                href={item.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400"
-                                            >
-                                                <ExternalLink className="h-4 w-4" />
-                                                فتح الرابط
-                                            </a>
+                                        </a>
+                                    )}
+
+                                    <CardContent className="text-center sm:text-right">
+                                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                                            {/* Order number */}
+                                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 text-lg font-bold text-white">
+                                                {index + 1}
+                                            </div>
+
+                                            {/* Content */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2">
+                                                    {getUrlIcon(item.url)}
+                                                    <h3 className="font-semibold text-slate-900 dark:text-white">
+                                                        {item.title}
+                                                    </h3>
+                                                </div>
+                                                {item.description && (
+                                                    <p className="mt-2 text-slate-600 dark:text-slate-400">
+                                                        {item.description}
+                                                    </p>
+                                                )}
+                                                <a
+                                                    href={item.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400"
+                                                >
+                                                    <ExternalLink className="h-4 w-4" />
+                                                    فتح الرابط
+                                                </a>
+                                            </div>
                                         </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                    </CardContent>
+                                </Card>
+                            )
+                        })}
                     </div>
                 )}
 
