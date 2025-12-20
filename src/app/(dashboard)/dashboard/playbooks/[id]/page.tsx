@@ -63,7 +63,9 @@ export default function PlaybookDetailPage() {
     const [loading, setLoading] = useState(true)
     const [showAddModal, setShowAddModal] = useState(false)
     const [showShareModal, setShowShareModal] = useState(false)
+    const [showEditModal, setShowEditModal] = useState(false)
     const [newItem, setNewItem] = useState({ title: "", url: "", description: "" })
+    const [editingItem, setEditingItem] = useState<PlaybookItem | null>(null)
     const [savingItem, setSavingItem] = useState(false)
     const [copied, setCopied] = useState(false)
 
@@ -159,6 +161,36 @@ export default function PlaybookDetailPage() {
             setItems(items.filter(i => i.id !== itemId))
         } catch (error) {
             console.error("Error deleting item:", error)
+        }
+    }
+
+    const openEditModal = (item: PlaybookItem) => {
+        setEditingItem(item)
+        setShowEditModal(true)
+    }
+
+    const handleUpdateItem = async () => {
+        if (!editingItem) return
+        setSavingItem(true)
+
+        try {
+            await updateDoc(doc(db, "playbookItems", editingItem.id), {
+                title: editingItem.title,
+                url: editingItem.url,
+                description: editingItem.description || null,
+                updatedAt: new Date(),
+            })
+
+            setItems(items.map(i =>
+                i.id === editingItem.id ? editingItem : i
+            ))
+
+            setShowEditModal(false)
+            setEditingItem(null)
+        } catch (error) {
+            console.error("Error updating item:", error)
+        } finally {
+            setSavingItem(false)
         }
     }
 
@@ -403,12 +435,22 @@ export default function PlaybookDetailPage() {
                                         </div>
 
                                         {/* Actions */}
-                                        <button
-                                            onClick={() => handleDeleteItem(item.id)}
-                                            className="rounded-lg p-2 text-slate-400 opacity-0 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={() => openEditModal(item)}
+                                                className="rounded-lg p-2 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
+                                                title="تعديل"
+                                            >
+                                                <Edit2 className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteItem(item.id)}
+                                                className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                                title="حذف"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -511,6 +553,54 @@ export default function PlaybookDetailPage() {
                         </div>
                     )}
                 </div>
+            </Modal>
+
+            {/* Edit Item Modal */}
+            <Modal
+                isOpen={showEditModal}
+                onClose={() => {
+                    setShowEditModal(false)
+                    setEditingItem(null)
+                }}
+                title="تعديل المحتوى"
+            >
+                {editingItem && (
+                    <div className="space-y-4">
+                        <Input
+                            label="العنوان"
+                            placeholder="عنوان المحتوى"
+                            value={editingItem.title}
+                            onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                            required
+                        />
+                        <Input
+                            label="الرابط"
+                            placeholder="رابط YouTube أو PDF أو أي رابط آخر"
+                            value={editingItem.url}
+                            onChange={(e) => setEditingItem({ ...editingItem, url: e.target.value })}
+                            required
+                        />
+                        <Textarea
+                            label="شرح (اختياري)"
+                            placeholder="شرح مختصر عن هذا المحتوى..."
+                            value={editingItem.description || ""}
+                            onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                            className="min-h-[80px]"
+                        />
+                        <div className="flex justify-end gap-3">
+                            <Button variant="outline" onClick={() => {
+                                setShowEditModal(false)
+                                setEditingItem(null)
+                            }}>
+                                إلغاء
+                            </Button>
+                            <Button onClick={handleUpdateItem} isLoading={savingItem}>
+                                <Edit2 className="h-4 w-4" />
+                                حفظ التعديلات
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </Modal>
         </div>
     )
