@@ -41,7 +41,8 @@ interface PlaybookItem {
 }
 
 // Extract YouTube video ID from URL
-function getYouTubeId(url: string): string | null {
+function getYouTubeId(url: string | undefined | null): string | null {
+    if (!url) return null
     const patterns = [
         /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
     ]
