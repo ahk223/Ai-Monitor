@@ -93,7 +93,7 @@ export default function CategoryDetailsPage() {
                 // Tools
                 getDocs(query(collection(db, "tools"), where("categoryId", "==", categoryId), where("workspaceId", "==", userData?.workspaceId))),
                 // Playbooks
-                getDocs(query(collection(db, "playbooks"), where("categoryId", "==", categoryId), where("workspaceId", "==", userData?.workspaceId))),
+                getDocs(query(collection(db, "playbooks"), where("categoryId", "==", categoryId), where("workspaceId", "==", userData?.workspaceId), where("isArchived", "==", false))),
                 // Notes
                 getDocs(query(collection(db, "notes"), where("categoryId", "==", categoryId), where("workspaceId", "==", userData?.workspaceId))),
                 // Courses
