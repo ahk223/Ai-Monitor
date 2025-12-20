@@ -243,7 +243,10 @@ export default function SettingsPage() {
     }
 
     const handleCreateWorkspace = async () => {
-        if (!newWorkspaceName.trim() || !userData?.id) return
+        if (!newWorkspaceName.trim() || !userData?.id) {
+            alert("يرجى إدخال اسم مساحة العمل")
+            return
+        }
 
         setSavingWorkspace(true)
         try {
@@ -260,11 +263,13 @@ export default function SettingsPage() {
                 workspaceName: newWorkspaceName,
                 role: "OWNER",
             })
+            alert("تم إنشاء مساحة العمل بنجاح!")
             setShowCreateWorkspaceModal(false)
             setNewWorkspaceName("")
             window.location.reload()
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error creating workspace:", error)
+            alert("حدث خطأ أثناء إنشاء مساحة العمل: " + (error?.message || "خطأ غير معروف"))
         } finally {
             setSavingWorkspace(false)
         }
