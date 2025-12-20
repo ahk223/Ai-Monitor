@@ -75,7 +75,7 @@ export default function PlaybookDetailPage() {
 
     const [playbook, setPlaybook] = useState<Playbook | null>(null)
     const [items, setItems] = useState<PlaybookItem[]>([])
-    const [progress, setProgress] = useState<Record<string, boolean>>({})
+    const [progress, setProgress] = useState<Record<string, { completed: boolean; rating?: number; notes?: string }>>({})
     const [loading, setLoading] = useState(true)
     const [showAddModal, setShowAddModal] = useState(false)
     const [showShareModal, setShowShareModal] = useState(false)
@@ -123,10 +123,14 @@ export default function PlaybookDetailPage() {
                     where("userId", "==", userData.id)
                 )
                 const progressSnap = await getDocs(progressQuery)
-                const progressMap: Record<string, boolean> = {}
+                const progressMap: Record<string, { completed: boolean; rating?: number; notes?: string }> = {}
                 progressSnap.docs.forEach(doc => {
                     const data = doc.data()
-                    progressMap[data.itemId] = data.completed
+                    progressMap[data.itemId] = {
+                        completed: data.completed,
+                        rating: data.rating,
+                        notes: data.notes
+                    }
                 })
                 setProgress(progressMap)
             }
@@ -422,11 +426,14 @@ export default function PlaybookDetailPage() {
         }
     }
 
-    const handleToggleProgress = async (itemId: string) => {
+    const handleFeedbackChange = async (itemId: string, updates: { rating?: number; notes?: string; completed?: boolean }) => {
         if (!userData?.id) return
 
-        const newCompleted = !progress[itemId]
-        setProgress({ ...progress, [itemId]: newCompleted })
+        const current = progress[itemId] || { completed: false }
+        const newProgress = { ...current, ...updates }
+
+        // Optimistic update
+        setProgress({ ...progress, [itemId]: newProgress })
 
         try {
             const progressId = `${userData.id}_${itemId}`
@@ -435,11 +442,11 @@ export default function PlaybookDetailPage() {
                 userId: userData.id,
                 playbookId,
                 itemId,
-                completed: newCompleted,
+                ...newProgress,
                 updatedAt: new Date(),
-            })
+            }, { merge: true })
         } catch (error) {
-            console.error("Error updating progress:", error)
+            console.error("Error updating feedback:", error)
         }
     }
 
@@ -598,127 +605,103 @@ export default function PlaybookDetailPage() {
                     </div>
                 ) : (
                     items.map((item, index) => {
-                        const youtubeId = getYouTubeId(item.url)
-                        const isCompleted = progress[item.id] || false
+                        const videoId = getYouTubeId(item.url)
+                        const isCompleted = progress[item.id]?.completed
 
                         return (
-                            <Card key={item.id} className={`transition-opacity ${isCompleted ? 'opacity-75' : ''}`}>
-                                <div className="flex flex-col sm:flex-row">
-                                    {/* Content */}
-                                    <div className="flex-1 p-6">
-                                        <div className="flex items-start gap-3">
-                                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 font-bold text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
-                                                {index + 1}
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    {getUrlIcon(item.url)}
-                                                    <h3 className={`font-semibold text-slate-900 dark:text-white ${isCompleted ? 'line-through decoration-slate-400' : ''}`}>
-                                                        {item.title}
-                                                    </h3>
-                                                </div>
-                                                {item.description && (
-                                                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                                                        {item.description}
-                                                    </p>
-                                                )}
-                                                <div className="mt-4 flex flex-wrap gap-2">
-                                                    <a
-                                                        href={item.url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
-                                                    >
-                                                        <ExternalLink className="h-3 w-3" />
-                                                        فتح الرابط
-                                                    </a>
-                                                    {isCompleted ? (
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => handleToggleProgress(item.id)}
-                                                            className="text-emerald-600 hover:text-emerald-700"
-                                                        >
-                                                            <RotateCcw className="h-3 w-3" />
-                                                            إلغاء الاكمال
-                                                        </Button>
-                                                    ) : (
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={() => handleToggleProgress(item.id)}
-                                                            className="bg-emerald-600 hover:bg-emerald-700"
-                                                        >
-                                                            <Check className="h-3 w-3" />
-                                                            إكمال
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Preview (YouTube) */}
-                                    {youtubeId && (
-                                        <div className="w-full sm:w-64 bg-slate-100 dark:bg-slate-900 sm:border-r border-t sm:border-t-0 dark:border-slate-800">
+                            <div
+                                key={item.id}
+                                className={`relative flex flex-col gap-4 rounded-xl border p-4 transition-all ${isCompleted
+                                        ? "border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-900/10"
+                                        : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
+                                    }`}
+                            >
+                                {/* Header with Title and Toggle */}
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex items-start gap-3 flex-1">
+                                        <button
+                                            onClick={() => handleFeedbackChange(item.id, { completed: !isCompleted })}
+                                            className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all ${isCompleted
+                                                    ? "border-green-500 bg-green-500 text-white"
+                                                    : "border-slate-300 hover:border-slate-400 dark:border-slate-600"
+                                                }`}
+                                        >
+                                            {isCompleted && <Check size={14} />}
+                                        </button>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className={`font-medium text-lg leading-snug ${isCompleted ? "text-slate-500 line-through dark:text-slate-500" : "text-slate-900 dark:text-white"}`}>
+                                                {item.title}
+                                            </h3>
+                                            {item.description && (
+                                                <p className="mt-1 text-sm text-slate-500 line-clamp-2">
+                                                    {item.description}
+                                                </p>
+                                            )}
                                             <a
                                                 href={item.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="group relative block h-40 w-full overflow-hidden sm:h-full"
+                                                className="mt-2 inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700 dir-ltr"
                                             >
-                                                <img
-                                                    src={getYouTubeThumbnail(youtubeId)}
-                                                    alt={item.title}
-                                                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                                />
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20">
-                                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-600 shadow-lg">
-                                                        <Play className="h-5 w-5 text-white fill-white mr-[-2px]" />
-                                                    </div>
-                                                </div>
+                                                <ExternalLink className="h-3 w-3" />
+                                                {item.url}
                                             </a>
                                         </div>
-                                    )}
-
-                                    {/* Actions */}
-                                    <div className="flex items-center gap-1 border-t p-2 sm:flex-col sm:border-l sm:border-t-0 sm:w-12 dark:border-slate-800">
-                                        <button
-                                            onClick={() => moveItem(index, 'up')}
-                                            disabled={index === 0}
-                                            className="flex h-8 w-8 items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 disabled:opacity-30 disabled:hover:bg-transparent"
-                                            title="تحريك لأعلى"
-                                        >
-                                            <ChevronUp className="h-4 w-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => moveItem(index, 'down')}
-                                            disabled={index === items.length - 1}
-                                            className="flex h-8 w-8 items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 disabled:opacity-30 disabled:hover:bg-transparent"
-                                            title="تحريك لأسهل"
-                                        >
-                                            <ChevronDown className="h-4 w-4" />
-                                        </button>
-                                        <div className="flex-1 sm:flex-none"></div>
-                                        <button
-                                            onClick={() => {
-                                                setEditingItem(item)
-                                                setShowEditModal(true)
-                                            }}
-                                            className="flex h-8 w-8 items-center justify-center rounded text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
-                                            title="تعديل"
-                                        >
-                                            <Edit2 className="h-4 w-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteItem(item.id)}
-                                            className="flex h-8 w-8 items-center justify-center rounded text-slate-400 hover:bg-red-50 hover:text-red-600"
-                                            title="حذف"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex gap-1">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => moveItem(index, 'up')} disabled={index === 0}>
+                                                <ArrowRight className="h-4 w-4 rotate-90" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => moveItem(index, 'down')} disabled={index === items.length - 1}>
+                                                <ArrowRight className="h-4 w-4 -rotate-90" />
+                                            </Button>
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-indigo-600" onClick={() => openEditModal(item)}>
+                                                <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDeleteItem(item.id)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
-                            </Card>
+
+                                {/* Video Embed */}
+                                {videoId && (
+                                    <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg bg-black">
+                                        <iframe
+                                            src={`https://www.youtube.com/embed/${videoId}`}
+                                            title={item.title}
+                                            className="absolute inset-0 h-full w-full"
+                                            allowFullScreen
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Feedback Section */}
+                                <div className={`mt-2 flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-4 transition-all dark:border-slate-800 dark:bg-slate-900/30 ${isCompleted ? 'opacity-100' : 'opacity-80'}`}>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">التقييم:</span>
+                                        <StarRating
+                                            rating={progress[item.id]?.rating || 0}
+                                            onRatingChange={(r) => handleFeedbackChange(item.id, { rating: r })}
+                                            size={20}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <span className="text-xs text-slate-500">ملاحظاتك:</span>
+                                        <Textarea
+                                            placeholder="أضف ملاحظاتك الخاصة هنا..."
+                                            value={progress[item.id]?.notes || ""}
+                                            onChange={(e) => handleFeedbackChange(item.id, { notes: e.target.value })}
+                                            className="min-h-[80px] border-slate-200 bg-white focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         )
                     })
                 )}

@@ -14,7 +14,8 @@ import {
     Loader2,
     ArrowRight,
     StickyNote,
-    Share2
+    Share2,
+    GraduationCap
 } from "lucide-react"
 import Link from "next/link"
 
@@ -29,8 +30,11 @@ interface ContentItem {
     title?: string
     content?: string
     name?: string
-    type: "prompt" | "tweet" | "tool" | "playbook" | "note"
+    type: "prompt" | "tweet" | "tool" | "playbook" | "note" | "course"
     createdAt?: any
+    images?: string[] // For prompts
+    image?: string // For generic use
+    url?: string
 }
 
 export default function CategoryDetailsPage() {
@@ -41,13 +45,23 @@ export default function CategoryDetailsPage() {
 
     const [category, setCategory] = useState<Category | null>(null)
     const [content, setContent] = useState<ContentItem[]>([])
+    const [filteredContent, setFilteredContent] = useState<ContentItem[]>([])
     const [loading, setLoading] = useState(true)
+    const [filter, setFilter] = useState("all")
 
     useEffect(() => {
         if (userData?.workspaceId && categoryId) {
             fetchData()
         }
     }, [userData?.workspaceId, categoryId])
+
+    useEffect(() => {
+        if (filter === "all") {
+            setFilteredContent(content)
+        } else {
+            setFilteredContent(content.filter(item => item.type === filter))
+        }
+    }, [filter, content])
 
     // Update Page Title
     useEffect(() => {
@@ -79,6 +93,8 @@ export default function CategoryDetailsPage() {
                 getDocs(query(collection(db, "playbooks"), where("categoryId", "==", categoryId), where("workspaceId", "==", userData?.workspaceId))),
                 // Notes
                 getDocs(query(collection(db, "notes"), where("categoryId", "==", categoryId), where("workspaceId", "==", userData?.workspaceId))),
+                // Courses
+                getDocs(query(collection(db, "courses"), where("categoryId", "==", categoryId), where("workspaceId", "==", userData?.workspaceId))),
             ]
 
             const results = await Promise.all(promises)
@@ -94,6 +110,15 @@ export default function CategoryDetailsPage() {
             results[3].docs.forEach(d => allContent.push({ ...d.data(), id: d.id, type: "playbook" } as any))
             // Notes
             results[4].docs.forEach(d => allContent.push({ ...d.data(), id: d.id, type: "note" } as any))
+            // Courses
+            results[5].docs.forEach(d => allContent.push({ ...d.data(), id: d.id, type: "course" } as any))
+
+            // Sort by createdAt desc
+            allContent.sort((a, b) => {
+                const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0)
+                const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0)
+                return dateB.getTime() - dateA.getTime()
+            })
 
             setContent(allContent)
 
@@ -111,6 +136,7 @@ export default function CategoryDetailsPage() {
             case "tool": return Wrench
             case "playbook": return BookOpen
             case "note": return StickyNote
+            case "course": return GraduationCap
             default: return MessageSquareText
         }
     }
@@ -122,6 +148,7 @@ export default function CategoryDetailsPage() {
             case "tool": return "أداة"
             case "playbook": return "Playbook"
             case "note": return "ملاحظة"
+            case "course": return "كورس"
             default: return type
         }
     }
@@ -133,6 +160,7 @@ export default function CategoryDetailsPage() {
             case "tool": return "bg-emerald-100 text-emerald-700"
             case "playbook": return "bg-orange-100 text-orange-700"
             case "note": return "bg-amber-100 text-amber-700"
+            case "course": return "bg-violet-100 text-violet-700"
             default: return "bg-gray-100 text-gray-700"
         }
     }
@@ -141,11 +169,17 @@ export default function CategoryDetailsPage() {
         switch (item.type) {
             case "prompt": return `/dashboard/prompts/${item.id}`
             case "playbook": return `/dashboard/playbooks/${item.id}`
-            case "tool": return `/dashboard/tools` // Tools usually just listed, maybe edit?
+            case "tool": return `/dashboard/tools`
             case "tweet": return `/dashboard/tweets`
             case "note": return `/dashboard/notes`
+            case "course": return item.url || "#" // Courses link externally primarily, or maybe we want a details page? For now external.
             default: return "#"
         }
+    }
+
+    // Check if item should open in new tab (external links)
+    const isExternalLink = (item: ContentItem) => {
+        return item.type === "course"
     }
 
     const getTitle = (item: ContentItem) => {
@@ -153,6 +187,15 @@ export default function CategoryDetailsPage() {
         if (item.name) return item.name
         if (item.content) return item.content.substring(0, 60) + (item.content.length > 60 ? "..." : "")
         return "بدون عنوان"
+    }
+
+    // Helper to get image URL if exists
+    const getItemImage = (item: ContentItem) => {
+        if (item.type === "prompt" && item.images && item.images.length > 0) {
+            return item.images[0]
+        }
+        // Could add logic for generic 'image' field if added to other types
+        return null
     }
 
     if (loading) {
@@ -164,6 +207,16 @@ export default function CategoryDetailsPage() {
     }
 
     if (!category) return null
+
+    const filters = [
+        { id: "all", label: "الكل" },
+        { id: "prompt", label: "البرومبتات" },
+        { id: "playbook", label: "Playbooks" },
+        { id: "course", label: "الكورسات" },
+        { id: "tweet", label: "محتوى" },
+        { id: "tool", label: "الأدوات" },
+        { id: "note", label: "الملاحظات" },
+    ]
 
     return (
         <div className="space-y-6">
@@ -188,34 +241,70 @@ export default function CategoryDetailsPage() {
                 </div>
             </div>
 
+            {/* Filters */}
+            <div className="flex flex-wrap gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                {filters.map(f => (
+                    <button
+                        key={f.id}
+                        onClick={() => setFilter(f.id)}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${filter === f.id
+                            ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400"
+                            }`}
+                    >
+                        {f.label}
+                    </button>
+                ))}
+            </div>
+
             {/* Content Grid */}
-            {content.length === 0 ? (
+            {filteredContent.length === 0 ? (
                 <Card>
                     <CardContent className="py-12 text-center">
-                        <p className="text-slate-500">لا يوجد محتوى في هذا التصنيف حتى الآن</p>
+                        <p className="text-slate-500">لا يوجد محتوى في هذا التصنيف</p>
                     </CardContent>
                 </Card>
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {content.map((item) => {
+                    {filteredContent.map((item) => {
                         const Icon = getTypeIcon(item.type)
-                        return (
-                            <Link key={`${item.type}-${item.id}`} href={getLink(item)}>
-                                <Card hover className="relative flex h-40 flex-col justify-between p-4 transition-all hover:-translate-y-1 hover:shadow-md">
-                                    <div className="flex items-start justify-between">
-                                        <Icon className="h-5 w-5 text-slate-400" />
-                                        <Badge variant="secondary" className={`${getTypeColor(item.type)} border-0`}>
-                                            {getTypeLabel(item.type)}
-                                        </Badge>
-                                    </div>
+                        const imageUrl = getItemImage(item)
+                        const LinkComponent = isExternalLink(item) ? 'a' : Link
+                        const linkProps = isExternalLink(item)
+                            ? { href: getLink(item), target: '_blank', rel: 'noopener noreferrer' }
+                            : { href: getLink(item) }
 
-                                    <div>
-                                        <h3 className="font-bold text-lg text-slate-900 dark:text-white line-clamp-2 text-right">
-                                            {getTitle(item)}
-                                        </h3>
+                        return (
+                            <LinkComponent key={`${item.type}-${item.id}`} {...linkProps as any} className="block h-full">
+                                <Card hover className="relative flex flex-col h-full overflow-hidden transition-all hover:-translate-y-1 hover:shadow-md group">
+                                    {/* Image Preview */}
+                                    {imageUrl && (
+                                        <div className="h-32 w-full bg-slate-100 dark:bg-slate-800 relative">
+                                            <img
+                                                src={imageUrl}
+                                                alt={getTitle(item)}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </div>
+                                    )}
+
+                                    <div className="flex-1 flex flex-col justify-between p-4 bg-white dark:bg-slate-950">
+                                        <div className="flex items-start justify-between mb-3 gap-2">
+                                            <Icon className="h-5 w-5 text-slate-400 flex-shrink-0 mt-0.5" />
+                                            <Badge variant="secondary" className={`${getTypeColor(item.type)} border-0 whitespace-nowrap`}>
+                                                {getTypeLabel(item.type)}
+                                            </Badge>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="font-bold text-lg text-slate-900 dark:text-white line-clamp-2 text-right leading-relaxed group-hover:text-indigo-600 transition-colors">
+                                                {getTitle(item)}
+                                            </h3>
+                                        </div>
                                     </div>
                                 </Card>
-                            </Link>
+                            </LinkComponent>
                         )
                     })}
                 </div>

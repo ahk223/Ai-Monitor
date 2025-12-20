@@ -16,6 +16,7 @@ import {
     ChevronLeft,
     Menu,
     X,
+    GraduationCap,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
@@ -29,6 +30,7 @@ const navItems = [
     { icon: MessageSquareText, label: "البرومبتات", href: "/dashboard/prompts" },
     { icon: Twitter, label: "السوشيال ميديا", href: "/dashboard/tweets" },
     { icon: Wrench, label: "الأدوات", href: "/dashboard/tools" },
+    { icon: GraduationCap, label: "الكورسات", href: "/dashboard/courses" },
     { icon: BookOpen, label: "Playbooks", href: "/dashboard/playbooks" },
     { icon: StickyNote, label: "الملاحظات", href: "/dashboard/notes" },
     { icon: Search, label: "البحث", href: "/dashboard/search" },
