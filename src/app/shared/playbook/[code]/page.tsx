@@ -111,16 +111,12 @@ export default function SharedPlaybookPage() {
 
     const getUrlIcon = (url: string) => {
         if (url.includes("youtube.com") || url.includes("youtu.be")) {
-            return <Youtube className="h-5 w-5 text-red-500" />
+            return <Youtube className="h-4 w-4 text-red-500" />
         }
         if (url.includes(".pdf")) {
-            return <FileText className="h-5 w-5 text-orange-500" />
+            return <FileText className="h-4 w-4 text-orange-500" />
         }
-        return <Link2 className="h-5 w-5 text-indigo-500" />
-    }
-
-    const isYouTube = (url: string) => {
-        return url.includes("youtube.com") || url.includes("youtu.be")
+        return <Link2 className="h-4 w-4 text-indigo-500" />
     }
 
     if (loading) {
@@ -163,7 +159,7 @@ export default function SharedPlaybookPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 dark:from-slate-900 dark:to-slate-800 py-8 px-4">
-            <div className="mx-auto max-w-3xl space-y-6">
+            <div className="mx-auto max-w-2xl space-y-6">
                 {/* Header */}
                 <div className="text-center">
                     <Badge className="mb-4">Playbook</Badge>
@@ -212,13 +208,26 @@ export default function SharedPlaybookPage() {
 
                             return (
                                 <Card key={item.id} className="overflow-hidden">
-                                    {/* YouTube Preview */}
+                                    {/* Header with number and title */}
+                                    <div className="flex items-center gap-3 px-4 pt-4">
+                                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 text-sm font-bold text-white">
+                                            {index + 1}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {getUrlIcon(item.url)}
+                                            <h3 className="font-semibold text-slate-900 dark:text-white">
+                                                {item.title}
+                                            </h3>
+                                        </div>
+                                    </div>
+
+                                    {/* YouTube Preview - smaller */}
                                     {youtubeId && (
                                         <a
                                             href={item.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="relative block aspect-video bg-slate-900"
+                                            className="relative block h-36 sm:h-44 mx-4 mt-3 rounded-lg overflow-hidden bg-slate-900"
                                         >
                                             <img
                                                 src={getYouTubeThumbnail(youtubeId)}
@@ -226,44 +235,28 @@ export default function SharedPlaybookPage() {
                                                 className="h-full w-full object-cover"
                                             />
                                             <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-all hover:bg-black/40">
-                                                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-600 shadow-lg">
-                                                    <Play className="h-8 w-8 text-white fill-white mr-[-4px]" />
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-600 shadow-lg">
+                                                    <Play className="h-6 w-6 text-white fill-white mr-[-2px]" />
                                                 </div>
                                             </div>
                                         </a>
                                     )}
 
-                                    <CardContent className="text-center sm:text-right">
-                                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                                            {/* Order number */}
-                                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 text-lg font-bold text-white">
-                                                {index + 1}
-                                            </div>
-
-                                            {/* Content */}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2">
-                                                    {getUrlIcon(item.url)}
-                                                    <h3 className="font-semibold text-slate-900 dark:text-white">
-                                                        {item.title}
-                                                    </h3>
-                                                </div>
-                                                {item.description && (
-                                                    <p className="mt-2 text-slate-600 dark:text-slate-400">
-                                                        {item.description}
-                                                    </p>
-                                                )}
-                                                <a
-                                                    href={item.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400"
-                                                >
-                                                    <ExternalLink className="h-4 w-4" />
-                                                    فتح الرابط
-                                                </a>
-                                            </div>
-                                        </div>
+                                    <CardContent className="pt-3">
+                                        {item.description && (
+                                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                                                {item.description}
+                                            </p>
+                                        )}
+                                        <a
+                                            href={item.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400"
+                                        >
+                                            <ExternalLink className="h-3 w-3" />
+                                            فتح الرابط
+                                        </a>
                                     </CardContent>
                                 </Card>
                             )

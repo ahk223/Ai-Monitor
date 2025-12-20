@@ -331,7 +331,7 @@ export default function PlaybookDetailPage() {
                                         href={item.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="relative block aspect-video bg-slate-900 sm:aspect-[21/9]"
+                                        className="relative block h-32 sm:h-40 bg-slate-900"
                                     >
                                         <img
                                             src={`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
@@ -339,16 +339,16 @@ export default function PlaybookDetailPage() {
                                             className="h-full w-full object-cover"
                                         />
                                         <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-all hover:bg-black/40">
-                                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-600 shadow-lg">
-                                                <svg className="h-7 w-7 text-white mr-[-2px]" fill="currentColor" viewBox="0 0 24 24">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-600 shadow-lg">
+                                                <svg className="h-6 w-6 text-white mr-[-2px]" fill="currentColor" viewBox="0 0 24 24">
                                                     <path d="M8 5v14l11-7z" />
                                                 </svg>
                                             </div>
                                         </div>
                                         {/* Progress overlay */}
                                         {progress[item.id] && (
-                                            <div className="absolute top-3 right-3">
-                                                <CheckCircle2 className="h-8 w-8 text-emerald-500 drop-shadow-lg" />
+                                            <div className="absolute top-2 right-2">
+                                                <CheckCircle2 className="h-6 w-6 text-emerald-500 drop-shadow-lg" />
                                             </div>
                                         )}
                                     </a>
