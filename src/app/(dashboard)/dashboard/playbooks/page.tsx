@@ -71,7 +71,7 @@ export default function PlaybooksPage() {
             const counts: Record<string, number> = {}
             for (const playbook of playbooksList) {
                 const stepsQuery = query(
-                    collection(db, "playbookSteps"),
+                    collection(db, "playbookItems"),
                     where("playbookId", "==", playbook.id)
                 )
                 const stepsSnap = await getDocs(stepsQuery)
