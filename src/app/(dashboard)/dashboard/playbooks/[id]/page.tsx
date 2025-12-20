@@ -37,6 +37,8 @@ interface Playbook {
     shareCode: string
     isPublic: boolean
     categoryId: string | null
+    clonedFromId?: string | null
+    lastSyncedItemCount?: number
 }
 
 interface PlaybookItem {
@@ -46,6 +48,12 @@ interface PlaybookItem {
     url: string
     description: string | null
     order: number
+    clonedFromItemId?: string
+}
+
+interface NewContentInfo {
+    count: number
+    items: PlaybookItem[]
 }
 
 interface ItemProgress {
@@ -72,6 +80,8 @@ export default function PlaybookDetailPage() {
     const [copied, setCopied] = useState(false)
     const [duplicateWarning, setDuplicateWarning] = useState<{ message: string; playbookTitle?: string } | null>(null)
     const [checkingDuplicate, setCheckingDuplicate] = useState(false)
+    const [newContent, setNewContent] = useState<NewContentInfo | null>(null)
+    const [syncingContent, setSyncingContent] = useState(false)
 
     useEffect(() => {
         if (playbookId) {
@@ -114,10 +124,85 @@ export default function PlaybookDetailPage() {
                 })
                 setProgress(progressMap)
             }
+
+            // Check for new content if this is a cloned playbook
+            const pbData = playbookDoc.data() as Playbook
+            if (pbData.clonedFromId) {
+                checkForNewContent(pbData.clonedFromId, itemsList)
+            }
         } catch (error) {
             console.error("Error fetching playbook:", error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const checkForNewContent = async (originalPlaybookId: string, currentItems: PlaybookItem[]) => {
+        try {
+            // Get items from original playbook
+            const originalItemsQuery = query(
+                collection(db, "playbookItems"),
+                where("playbookId", "==", originalPlaybookId)
+            )
+            const originalSnap = await getDocs(originalItemsQuery)
+            const originalItems = originalSnap.docs.map(doc => doc.data() as PlaybookItem)
+
+            // Find items that don't exist in our cloned version
+            const clonedFromIds = currentItems.map(i => i.clonedFromItemId).filter(Boolean)
+            const newItems = originalItems.filter(item => !clonedFromIds.includes(item.id))
+
+            if (newItems.length > 0) {
+                setNewContent({ count: newItems.length, items: newItems })
+            }
+        } catch (error) {
+            console.error("Error checking for new content:", error)
+        }
+    }
+
+    const syncNewContent = async () => {
+        if (!newContent || !playbook) return
+
+        setSyncingContent(true)
+        try {
+            const currentMaxOrder = items.length
+
+            for (let i = 0; i < newContent.items.length; i++) {
+                const originalItem = newContent.items[i]
+                const newItemId = doc(collection(db, "playbookItems")).id
+
+                await setDoc(doc(db, "playbookItems", newItemId), {
+                    id: newItemId,
+                    playbookId: playbookId,
+                    title: originalItem.title,
+                    url: originalItem.url,
+                    description: originalItem.description,
+                    order: currentMaxOrder + i + 1,
+                    clonedFromItemId: originalItem.id,
+                    createdAt: new Date(),
+                })
+
+                setItems(prev => [...prev, {
+                    id: newItemId,
+                    playbookId: playbookId,
+                    title: originalItem.title,
+                    url: originalItem.url,
+                    description: originalItem.description,
+                    order: currentMaxOrder + i + 1,
+                    clonedFromItemId: originalItem.id,
+                }])
+            }
+
+            // Update lastSyncedItemCount
+            await updateDoc(doc(db, "playbooks", playbookId), {
+                lastSyncedItemCount: items.length + newContent.items.length,
+            })
+
+            setNewContent(null)
+        } catch (error) {
+            console.error("Error syncing content:", error)
+            alert("حدث خطأ أثناء المزامنة")
+        } finally {
+            setSyncingContent(false)
         }
     }
 
@@ -352,6 +437,36 @@ export default function PlaybookDetailPage() {
 
     return (
         <div className="space-y-6">
+            {/* New Content Alert */}
+            {newContent && (
+                <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 dark:border-indigo-800 dark:from-indigo-900/20 dark:to-purple-900/20">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50">
+                                <Plus className="h-5 w-5 text-indigo-600" />
+                            </div>
+                            <div>
+                                <p className="font-medium text-indigo-900 dark:text-indigo-100">
+                                    🎉 محتوى جديد من مالك الـ Playbook!
+                                </p>
+                                <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                                    تم إضافة {newContent.count} محتوى جديد. هل تريد إضافتهم لنسختك؟
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setNewContent(null)}>
+                                تجاهل
+                            </Button>
+                            <Button size="sm" onClick={syncNewContent} isLoading={syncingContent}>
+                                <Plus className="h-4 w-4" />
+                                إضافة للنسخة
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-4">

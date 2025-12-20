@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
-import { db } from "@/lib/firebase"
-import { collection, query, where, getDocs } from "firebase/firestore"
-import { Card, CardContent, Badge } from "@/components/ui"
+import { useParams, useRouter } from "next/navigation"
+import { db, auth } from "@/lib/firebase"
+import { collection, query, where, getDocs, doc, setDoc, getDoc } from "firebase/firestore"
+import { onAuthStateChanged, User } from "firebase/auth"
+import { Card, CardContent, Badge, Button } from "@/components/ui"
 import {
     BookOpen,
     Youtube,
@@ -14,7 +15,11 @@ import {
     Loader2,
     Lock,
     Play,
+    Plus,
+    Check,
+    LogIn,
 } from "lucide-react"
+import Link from "next/link"
 
 interface Playbook {
     id: string
@@ -23,6 +28,7 @@ interface Playbook {
     toolUrl: string | null
     shareCode: string
     isPublic: boolean
+    workspaceId: string
 }
 
 interface PlaybookItem {
@@ -53,19 +59,47 @@ function getYouTubeThumbnail(videoId: string): string {
 
 export default function SharedPlaybookPage() {
     const params = useParams()
+    const router = useRouter()
     const shareCode = params.code as string
 
+    const [user, setUser] = useState<User | null>(null)
+    const [userData, setUserData] = useState<{ workspaceId: string } | null>(null)
     const [playbook, setPlaybook] = useState<Playbook | null>(null)
     const [items, setItems] = useState<PlaybookItem[]>([])
     const [loading, setLoading] = useState(true)
     const [notFound, setNotFound] = useState(false)
     const [isPrivate, setIsPrivate] = useState(false)
+    const [isCloning, setIsCloning] = useState(false)
+    const [alreadyCloned, setAlreadyCloned] = useState(false)
+    const [clonedPlaybookId, setClonedPlaybookId] = useState<string | null>(null)
+
+    // Check auth state
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            setUser(firebaseUser)
+            if (firebaseUser) {
+                // Get user data
+                const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
+                if (userDoc.exists()) {
+                    setUserData(userDoc.data() as { workspaceId: string })
+                }
+            }
+        })
+        return () => unsubscribe()
+    }, [])
 
     useEffect(() => {
         if (shareCode) {
             fetchData()
         }
     }, [shareCode])
+
+    // Check if already cloned
+    useEffect(() => {
+        if (user && playbook && userData?.workspaceId) {
+            checkIfCloned()
+        }
+    }, [user, playbook, userData])
 
     const fetchData = async () => {
         try {
@@ -106,6 +140,75 @@ export default function SharedPlaybookPage() {
             setNotFound(true)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const checkIfCloned = async () => {
+        if (!userData?.workspaceId || !playbook) return
+
+        try {
+            const clonedQuery = query(
+                collection(db, "playbooks"),
+                where("workspaceId", "==", userData.workspaceId),
+                where("clonedFromId", "==", playbook.id)
+            )
+            const snap = await getDocs(clonedQuery)
+            if (!snap.empty) {
+                setAlreadyCloned(true)
+                setClonedPlaybookId(snap.docs[0].id)
+            }
+        } catch (error) {
+            console.error("Error checking cloned:", error)
+        }
+    }
+
+    const handleCloneToMyAccount = async () => {
+        if (!user || !userData?.workspaceId || !playbook) return
+
+        setIsCloning(true)
+        try {
+            // Create new playbook
+            const newPlaybookId = doc(collection(db, "playbooks")).id
+            const newShareCode = Math.random().toString(36).substring(2, 10)
+
+            await setDoc(doc(db, "playbooks", newPlaybookId), {
+                id: newPlaybookId,
+                workspaceId: userData.workspaceId,
+                title: playbook.title,
+                description: playbook.description,
+                toolUrl: playbook.toolUrl,
+                shareCode: newShareCode,
+                isPublic: false,
+                isArchived: false,
+                clonedFromId: playbook.id, // Track original
+                clonedAt: new Date(),
+                lastSyncedItemCount: items.length,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            })
+
+            // Clone all items
+            for (const item of items) {
+                const newItemId = doc(collection(db, "playbookItems")).id
+                await setDoc(doc(db, "playbookItems", newItemId), {
+                    id: newItemId,
+                    playbookId: newPlaybookId,
+                    title: item.title,
+                    url: item.url,
+                    description: item.description,
+                    order: item.order,
+                    clonedFromItemId: item.id,
+                    createdAt: new Date(),
+                })
+            }
+
+            setAlreadyCloned(true)
+            setClonedPlaybookId(newPlaybookId)
+        } catch (error) {
+            console.error("Error cloning playbook:", error)
+            alert("حدث خطأ أثناء الإضافة")
+        } finally {
+            setIsCloning(false)
         }
     }
 
@@ -181,6 +284,43 @@ export default function SharedPlaybookPage() {
                             <ExternalLink className="h-4 w-4" />
                             رابط الأداة
                         </a>
+                    )}
+                </div>
+
+                {/* Add to my account button */}
+                <div className="text-center">
+                    {user ? (
+                        alreadyCloned ? (
+                            <div className="space-y-2">
+                                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                    <Check className="h-4 w-4" />
+                                    مُضاف لحسابك
+                                </div>
+                                <div>
+                                    <Link href={`/dashboard/playbooks/${clonedPlaybookId}`}>
+                                        <Button variant="outline" size="sm">
+                                            فتح في لوحة التحكم
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </div>
+                        ) : (
+                            <Button
+                                onClick={handleCloneToMyAccount}
+                                isLoading={isCloning}
+                                className="bg-gradient-to-r from-indigo-600 to-purple-600"
+                            >
+                                <Plus className="h-4 w-4" />
+                                إضافة لحسابي
+                            </Button>
+                        )
+                    ) : (
+                        <Link href="/login">
+                            <Button variant="outline">
+                                <LogIn className="h-4 w-4" />
+                                سجل دخول لإضافته لحسابك
+                            </Button>
+                        </Link>
                     )}
                 </div>
 
