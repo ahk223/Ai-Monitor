@@ -1,69 +1,62 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useAuth } from "@/contexts/AuthContext"
 import { Button, Input, Card, CardContent } from "@/components/ui"
-import { Mail, Lock, User, Building } from "lucide-react"
+import { Mail, Lock, User, Building2, Loader2 } from "lucide-react"
+import Link from "next/link"
 
 export default function RegisterPage() {
-    const router = useRouter()
-    const [isLoading, setIsLoading] = useState(false)
+    const { signUp } = useAuth()
+    const [name, setName] = useState("")
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
+    const [workspaceName, setWorkspaceName] = useState("")
     const [error, setError] = useState("")
-    const [form, setForm] = useState({
-        name: "",
-        email: "",
-        password: "",
-        workspaceName: "",
-    })
+    const [isLoading, setIsLoading] = useState(false)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setIsLoading(true)
         setError("")
+        setIsLoading(true)
 
         try {
-            const res = await fetch("/api/auth/register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
-            })
-
-            const data = await res.json()
-
-            if (!res.ok) {
-                setError(data.error || "حدث خطأ أثناء التسجيل")
-                return
+            await signUp(email, password, name, workspaceName)
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : "حدث خطأ"
+            if (errorMessage.includes("email-already-in-use")) {
+                setError("هذا البريد الإلكتروني مسجل مسبقاً")
+            } else if (errorMessage.includes("weak-password")) {
+                setError("كلمة المرور ضعيفة - يجب أن تكون 6 أحرف على الأقل")
+            } else if (errorMessage.includes("invalid-email")) {
+                setError("البريد الإلكتروني غير صالح")
+            } else {
+                setError("حدث خطأ أثناء إنشاء الحساب")
             }
-
-            // Redirect to login
-            router.push("/login?registered=true")
-        } catch {
-            setError("حدث خطأ، يرجى المحاولة مرة أخرى")
         } finally {
             setIsLoading(false)
         }
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 p-4" dir="rtl">
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4 dark:from-slate-900 dark:to-slate-800">
             <div className="w-full max-w-md">
                 {/* Logo */}
                 <div className="mb-8 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/25">
-                        <span className="text-2xl font-bold text-white">AI</span>
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 text-2xl font-bold text-white shadow-lg">
+                        AI
                     </div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
                         إنشاء حساب جديد
                     </h1>
-                    <p className="mt-1 text-slate-500">ابدأ بإدارة معرفتك التشغيلية</p>
+                    <p className="mt-1 text-slate-500">ابدأ رحلتك مع AI Knowledge Hub</p>
                 </div>
 
-                <Card gradient>
+                <Card>
                     <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-5">
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             {error && (
-                                <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:border-red-900 dark:text-red-400">
+                                <div className="rounded-xl bg-red-50 p-3 text-center text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
                                     {error}
                                 </div>
                             )}
@@ -72,9 +65,9 @@ export default function RegisterPage() {
                                 label="الاسم"
                                 type="text"
                                 placeholder="اسمك الكامل"
-                                value={form.name}
-                                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                icon={<User className="h-4 w-4" />}
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                icon={<User className="h-5 w-5" />}
                                 required
                             />
 
@@ -82,41 +75,47 @@ export default function RegisterPage() {
                                 label="البريد الإلكتروني"
                                 type="email"
                                 placeholder="example@email.com"
-                                value={form.email}
-                                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                                icon={<Mail className="h-4 w-4" />}
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                icon={<Mail className="h-5 w-5" />}
                                 required
                             />
 
                             <Input
                                 label="كلمة المرور"
                                 type="password"
-                                placeholder="6 أحرف على الأقل"
-                                value={form.password}
-                                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                                icon={<Lock className="h-4 w-4" />}
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                icon={<Lock className="h-5 w-5" />}
                                 required
-                                minLength={6}
                             />
 
                             <Input
                                 label="اسم مساحة العمل"
                                 type="text"
-                                placeholder="مثال: شركتي، مشاريعي..."
-                                value={form.workspaceName}
-                                onChange={(e) => setForm({ ...form, workspaceName: e.target.value })}
-                                icon={<Building className="h-4 w-4" />}
+                                placeholder="مثال: حسابي الشخصي"
+                                value={workspaceName}
+                                onChange={(e) => setWorkspaceName(e.target.value)}
+                                icon={<Building2 className="h-5 w-5" />}
                                 required
                             />
 
-                            <Button type="submit" className="w-full" isLoading={isLoading}>
-                                {isLoading ? "جارٍ إنشاء الحساب..." : "إنشاء حساب"}
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                isLoading={isLoading}
+                            >
+                                إنشاء حساب
                             </Button>
                         </form>
 
                         <div className="mt-6 text-center text-sm text-slate-500">
                             لديك حساب بالفعل؟{" "}
-                            <Link href="/login" className="font-medium text-indigo-600 hover:underline">
+                            <Link
+                                href="/login"
+                                className="font-medium text-indigo-600 hover:text-indigo-500"
+                            >
                                 سجّل دخولك
                             </Link>
                         </div>

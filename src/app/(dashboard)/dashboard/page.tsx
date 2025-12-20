@@ -1,5 +1,9 @@
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+"use client"
+
+import { useEffect, useState } from "react"
+import { useAuth } from "@/contexts/AuthContext"
+import { db } from "@/lib/firebase"
+import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore"
 import { Card, CardHeader, CardTitle, CardContent, Badge } from "@/components/ui"
 import {
     MessageSquareText,
@@ -10,56 +14,118 @@ import {
     Clock,
     Star,
     ArrowUpRight,
+    Loader2,
 } from "lucide-react"
 import Link from "next/link"
 
-interface PromptWithCategory {
+interface Prompt {
     id: string
     title: string
     rating: number | null
-    category: { id: string; name: string; color: string } | null
+    category?: { name: string }
+    categoryId?: string
+    createdAt: Date
 }
 
-async function getDashboardStats(workspaceId: string) {
-    const [promptsCount, tweetsCount, toolsCount, playbooksCount, recentPrompts, topRatedPrompts] = await Promise.all([
-        prisma.prompt.count({ where: { workspaceId, isArchived: false } }),
-        prisma.tweet.count({ where: { workspaceId, isArchived: false } }),
-        prisma.tool.count({ where: { workspaceId, isArchived: false } }),
-        prisma.playbook.count({ where: { workspaceId, isArchived: false } }),
-        prisma.prompt.findMany({
-            where: { workspaceId, isArchived: false },
-            orderBy: { createdAt: "desc" },
-            take: 5,
-            include: { category: true },
-        }),
-        prisma.prompt.findMany({
-            where: { workspaceId, isArchived: false, rating: { not: null } },
-            orderBy: { rating: "desc" },
-            take: 5,
-            include: { category: true },
-        }),
-    ])
-
-    return {
-        stats: {
-            prompts: promptsCount,
-            tweets: tweetsCount,
-            tools: toolsCount,
-            playbooks: playbooksCount,
-        },
-        recentPrompts: recentPrompts as PromptWithCategory[],
-        topRatedPrompts: topRatedPrompts as PromptWithCategory[],
-    }
+interface Stats {
+    prompts: number
+    tweets: number
+    tools: number
+    playbooks: number
 }
 
-export default async function DashboardPage() {
-    const session = await auth()
+export default function DashboardPage() {
+    const { userData } = useAuth()
+    const [stats, setStats] = useState<Stats>({ prompts: 0, tweets: 0, tools: 0, playbooks: 0 })
+    const [recentPrompts, setRecentPrompts] = useState<Prompt[]>([])
+    const [topRatedPrompts, setTopRatedPrompts] = useState<Prompt[]>([])
+    const [loading, setLoading] = useState(true)
+    const [categories, setCategories] = useState<Record<string, string>>({})
 
-    if (!session?.user?.workspaceId) {
-        return <div>لا توجد مساحة عمل</div>
+    useEffect(() => {
+        if (userData?.workspaceId) {
+            fetchDashboardData()
+        }
+    }, [userData?.workspaceId])
+
+    const fetchDashboardData = async () => {
+        if (!userData?.workspaceId) return
+
+        try {
+            // Fetch categories first
+            const categoriesQuery = query(
+                collection(db, "categories"),
+                where("workspaceId", "==", userData.workspaceId)
+            )
+            const categoriesSnap = await getDocs(categoriesQuery)
+            const catsMap: Record<string, string> = {}
+            categoriesSnap.docs.forEach(doc => {
+                const data = doc.data()
+                catsMap[data.id] = data.name
+            })
+            setCategories(catsMap)
+
+            // Fetch counts
+            const promptsQuery = query(
+                collection(db, "prompts"),
+                where("workspaceId", "==", userData.workspaceId),
+                where("isArchived", "==", false)
+            )
+            const promptsSnap = await getDocs(promptsQuery)
+
+            const tweetsQuery = query(
+                collection(db, "tweets"),
+                where("workspaceId", "==", userData.workspaceId),
+                where("isArchived", "==", false)
+            )
+            const tweetsSnap = await getDocs(tweetsQuery)
+
+            const toolsQuery = query(
+                collection(db, "tools"),
+                where("workspaceId", "==", userData.workspaceId),
+                where("isArchived", "==", false)
+            )
+            const toolsSnap = await getDocs(toolsQuery)
+
+            const playbooksQuery = query(
+                collection(db, "playbooks"),
+                where("workspaceId", "==", userData.workspaceId),
+                where("isArchived", "==", false)
+            )
+            const playbooksSnap = await getDocs(playbooksQuery)
+
+            setStats({
+                prompts: promptsSnap.size,
+                tweets: tweetsSnap.size,
+                tools: toolsSnap.size,
+                playbooks: playbooksSnap.size,
+            })
+
+            // Get recent prompts (sort by createdAt)
+            const allPrompts = promptsSnap.docs.map(doc => ({
+                ...doc.data(),
+                id: doc.id,
+            })) as Prompt[]
+
+            const sorted = allPrompts.sort((a, b) => {
+                const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
+                const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
+                return dateB.getTime() - dateA.getTime()
+            })
+            setRecentPrompts(sorted.slice(0, 5))
+
+            // Get top rated
+            const rated = allPrompts
+                .filter(p => p.rating !== null && p.rating !== undefined)
+                .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+            setTopRatedPrompts(rated.slice(0, 5))
+
+        } catch (error) {
+            console.error("Error fetching dashboard data:", error)
+        } finally {
+            setLoading(false)
+        }
     }
-
-    const { stats, recentPrompts, topRatedPrompts } = await getDashboardStats(session.user.workspaceId)
 
     const statCards = [
         { icon: MessageSquareText, label: "البروبمتات", value: stats.prompts, color: "from-indigo-500 to-purple-500", href: "/dashboard/prompts" },
@@ -68,11 +134,19 @@ export default async function DashboardPage() {
         { icon: BookOpen, label: "Playbooks", value: stats.playbooks, color: "from-orange-500 to-red-500", href: "/dashboard/playbooks" },
     ]
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-6">
             {/* Welcome */}
             <div className="rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 p-6 text-white shadow-xl">
-                <h1 className="text-2xl font-bold">مرحباً، {session.user.name || "مستخدم"} 👋</h1>
+                <h1 className="text-2xl font-bold">مرحباً، {userData?.name || "مستخدم"} 👋</h1>
                 <p className="mt-1 text-white/80">إليك نظرة سريعة على معرفتك التشغيلية</p>
             </div>
 
@@ -124,7 +198,7 @@ export default async function DashboardPage() {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {recentPrompts.map((prompt: PromptWithCategory) => (
+                                {recentPrompts.map((prompt) => (
                                     <Link
                                         key={prompt.id}
                                         href={`/dashboard/prompts/${prompt.id}`}
@@ -135,7 +209,7 @@ export default async function DashboardPage() {
                                                 {prompt.title}
                                             </p>
                                             <p className="text-xs text-slate-500">
-                                                {prompt.category?.name || "بدون تصنيف"}
+                                                {prompt.categoryId ? categories[prompt.categoryId] || "بدون تصنيف" : "بدون تصنيف"}
                                             </p>
                                         </div>
                                         {prompt.rating && (
@@ -167,7 +241,7 @@ export default async function DashboardPage() {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {topRatedPrompts.map((prompt: PromptWithCategory, index: number) => (
+                                {topRatedPrompts.map((prompt, index) => (
                                     <Link
                                         key={prompt.id}
                                         href={`/dashboard/prompts/${prompt.id}`}

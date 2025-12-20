@@ -2,8 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/AuthContext"
+import { db, storage } from "@/lib/firebase"
+import { collection, doc, setDoc, getDocs, query, where } from "firebase/firestore"
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { Button, Input, Textarea, Card, CardContent, Select, ImageUpload } from "@/components/ui"
-import { ArrowRight, Save, Loader2, Wand2, Image } from "lucide-react"
+import { ArrowRight, Save, Wand2, Image } from "lucide-react"
 import Link from "next/link"
 
 interface Category {
@@ -20,6 +24,7 @@ interface Attachment {
 
 export default function NewPromptPage() {
     const router = useRouter()
+    const { userData } = useAuth()
     const [isLoading, setIsLoading] = useState(false)
     const [categories, setCategories] = useState<Category[]>([])
     const [attachments, setAttachments] = useState<Attachment[]>([])
@@ -32,16 +37,22 @@ export default function NewPromptPage() {
     })
 
     useEffect(() => {
-        fetchCategories()
-    }, [])
+        if (userData?.workspaceId) {
+            fetchCategories()
+        }
+    }, [userData?.workspaceId])
 
     const fetchCategories = async () => {
+        if (!userData?.workspaceId) return
+
         try {
-            const res = await fetch("/api/categories")
-            if (res.ok) {
-                const data = await res.json()
-                setCategories(data)
-            }
+            const categoriesQuery = query(
+                collection(db, "categories"),
+                where("workspaceId", "==", userData.workspaceId)
+            )
+            const snap = await getDocs(categoriesQuery)
+            const cats = snap.docs.map(doc => doc.data() as Category)
+            setCategories(cats)
         } catch (error) {
             console.error("Failed to fetch categories:", error)
         }
@@ -61,25 +72,62 @@ export default function NewPromptPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (!userData?.workspaceId) return
+
         setIsLoading(true)
 
         try {
-            const res = await fetch("/api/prompts", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...form,
-                    attachmentIds: attachments.map(a => a.id),
-                }),
+            // Generate new prompt ID
+            const promptId = doc(collection(db, "prompts")).id
+
+            // Create prompt document
+            await setDoc(doc(db, "prompts", promptId), {
+                id: promptId,
+                workspaceId: userData.workspaceId,
+                title: form.title,
+                description: form.description || null,
+                content: form.content,
+                categoryId: form.categoryId || null,
+                rating: null,
+                usageCount: 0,
+                isArchived: false,
+                createdAt: new Date(),
+                updatedAt: new Date(),
             })
 
-            if (res.ok) {
-                const prompt = await res.json()
-                router.push(`/dashboard/prompts/${prompt.id}`)
-            } else {
-                const data = await res.json()
-                alert(data.error || "حدث خطأ")
+            // Create first version
+            const versionId = doc(collection(db, "promptVersions")).id
+            await setDoc(doc(db, "promptVersions", versionId), {
+                id: versionId,
+                promptId,
+                version: 1,
+                content: form.content,
+                changeNote: "الإصدار الأول",
+                createdAt: new Date(),
+            })
+
+            // Extract and save variables
+            const variables = detectVariables()
+            for (const varName of variables) {
+                const varId = doc(collection(db, "promptVariables")).id
+                await setDoc(doc(db, "promptVariables", varId), {
+                    id: varId,
+                    promptId,
+                    name: varName,
+                    description: null,
+                    defaultValue: null,
+                })
             }
+
+            // Update attachments with promptId
+            for (const attachment of attachments) {
+                await setDoc(doc(db, "attachments", attachment.id), {
+                    ...attachment,
+                    promptId,
+                }, { merge: true })
+            }
+
+            router.push(`/dashboard/prompts/${promptId}`)
         } catch (error) {
             console.error("Failed to create prompt:", error)
             alert("حدث خطأ")
@@ -88,7 +136,33 @@ export default function NewPromptPage() {
         }
     }
 
-    const handleUpload = (attachment: Attachment) => {
+    const handleUpload = async (file: File): Promise<Attachment> => {
+        if (!userData?.workspaceId) throw new Error("No workspace")
+
+        const attachmentId = doc(collection(db, "attachments")).id
+        const storageRef = ref(storage, `attachments/${userData.workspaceId}/${attachmentId}-${file.name}`)
+
+        await uploadBytes(storageRef, file)
+        const url = await getDownloadURL(storageRef)
+
+        const attachment: Attachment = {
+            id: attachmentId,
+            url,
+            originalName: file.name,
+            mimeType: file.type,
+        }
+
+        // Save to Firestore
+        await setDoc(doc(db, "attachments", attachmentId), {
+            ...attachment,
+            size: file.size,
+            createdAt: new Date(),
+        })
+
+        return attachment
+    }
+
+    const handleAttachmentUpload = (attachment: Attachment) => {
         setAttachments(prev => [...prev, attachment])
     }
 
@@ -202,7 +276,7 @@ export default function NewPromptPage() {
                             {showUpload && (
                                 <ImageUpload
                                     attachments={attachments}
-                                    onUpload={handleUpload}
+                                    onUpload={handleAttachmentUpload}
                                     onRemove={handleRemoveAttachment}
                                     entityType="prompt"
                                 />

@@ -1,32 +1,55 @@
-import { auth } from "@/lib/auth"
-import { redirect } from "next/navigation"
-import { Sidebar } from "@/components/layout/sidebar"
-import { Header } from "@/components/layout/header"
+"use client"
 
-export default async function DashboardLayout({
-    children,
-}: {
-    children: React.ReactNode
-}) {
-    const session = await auth()
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { AuthProvider, useAuth } from "@/contexts/AuthContext"
+import { Sidebar } from "@/components/layout"
+import { Header } from "@/components/layout"
+import { Loader2 } from "lucide-react"
 
-    if (!session?.user) {
-        redirect("/login")
+function DashboardContent({ children }: { children: React.ReactNode }) {
+    const { user, userData, loading } = useAuth()
+    const router = useRouter()
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push("/login")
+        }
+    }, [user, loading, router])
+
+    if (loading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
+                <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+            </div>
+        )
+    }
+
+    if (!user || !userData) {
+        return null
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950" dir="rtl">
-            {/* Sidebar */}
-            <Sidebar workspaceName={session.user.workspaceName} />
-
-            {/* Main Content */}
-            <div className="lg:mr-64">
-                <Header userName={session.user.name || undefined} />
-
-                <main className="p-6">
+        <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900" dir="rtl">
+            <Sidebar />
+            <div className="flex flex-1 flex-col lg:mr-64">
+                <Header user={{ name: userData.name, email: userData.email }} />
+                <main className="flex-1 p-4 lg:p-6">
                     {children}
                 </main>
             </div>
         </div>
+    )
+}
+
+export default function DashboardLayoutWrapper({
+    children,
+}: {
+    children: React.ReactNode
+}) {
+    return (
+        <AuthProvider>
+            <DashboardContent>{children}</DashboardContent>
+        </AuthProvider>
     )
 }

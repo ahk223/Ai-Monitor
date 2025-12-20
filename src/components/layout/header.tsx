@@ -6,11 +6,12 @@ import { useState } from "react"
 import Link from "next/link"
 
 interface HeaderProps {
-    userName?: string
+    user?: { name: string | null; email: string }
 }
 
-export function Header({ userName = "مستخدم" }: HeaderProps) {
+export function Header({ user }: HeaderProps) {
     const [searchQuery, setSearchQuery] = useState("")
+    const userName = user?.name || "مستخدم"
 
     return (
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-6 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
