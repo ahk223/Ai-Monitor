@@ -177,8 +177,9 @@ export default function PlaybookDetailPage() {
         }
     }
 
-    // Helper functions
-    const getYouTubeId = (url: string) => {
+    // Extract YouTube video ID from URL
+    function getYouTubeId(url: string | undefined | null): string | null {
+        if (!url) return null
         const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/)
         return match ? match[1] : null
     }
