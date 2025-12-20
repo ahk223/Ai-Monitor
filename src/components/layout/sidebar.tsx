@@ -16,7 +16,7 @@ import {
     Menu,
 } from "lucide-react"
 import { useState } from "react"
-import { signOut } from "next-auth/react"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface SidebarProps {
     workspaceName?: string
@@ -35,6 +35,11 @@ const navItems = [
 export function Sidebar({ workspaceName = "مساحة العمل" }: SidebarProps) {
     const pathname = usePathname()
     const [collapsed, setCollapsed] = useState(false)
+    const { signOut } = useAuth()
+
+    const handleSignOut = async () => {
+        await signOut()
+    }
 
     return (
         <>
@@ -107,7 +112,7 @@ export function Sidebar({ workspaceName = "مساحة العمل" }: SidebarProp
                 {/* Logout */}
                 <div className="border-t border-slate-200 p-4 dark:border-slate-800">
                     <button
-                        onClick={() => signOut({ callbackUrl: "/login" })}
+                        onClick={handleSignOut}
                         className={cn(
                             "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 transition-all hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20",
                             collapsed && "justify-center"
