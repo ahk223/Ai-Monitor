@@ -3,14 +3,15 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
-import { collection, query, where, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore"
-import { Card, CardContent, CardHeader, CardTitle, Button, Input, Badge } from "@/components/ui"
+import { collection, query, where, getDocs, doc, setDoc, deleteDoc, updateDoc } from "firebase/firestore"
+import { Card, CardContent, CardHeader, CardTitle, Button, Input, Badge, Modal } from "@/components/ui"
 import {
     Settings,
     Plus,
     Trash2,
     Loader2,
     Palette,
+    Edit2,
 } from "lucide-react"
 
 interface Category {
@@ -37,6 +38,9 @@ export default function SettingsPage() {
     const [newCategoryName, setNewCategoryName] = useState("")
     const [newCategoryColor, setNewCategoryColor] = useState(colorOptions[0])
     const [adding, setAdding] = useState(false)
+    const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+    const [showEditModal, setShowEditModal] = useState(false)
+    const [saving, setSaving] = useState(false)
 
     useEffect(() => {
         if (userData?.workspaceId) {
@@ -98,6 +102,33 @@ export default function SettingsPage() {
             setCategories(categories.filter(c => c.id !== id))
         } catch (error) {
             console.error("Error deleting category:", error)
+        }
+    }
+
+    const handleEditCategory = (category: Category) => {
+        setEditingCategory({ ...category })
+        setShowEditModal(true)
+    }
+
+    const handleSaveEdit = async () => {
+        if (!editingCategory || !editingCategory.name.trim()) return
+
+        setSaving(true)
+        try {
+            await updateDoc(doc(db, "categories", editingCategory.id), {
+                name: editingCategory.name,
+                color: editingCategory.color,
+                updatedAt: new Date(),
+            })
+            setCategories(categories.map(c =>
+                c.id === editingCategory.id ? editingCategory : c
+            ))
+            setShowEditModal(false)
+            setEditingCategory(null)
+        } catch (error) {
+            console.error("Error updating category:", error)
+        } finally {
+            setSaving(false)
         }
     }
 
@@ -179,12 +210,22 @@ export default function SettingsPage() {
                                     />
                                     <span className="font-medium">{category.name}</span>
                                 </div>
-                                <button
-                                    onClick={() => handleDeleteCategory(category.id)}
-                                    className="text-slate-400 hover:text-red-600"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => handleEditCategory(category)}
+                                        className="text-slate-400 hover:text-indigo-600"
+                                        title="تعديل"
+                                    >
+                                        <Edit2 className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteCategory(category.id)}
+                                        className="text-slate-400 hover:text-red-600"
+                                        title="حذف"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -207,8 +248,8 @@ export default function SettingsPage() {
                                         key={color}
                                         onClick={() => setNewCategoryColor(color)}
                                         className={`h-8 w-8 rounded-lg transition-all ${newCategoryColor === color
-                                                ? "ring-2 ring-indigo-500 ring-offset-2"
-                                                : ""
+                                            ? "ring-2 ring-indigo-500 ring-offset-2"
+                                            : ""
                                             }`}
                                         style={{ backgroundColor: color }}
                                     />
@@ -226,6 +267,54 @@ export default function SettingsPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Edit Category Modal */}
+            <Modal
+                isOpen={showEditModal}
+                onClose={() => {
+                    setShowEditModal(false)
+                    setEditingCategory(null)
+                }}
+                title="تعديل التصنيف"
+            >
+                {editingCategory && (
+                    <div className="space-y-4">
+                        <Input
+                            label="اسم التصنيف"
+                            placeholder="اسم التصنيف"
+                            value={editingCategory.name}
+                            onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                        />
+                        <div>
+                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">اللون</p>
+                            <div className="flex gap-2">
+                                {colorOptions.map(color => (
+                                    <button
+                                        key={color}
+                                        onClick={() => setEditingCategory({ ...editingCategory, color })}
+                                        className={`h-8 w-8 rounded-lg transition-all ${editingCategory.color === color
+                                            ? "ring-2 ring-indigo-500 ring-offset-2"
+                                            : ""
+                                            }`}
+                                        style={{ backgroundColor: color }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-4">
+                            <Button variant="outline" onClick={() => {
+                                setShowEditModal(false)
+                                setEditingCategory(null)
+                            }}>
+                                إلغاء
+                            </Button>
+                            <Button onClick={handleSaveEdit} isLoading={saving}>
+                                حفظ التعديلات
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     )
 }
