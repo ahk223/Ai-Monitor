@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
-import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore"
-import { Card, CardHeader, CardTitle, CardContent, Badge } from "@/components/ui"
+import { collection, query, where, getDocs } from "firebase/firestore"
+import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from "@/components/ui"
 import {
     MessageSquareText,
     Twitter,
@@ -15,6 +15,7 @@ import {
     Star,
     ArrowUpRight,
     Loader2,
+    AlertCircle,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -22,7 +23,6 @@ interface Prompt {
     id: string
     title: string
     rating: number | null
-    category?: { name: string }
     categoryId?: string
     createdAt: Date
 }
@@ -40,18 +40,27 @@ export default function DashboardPage() {
     const [recentPrompts, setRecentPrompts] = useState<Prompt[]>([])
     const [topRatedPrompts, setTopRatedPrompts] = useState<Prompt[]>([])
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     const [categories, setCategories] = useState<Record<string, string>>({})
 
     useEffect(() => {
+        // If no workspace, stop loading
+        if (userData && !userData.workspaceId) {
+            setLoading(false)
+            return
+        }
+
         if (userData?.workspaceId) {
             fetchDashboardData()
         }
-    }, [userData?.workspaceId])
+    }, [userData])
 
     const fetchDashboardData = async () => {
         if (!userData?.workspaceId) return
 
         try {
+            setError(null)
+
             // Fetch categories first
             const categoriesQuery = query(
                 collection(db, "categories"),
@@ -101,38 +110,58 @@ export default function DashboardPage() {
                 playbooks: playbooksSnap.size,
             })
 
-            // Get recent prompts (sort by createdAt)
-            const allPrompts = promptsSnap.docs.map(doc => ({
+            // Get prompts and sort them
+            const promptsList = promptsSnap.docs.map(doc => ({
                 ...doc.data(),
                 id: doc.id,
             })) as Prompt[]
 
-            const sorted = allPrompts.sort((a, b) => {
+            // Recent prompts (sorted by creation date)
+            const sorted = [...promptsList].sort((a, b) => {
                 const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
                 const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
                 return dateB.getTime() - dateA.getTime()
             })
             setRecentPrompts(sorted.slice(0, 5))
 
-            // Get top rated
-            const rated = allPrompts
-                .filter(p => p.rating !== null && p.rating !== undefined)
+            // Top rated prompts
+            const topRated = promptsList
+                .filter(p => p.rating && p.rating > 0)
                 .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-            setTopRatedPrompts(rated.slice(0, 5))
-
-        } catch (error) {
-            console.error("Error fetching dashboard data:", error)
+                .slice(0, 5)
+            setTopRatedPrompts(topRated)
+        } catch (err) {
+            console.error("Error fetching dashboard data:", err)
+            setError("فشل تحميل البيانات. تأكد من اتصالك بالإنترنت.")
         } finally {
             setLoading(false)
         }
     }
 
-    const statCards = [
-        { icon: MessageSquareText, label: "البروبمتات", value: stats.prompts, color: "from-indigo-500 to-purple-500", href: "/dashboard/prompts" },
-        { icon: Twitter, label: "التغريدات", value: stats.tweets, color: "from-cyan-500 to-blue-500", href: "/dashboard/tweets" },
-        { icon: Wrench, label: "الأدوات", value: stats.tools, color: "from-emerald-500 to-teal-500", href: "/dashboard/tools" },
-        { icon: BookOpen, label: "Playbooks", value: stats.playbooks, color: "from-orange-500 to-red-500", href: "/dashboard/playbooks" },
+    const statsCards = [
+        { title: "البروبمتات", value: stats.prompts, icon: MessageSquareText, color: "from-indigo-500 to-purple-500", href: "/dashboard/prompts" },
+        { title: "التغريدات", value: stats.tweets, icon: Twitter, color: "from-cyan-500 to-blue-500", href: "/dashboard/tweets" },
+        { title: "الأدوات", value: stats.tools, icon: Wrench, color: "from-emerald-500 to-teal-500", href: "/dashboard/tools" },
+        { title: "Playbooks", value: stats.playbooks, icon: BookOpen, color: "from-orange-500 to-red-500", href: "/dashboard/playbooks" },
     ]
+
+    // No workspace case
+    if (!loading && userData && !userData.workspaceId) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20">
+                <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                    لا توجد مساحة عمل
+                </h2>
+                <p className="text-slate-500 mb-4 text-center max-w-md">
+                    يبدو أن حسابك غير مرتبط بمساحة عمل. قد تحتاج إلى إنشاء حساب جديد.
+                </p>
+                <Link href="/register">
+                    <Button>إنشاء حساب جديد</Button>
+                </Link>
+            </div>
+        )
+    }
 
     if (loading) {
         return (
@@ -142,35 +171,47 @@ export default function DashboardPage() {
         )
     }
 
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20">
+                <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                    حدث خطأ
+                </h2>
+                <p className="text-slate-500 mb-4">{error}</p>
+                <Button onClick={fetchDashboardData}>إعادة المحاولة</Button>
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-6">
             {/* Welcome */}
-            <div className="rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 p-6 text-white shadow-xl">
-                <h1 className="text-2xl font-bold">مرحباً، {userData?.name || "مستخدم"} 👋</h1>
-                <p className="mt-1 text-white/80">إليك نظرة سريعة على معرفتك التشغيلية</p>
+            <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
+                <h1 className="text-2xl font-bold">
+                    مرحباً، {userData?.name || "مستخدم"} 👋
+                </h1>
+                <p className="mt-1 opacity-90">
+                    {userData?.workspaceName || "مساحة العمل"}
+                </p>
             </div>
 
-            {/* Stats Grid */}
+            {/* Stats */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {statCards.map((stat) => (
-                    <Link key={stat.label} href={stat.href}>
+                {statsCards.map((stat) => (
+                    <Link key={stat.title} href={stat.href}>
                         <Card hover className="group cursor-pointer">
-                            <CardContent>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm text-slate-500">{stat.label}</p>
-                                        <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">
-                                            {stat.value}
-                                        </p>
-                                    </div>
-                                    <div className={`rounded-xl bg-gradient-to-br ${stat.color} p-3 shadow-lg`}>
-                                        <stat.icon className="h-6 w-6 text-white" />
-                                    </div>
+                            <CardContent className="flex items-center gap-4">
+                                <div className={`flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br ${stat.color} shadow-lg`}>
+                                    <stat.icon className="h-7 w-7 text-white" />
                                 </div>
-                                <div className="mt-3 flex items-center gap-1 text-xs text-slate-500 group-hover:text-indigo-600">
-                                    <span>عرض الكل</span>
-                                    <ArrowUpRight className="h-3 w-3" />
+                                <div>
+                                    <p className="text-sm text-slate-500">{stat.title}</p>
+                                    <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                                        {stat.value}
+                                    </p>
                                 </div>
+                                <ArrowUpRight className="mr-auto h-5 w-5 text-slate-400 opacity-0 transition-opacity group-hover:opacity-100" />
                             </CardContent>
                         </Card>
                     </Link>
@@ -189,33 +230,31 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         {recentPrompts.length === 0 ? (
-                            <div className="py-8 text-center text-slate-400">
-                                <MessageSquareText className="mx-auto h-10 w-10 mb-2 opacity-50" />
-                                <p>لا توجد بروبمتات بعد</p>
-                                <Link href="/dashboard/prompts/new" className="mt-2 inline-block text-indigo-600 hover:underline">
-                                    أضف أول بروبمت
-                                </Link>
-                            </div>
+                            <p className="text-center text-slate-500 py-4">لا توجد بروبمتات بعد</p>
                         ) : (
                             <div className="space-y-3">
-                                {recentPrompts.map((prompt) => (
+                                {recentPrompts.map(prompt => (
                                     <Link
                                         key={prompt.id}
                                         href={`/dashboard/prompts/${prompt.id}`}
-                                        className="flex items-center justify-between rounded-xl border border-slate-100 p-3 transition-all hover:border-indigo-200 hover:bg-indigo-50/50 dark:border-slate-800 dark:hover:border-indigo-900 dark:hover:bg-indigo-900/10"
+                                        className="flex items-center justify-between rounded-xl border border-slate-100 p-3 transition-all hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
                                     >
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-slate-900 truncate dark:text-white">
+                                        <div>
+                                            <p className="font-medium text-slate-900 dark:text-white">
                                                 {prompt.title}
                                             </p>
-                                            <p className="text-xs text-slate-500">
-                                                {prompt.categoryId ? categories[prompt.categoryId] || "بدون تصنيف" : "بدون تصنيف"}
-                                            </p>
+                                            {prompt.categoryId && categories[prompt.categoryId] && (
+                                                <Badge variant="secondary" className="mt-1">
+                                                    {categories[prompt.categoryId]}
+                                                </Badge>
+                                            )}
                                         </div>
                                         {prompt.rating && (
                                             <div className="flex items-center gap-1 text-amber-500">
                                                 <Star className="h-4 w-4 fill-amber-500" />
-                                                <span className="text-sm">{prompt.rating.toFixed(1)}</span>
+                                                <span className="text-sm font-medium">
+                                                    {prompt.rating.toFixed(1)}
+                                                </span>
                                             </div>
                                         )}
                                     </Link>
@@ -235,33 +274,31 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         {topRatedPrompts.length === 0 ? (
-                            <div className="py-8 text-center text-slate-400">
-                                <Star className="mx-auto h-10 w-10 mb-2 opacity-50" />
-                                <p>لا توجد تقييمات بعد</p>
-                            </div>
+                            <p className="text-center text-slate-500 py-4">لا توجد بروبمتات مُقيّمة</p>
                         ) : (
                             <div className="space-y-3">
                                 {topRatedPrompts.map((prompt, index) => (
                                     <Link
                                         key={prompt.id}
                                         href={`/dashboard/prompts/${prompt.id}`}
-                                        className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 transition-all hover:border-indigo-200 hover:bg-indigo-50/50 dark:border-slate-800 dark:hover:border-indigo-900 dark:hover:bg-indigo-900/10"
+                                        className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 transition-all hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
                                     >
-                                        <div className={`flex h-8 w-8 items-center justify-center rounded-lg font-bold ${index === 0 ? "bg-amber-100 text-amber-700" :
-                                            index === 1 ? "bg-slate-100 text-slate-700" :
-                                                index === 2 ? "bg-orange-100 text-orange-700" :
-                                                    "bg-slate-50 text-slate-500"
+                                        <div className={`flex h-8 w-8 items-center justify-center rounded-lg font-bold ${index === 0 ? "bg-amber-100 text-amber-600" :
+                                                index === 1 ? "bg-slate-200 text-slate-600" :
+                                                    "bg-orange-100 text-orange-600"
                                             }`}>
                                             {index + 1}
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-slate-900 truncate dark:text-white">
+                                        <div className="flex-1">
+                                            <p className="font-medium text-slate-900 dark:text-white">
                                                 {prompt.title}
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-1 text-amber-500">
                                             <Star className="h-4 w-4 fill-amber-500" />
-                                            <span className="font-medium">{prompt.rating?.toFixed(1)}</span>
+                                            <span className="font-medium">
+                                                {prompt.rating?.toFixed(1)}
+                                            </span>
                                         </div>
                                     </Link>
                                 ))}
