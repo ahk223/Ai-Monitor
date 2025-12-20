@@ -1,10 +1,11 @@
 "use client"
 
-import { Search, Bell, Plus, User, LogOut, Settings } from "lucide-react"
+import { Search, Bell, Plus, User, LogOut, Settings, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/AuthContext"
+import { useTheme } from "next-themes"
 
 interface HeaderProps {
     user?: { name: string | null; email: string }
@@ -12,10 +13,16 @@ interface HeaderProps {
 
 export function Header({ user }: HeaderProps) {
     const { signOut } = useAuth()
+    const { theme, setTheme } = useTheme()
     const [searchQuery, setSearchQuery] = useState("")
     const [showQuickAdd, setShowQuickAdd] = useState(false)
     const [showProfileMenu, setShowProfileMenu] = useState(false)
+    const [mounted, setMounted] = useState(false)
     const userName = user?.name || "مستخدم"
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     const handleLogout = async () => {
         try {
@@ -23,6 +30,10 @@ export function Header({ user }: HeaderProps) {
         } catch (error) {
             console.error("Error logging out:", error)
         }
+    }
+
+    const toggleTheme = () => {
+        setTheme(theme === "dark" ? "light" : "dark")
     }
 
     return (
@@ -50,6 +61,21 @@ export function Header({ user }: HeaderProps) {
                         <Search className="h-5 w-5" />
                     </button>
                 </Link>
+
+                {/* Dark Mode Toggle */}
+                {mounted && (
+                    <button
+                        onClick={toggleTheme}
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+                        title={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
+                    >
+                        {theme === "dark" ? (
+                            <Sun className="h-5 w-5" />
+                        ) : (
+                            <Moon className="h-5 w-5" />
+                        )}
+                    </button>
+                )}
 
                 {/* Quick Add */}
                 <div className="relative">
