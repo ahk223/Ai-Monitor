@@ -1,156 +1,215 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
+import { useEffect, useState } from "react"
+import { useAuth } from "@/contexts/AuthContext"
+import { db } from "@/lib/firebase"
+import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore"
 import { Card, CardContent, Button, Badge } from "@/components/ui"
-import { Plus, Search, Twitter, ExternalLink, MoreVertical, Trash2 } from "lucide-react"
-import { formatRelativeTime, truncate } from "@/lib/utils"
+import {
+    Plus,
+    Search,
+    Twitter,
+    ExternalLink,
+    Edit2,
+    Trash2,
+    Loader2,
+} from "lucide-react"
+import Link from "next/link"
 
 interface Tweet {
     id: string
     content: string
     sourceUrl: string | null
     importance: string | null
-    createdAt: string
-    category: { name: string; color: string } | null
-    benefitType: { name: string } | null
-    contentType: { name: string } | null
-    tags: { id: string; name: string }[]
+    categoryId: string | null
+    createdAt: Date
+    isArchived: boolean
+}
+
+interface Category {
+    id: string
+    name: string
+    color: string
 }
 
 export default function TweetsPage() {
+    const { userData } = useAuth()
     const [tweets, setTweets] = useState<Tweet[]>([])
+    const [categories, setCategories] = useState<Category[]>([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
 
     useEffect(() => {
-        fetchTweets()
-    }, [search])
+        if (userData?.workspaceId) {
+            fetchData()
+        }
+    }, [userData?.workspaceId])
 
-    const fetchTweets = async () => {
+    const fetchData = async () => {
+        if (!userData?.workspaceId) return
+
         try {
-            const params = new URLSearchParams()
-            if (search) params.set("search", search)
-            const res = await fetch(`/api/tweets?${params}`)
-            const data = await res.json()
-            setTweets(data)
+            // Fetch categories
+            const categoriesQuery = query(
+                collection(db, "categories"),
+                where("workspaceId", "==", userData.workspaceId)
+            )
+            const categoriesSnap = await getDocs(categoriesQuery)
+            const cats = categoriesSnap.docs.map(doc => doc.data() as Category)
+            setCategories(cats)
+
+            // Fetch tweets
+            const tweetsQuery = query(
+                collection(db, "tweets"),
+                where("workspaceId", "==", userData.workspaceId),
+                where("isArchived", "==", false)
+            )
+            const tweetsSnap = await getDocs(tweetsQuery)
+            const tweetsList = tweetsSnap.docs.map(doc => ({
+                ...doc.data(),
+                id: doc.id,
+            })) as Tweet[]
+
+            tweetsList.sort((a, b) => {
+                const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
+                const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
+                return dateB.getTime() - dateA.getTime()
+            })
+
+            setTweets(tweetsList)
         } catch (error) {
-            console.error("Failed to fetch tweets:", error)
+            console.error("Error fetching tweets:", error)
         } finally {
             setLoading(false)
         }
     }
 
-    const deleteTweet = async (id: string) => {
+    const handleDelete = async (id: string) => {
         if (!confirm("هل أنت متأكد من حذف هذه التغريدة؟")) return
+
         try {
-            await fetch(`/api/tweets/${id}`, { method: "DELETE" })
-            setTweets(tweets.filter((t) => t.id !== id))
+            await updateDoc(doc(db, "tweets", id), { isArchived: true })
+            setTweets(tweets.filter(t => t.id !== id))
         } catch (error) {
-            console.error("Failed to delete tweet:", error)
+            console.error("Error deleting tweet:", error)
         }
+    }
+
+    const getCategoryById = (id: string | null) => {
+        if (!id) return null
+        return categories.find(c => c.id === id)
+    }
+
+    const filteredTweets = tweets.filter(tweet => {
+        return !search || tweet.content.toLowerCase().includes(search.toLowerCase())
+    })
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+            </div>
+        )
     }
 
     return (
         <div className="space-y-6">
+            {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">التغريدات والملاحظات</h1>
-                    <p className="text-slate-500">حفظ وتنظيم المحتوى المفيد</p>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                        التغريدات والملاحظات
+                    </h1>
+                    <p className="text-slate-500">{tweets.length} تغريدة في مكتبتك</p>
                 </div>
                 <Link href="/dashboard/tweets/new">
                     <Button>
                         <Plus className="h-4 w-4" />
-                        تغريدة جديدة
+                        إضافة تغريدة
                     </Button>
                 </Link>
             </div>
 
+            {/* Search */}
             <div className="relative">
-                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
                     type="text"
                     placeholder="ابحث في التغريدات..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="h-11 w-full rounded-xl border-2 border-slate-200 bg-white pr-10 pl-4 text-sm outline-none transition-all focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-900"
+                    className="w-full rounded-xl border-2 border-slate-200 bg-white py-2.5 pr-10 pl-4 transition-all focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-900"
                 />
             </div>
 
-            {loading ? (
-                <div className="space-y-4">
-                    {[1, 2, 3].map((i) => (
-                        <Card key={i} className="animate-pulse">
-                            <CardContent>
-                                <div className="h-4 w-3/4 rounded bg-slate-200" />
-                                <div className="mt-2 h-3 w-1/2 rounded bg-slate-100" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            ) : tweets.length === 0 ? (
-                <Card className="py-12">
-                    <CardContent className="text-center">
+            {/* Tweets Grid */}
+            {filteredTweets.length === 0 ? (
+                <Card>
+                    <CardContent className="py-12 text-center">
                         <Twitter className="mx-auto h-12 w-12 text-slate-300" />
-                        <h3 className="mt-4 text-lg font-medium">لا توجد تغريدات</h3>
-                        <p className="mt-1 text-slate-500">ابدأ بإضافة أول تغريدة</p>
+                        <h3 className="mt-4 font-medium text-slate-900 dark:text-white">
+                            لا توجد تغريدات
+                        </h3>
+                        <p className="mt-1 text-slate-500">
+                            ابدأ بإضافة أول تغريدة
+                        </p>
                         <Link href="/dashboard/tweets/new" className="mt-4 inline-block">
-                            <Button><Plus className="h-4 w-4" /> إضافة تغريدة</Button>
+                            <Button>
+                                <Plus className="h-4 w-4" />
+                                إضافة تغريدة
+                            </Button>
                         </Link>
                     </CardContent>
                 </Card>
             ) : (
-                <div className="space-y-4">
-                    {tweets.map((tweet) => (
-                        <Card key={tweet.id} hover className="group">
-                            <CardContent>
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-slate-900 dark:text-white leading-relaxed">
-                                            {tweet.content}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredTweets.map(tweet => {
+                        const category = getCategoryById(tweet.categoryId)
+                        return (
+                            <Card key={tweet.id} hover className="group">
+                                <CardContent>
+                                    <p className="line-clamp-4 text-slate-700 dark:text-slate-300">
+                                        {tweet.content}
+                                    </p>
+
+                                    {tweet.importance && (
+                                        <p className="mt-2 text-sm text-slate-500">
+                                            <strong>الأهمية:</strong> {tweet.importance}
                                         </p>
-                                        {tweet.importance && (
-                                            <p className="mt-2 text-sm text-slate-500">
-                                                <span className="font-medium">الأهمية:</span> {tweet.importance}
-                                            </p>
-                                        )}
-                                        <div className="mt-3 flex flex-wrap gap-2">
-                                            {tweet.benefitType && (
-                                                <Badge variant="success">{tweet.benefitType.name}</Badge>
+                                    )}
+
+                                    <div className="mt-4 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            {category && (
+                                                <Badge style={{ backgroundColor: category.color + "20", color: category.color }}>
+                                                    {category.name}
+                                                </Badge>
                                             )}
-                                            {tweet.contentType && (
-                                                <Badge variant="secondary">{tweet.contentType.name}</Badge>
+                                            {tweet.sourceUrl && (
+                                                <a
+                                                    href={tweet.sourceUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-slate-400 hover:text-indigo-600"
+                                                >
+                                                    <ExternalLink className="h-4 w-4" />
+                                                </a>
                                             )}
-                                            {tweet.tags.map((tag) => (
-                                                <Badge key={tag.id} variant="secondary">{tag.name}</Badge>
-                                            ))}
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={() => handleDelete(tweet.id)}
+                                                className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                                title="حذف"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        {tweet.sourceUrl && (
-                                            <a
-                                                href={tweet.sourceUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-blue-600"
-                                            >
-                                                <ExternalLink className="h-4 w-4" />
-                                            </a>
-                                        )}
-                                        <button
-                                            onClick={() => deleteTweet(tweet.id)}
-                                            className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 opacity-0 group-hover:opacity-100"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="mt-3 text-xs text-slate-400">
-                                    {formatRelativeTime(tweet.createdAt)}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                                </CardContent>
+                            </Card>
+                        )
+                    })}
                 </div>
             )}
         </div>

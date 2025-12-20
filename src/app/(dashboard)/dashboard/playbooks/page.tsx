@@ -1,137 +1,206 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
+import { useEffect, useState } from "react"
+import { useAuth } from "@/contexts/AuthContext"
+import { db } from "@/lib/firebase"
+import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore"
 import { Card, CardContent, Button, Badge } from "@/components/ui"
-import { Plus, Search, BookOpen, Trash2, ListChecks } from "lucide-react"
-import { formatRelativeTime } from "@/lib/utils"
+import {
+    Plus,
+    Search,
+    BookOpen,
+    Trash2,
+    Loader2,
+    ChevronLeft,
+} from "lucide-react"
+import Link from "next/link"
 
 interface Playbook {
     id: string
     title: string
     description: string | null
-    usageCount: number
-    createdAt: string
-    tags: { id: string; name: string }[]
-    _count: { steps: number }
+    createdAt: Date
+    isArchived: boolean
+}
+
+interface PlaybookStep {
+    id: string
+    playbookId: string
+    title: string
+    order: number
 }
 
 export default function PlaybooksPage() {
+    const { userData } = useAuth()
     const [playbooks, setPlaybooks] = useState<Playbook[]>([])
+    const [stepCounts, setStepCounts] = useState<Record<string, number>>({})
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
 
     useEffect(() => {
-        fetchPlaybooks()
-    }, [search])
+        if (userData?.workspaceId) {
+            fetchData()
+        }
+    }, [userData?.workspaceId])
 
-    const fetchPlaybooks = async () => {
+    const fetchData = async () => {
+        if (!userData?.workspaceId) return
+
         try {
-            const params = new URLSearchParams()
-            if (search) params.set("search", search)
-            const res = await fetch(`/api/playbooks?${params}`)
-            const data = await res.json()
-            setPlaybooks(data)
+            // Fetch playbooks
+            const playbooksQuery = query(
+                collection(db, "playbooks"),
+                where("workspaceId", "==", userData.workspaceId),
+                where("isArchived", "==", false)
+            )
+            const playbooksSnap = await getDocs(playbooksQuery)
+            const playbooksList = playbooksSnap.docs.map(doc => ({
+                ...doc.data(),
+                id: doc.id,
+            })) as Playbook[]
+
+            playbooksList.sort((a, b) => {
+                const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
+                const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
+                return dateB.getTime() - dateA.getTime()
+            })
+
+            setPlaybooks(playbooksList)
+
+            // Fetch step counts for each playbook
+            const counts: Record<string, number> = {}
+            for (const playbook of playbooksList) {
+                const stepsQuery = query(
+                    collection(db, "playbookSteps"),
+                    where("playbookId", "==", playbook.id)
+                )
+                const stepsSnap = await getDocs(stepsQuery)
+                counts[playbook.id] = stepsSnap.size
+            }
+            setStepCounts(counts)
         } catch (error) {
-            console.error("Failed to fetch playbooks:", error)
+            console.error("Error fetching playbooks:", error)
         } finally {
             setLoading(false)
         }
     }
 
-    const deletePlaybook = async (id: string) => {
-        if (!confirm("هل أنت متأكد من حذف هذا الـPlaybook؟")) return
+    const handleDelete = async (id: string) => {
+        if (!confirm("هل أنت متأكد من حذف هذا الـ Playbook؟")) return
+
         try {
-            await fetch(`/api/playbooks/${id}`, { method: "DELETE" })
-            setPlaybooks(playbooks.filter((p) => p.id !== id))
+            await updateDoc(doc(db, "playbooks", id), { isArchived: true })
+            setPlaybooks(playbooks.filter(p => p.id !== id))
         } catch (error) {
-            console.error("Failed to delete playbook:", error)
+            console.error("Error deleting playbook:", error)
         }
+    }
+
+    const filteredPlaybooks = playbooks.filter(playbook => {
+        return !search ||
+            playbook.title.toLowerCase().includes(search.toLowerCase()) ||
+            (playbook.description && playbook.description.toLowerCase().includes(search.toLowerCase()))
+    })
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+            </div>
+        )
     }
 
     return (
         <div className="space-y-6">
+            {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Playbooks</h1>
-                    <p className="text-slate-500">وصفات عمل جاهزة للمهام المتكررة</p>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                        Playbooks
+                    </h1>
+                    <p className="text-slate-500">{playbooks.length} playbook في مكتبتك</p>
                 </div>
                 <Link href="/dashboard/playbooks/new">
                     <Button>
                         <Plus className="h-4 w-4" />
-                        Playbook جديد
+                        إضافة Playbook
                     </Button>
                 </Link>
             </div>
 
+            {/* Search */}
             <div className="relative">
-                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
                     type="text"
-                    placeholder="ابحث في الـPlaybooks..."
+                    placeholder="ابحث في الـ Playbooks..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="h-11 w-full rounded-xl border-2 border-slate-200 bg-white pr-10 pl-4 text-sm outline-none transition-all focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-900"
+                    className="w-full rounded-xl border-2 border-slate-200 bg-white py-2.5 pr-10 pl-4 transition-all focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-900"
                 />
             </div>
 
-            {loading ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {[1, 2, 3].map((i) => (
-                        <Card key={i} className="animate-pulse">
-                            <CardContent>
-                                <div className="h-5 w-2/3 rounded bg-slate-200" />
-                                <div className="mt-2 h-3 w-full rounded bg-slate-100" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            ) : playbooks.length === 0 ? (
-                <Card className="py-12">
-                    <CardContent className="text-center">
+            {/* Playbooks Grid */}
+            {filteredPlaybooks.length === 0 ? (
+                <Card>
+                    <CardContent className="py-12 text-center">
                         <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
-                        <h3 className="mt-4 text-lg font-medium">لا توجد Playbooks</h3>
-                        <p className="mt-1 text-slate-500">ابدأ بإنشاء أول Playbook</p>
+                        <h3 className="mt-4 font-medium text-slate-900 dark:text-white">
+                            لا توجد Playbooks
+                        </h3>
+                        <p className="mt-1 text-slate-500">
+                            ابدأ بإضافة أول Playbook
+                        </p>
                         <Link href="/dashboard/playbooks/new" className="mt-4 inline-block">
-                            <Button><Plus className="h-4 w-4" /> إنشاء Playbook</Button>
+                            <Button>
+                                <Plus className="h-4 w-4" />
+                                إضافة Playbook
+                            </Button>
                         </Link>
                     </CardContent>
                 </Card>
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {playbooks.map((playbook) => (
+                    {filteredPlaybooks.map(playbook => (
                         <Card key={playbook.id} hover className="group">
                             <CardContent>
                                 <div className="flex items-start justify-between">
-                                    <Link href={`/dashboard/playbooks/${playbook.id}`} className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-slate-900 group-hover:text-indigo-600 dark:text-white">
-                                            {playbook.title}
-                                        </h3>
-                                    </Link>
-                                    <button
-                                        onClick={() => deletePlaybook(playbook.id)}
-                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 opacity-0 group-hover:opacity-100"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-red-500">
+                                            <BookOpen className="h-6 w-6 text-white" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-slate-900 dark:text-white">
+                                                {playbook.title}
+                                            </h3>
+                                            <p className="text-sm text-slate-500">
+                                                {stepCounts[playbook.id] || 0} خطوة
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {playbook.description && (
-                                    <p className="mt-2 text-sm text-slate-500 line-clamp-2">{playbook.description}</p>
+                                    <p className="mt-3 line-clamp-2 text-sm text-slate-500">
+                                        {playbook.description}
+                                    </p>
                                 )}
 
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {playbook.tags.map((tag) => (
-                                        <Badge key={tag.id} variant="secondary">{tag.name}</Badge>
-                                    ))}
-                                </div>
-
-                                <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
-                                    <span className="flex items-center gap-1">
-                                        <ListChecks className="h-3.5 w-3.5" />
-                                        {playbook._count.steps} خطوة
-                                    </span>
-                                    <span>{formatRelativeTime(playbook.createdAt)}</span>
+                                <div className="mt-4 flex items-center justify-between">
+                                    <Link
+                                        href={`/dashboard/playbooks/${playbook.id}`}
+                                        className="flex items-center gap-1 text-sm text-indigo-600 hover:underline"
+                                    >
+                                        عرض التفاصيل
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Link>
+                                    <button
+                                        onClick={() => handleDelete(playbook.id)}
+                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                        title="حذف"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
                                 </div>
                             </CardContent>
                         </Card>
