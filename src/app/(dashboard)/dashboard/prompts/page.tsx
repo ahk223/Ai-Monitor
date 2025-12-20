@@ -15,6 +15,7 @@ import {
     MessageSquareText,
     Filter,
     Loader2,
+    Image as ImageIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { formatRelativeTime } from "@/lib/utils"
@@ -36,10 +37,18 @@ interface Category {
     color: string
 }
 
+interface Attachment {
+    id: string
+    promptId: string
+    url: string
+    mimeType: string
+}
+
 export default function PromptsPage() {
     const { userData } = useAuth()
     const [prompts, setPrompts] = useState<Prompt[]>([])
     const [categories, setCategories] = useState<Category[]>([])
+    const [attachments, setAttachments] = useState<Record<string, Attachment[]>>({})
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
     const [selectedCategory, setSelectedCategory] = useState("")
@@ -83,6 +92,28 @@ export default function PromptsPage() {
             })
 
             setPrompts(promptsList)
+
+            // Fetch attachments for all prompts
+            const promptIds = promptsList.map(p => p.id)
+            if (promptIds.length > 0) {
+                const attachmentsMap: Record<string, Attachment[]> = {}
+
+                // Fetch all attachments (we'll filter client-side)
+                const attachmentsQuery = query(collection(db, "attachments"))
+                const attachmentsSnap = await getDocs(attachmentsQuery)
+
+                attachmentsSnap.docs.forEach(doc => {
+                    const data = doc.data() as Attachment
+                    if (data.promptId && promptIds.includes(data.promptId)) {
+                        if (!attachmentsMap[data.promptId]) {
+                            attachmentsMap[data.promptId] = []
+                        }
+                        attachmentsMap[data.promptId].push(data)
+                    }
+                })
+
+                setAttachments(attachmentsMap)
+            }
         } catch (error) {
             console.error("Error fetching prompts:", error)
         } finally {
@@ -109,6 +140,11 @@ export default function PromptsPage() {
     const getCategoryById = (id: string | null) => {
         if (!id) return null
         return categories.find(c => c.id === id)
+    }
+
+    const getPromptImages = (promptId: string) => {
+        const promptAttachments = attachments[promptId] || []
+        return promptAttachments.filter(a => a.mimeType?.startsWith("image/"))
     }
 
     const filteredPrompts = prompts.filter(prompt => {
@@ -194,8 +230,28 @@ export default function PromptsPage() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredPrompts.map(prompt => {
                         const category = getCategoryById(prompt.categoryId)
+                        const images = getPromptImages(prompt.id)
                         return (
-                            <Card key={prompt.id} hover className="group">
+                            <Card key={prompt.id} hover className="group overflow-hidden">
+                                {/* Image Preview */}
+                                {images.length > 0 && (
+                                    <Link href={`/dashboard/prompts/${prompt.id}`}>
+                                        <div className="relative h-40 bg-slate-100 dark:bg-slate-800">
+                                            <img
+                                                src={images[0].url}
+                                                alt=""
+                                                className="h-full w-full object-cover"
+                                            />
+                                            {images.length > 1 && (
+                                                <div className="absolute bottom-2 left-2 flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-xs text-white">
+                                                    <ImageIcon className="h-3 w-3" />
+                                                    +{images.length - 1}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </Link>
+                                )}
+
                                 <CardContent>
                                     <div className="flex items-start justify-between">
                                         <Link href={`/dashboard/prompts/${prompt.id}`} className="flex-1">
@@ -235,7 +291,7 @@ export default function PromptsPage() {
                                             >
                                                 <Copy className="h-4 w-4" />
                                             </button>
-                                            <Link href={`/dashboard/prompts/${prompt.id}`}>
+                                            <Link href={`/dashboard/prompts/${prompt.id}/edit`}>
                                                 <button className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" title="تعديل">
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>
