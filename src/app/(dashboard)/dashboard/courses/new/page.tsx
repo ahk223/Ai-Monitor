@@ -101,7 +101,7 @@ export default function NewCoursePage() {
 
             <Card>
                 <CardContent className="pt-6">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
                         {/* Name */}
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-slate-900 dark:text-white">
@@ -112,6 +112,8 @@ export default function NewCoursePage() {
                                 value={form.title}
                                 onChange={e => setForm({ ...form, title: e.target.value })}
                                 placeholder="مثلاً: دورة تعلم React المتقدمة"
+                                autoComplete="off"
+                                name="course_title_field" // Random name to discourage autofill
                             />
                         </div>
 
