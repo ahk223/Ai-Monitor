@@ -12,6 +12,7 @@ import {
     Wrench,
     BookOpen,
     Loader2,
+    Share2,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -129,7 +130,7 @@ export default function SearchPage() {
     const getTypeIcon = (type: string) => {
         switch (type) {
             case "prompt": return MessageSquareText
-            case "tweet": return Twitter
+            case "tweet": return Share2
             case "tool": return Wrench
             case "playbook": return BookOpen
             default: return MessageSquareText
@@ -139,7 +140,7 @@ export default function SearchPage() {
     const getTypeLabel = (type: string) => {
         switch (type) {
             case "prompt": return "بروبمت"
-            case "tweet": return "تغريدة"
+            case "tweet": return "سوشيال ميديا"
             case "tool": return "أداة"
             case "playbook": return "Playbook"
             default: return type

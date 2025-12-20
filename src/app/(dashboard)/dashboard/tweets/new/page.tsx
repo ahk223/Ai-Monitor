@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
 import { collection, doc, setDoc, getDocs, query, where } from "firebase/firestore"
 import { Button, Input, Textarea, Card, CardContent, Select } from "@/components/ui"
-import { ArrowRight, Save, Sparkles } from "lucide-react"
+import { ArrowRight, Save, Sparkles, Youtube, Instagram, Video, Twitter, Share2 } from "lucide-react"
 import Link from "next/link"
 
 interface Category {
@@ -14,14 +14,23 @@ interface Category {
     name: string
 }
 
-export default function NewTweetPage() {
+const PLATFORMS = [
+    { value: 'x', label: 'X (Twitter)' },
+    { value: 'instagram', label: 'Instagram' },
+    { value: 'tiktok', label: 'TikTok' },
+    { value: 'youtube', label: 'YouTube' },
+    { value: 'other', label: 'منصة أخرى' },
+]
+
+export default function NewSocialMediaPage() {
     const router = useRouter()
     const { userData } = useAuth()
     const [isLoading, setIsLoading] = useState(false)
     const [categories, setCategories] = useState<Category[]>([])
     const [extractedHandle, setExtractedHandle] = useState("")
     const [form, setForm] = useState({
-        tweetUrl: "",
+        url: "",
+        platform: "x",
         importance: "",
         categoryId: "",
     })
@@ -32,20 +41,36 @@ export default function NewTweetPage() {
         }
     }, [userData?.workspaceId])
 
-    // Extract username from Twitter/X URL
+    // Auto-detect platform and handle from URL
     useEffect(() => {
-        const url = form.tweetUrl.trim()
-        if (url) {
+        const url = form.url.trim().toLowerCase()
+        if (!url) {
+            setExtractedHandle("")
+            return
+        }
+
+        let detectedPlatform = form.platform
+
+        if (url.includes('twitter.com') || url.includes('x.com')) {
+            detectedPlatform = 'x'
             const match = url.match(/(?:twitter\.com|x\.com)\/([^\/]+)\/status/)
-            if (match && match[1]) {
-                setExtractedHandle("@" + match[1])
-            } else {
-                setExtractedHandle("")
-            }
-        } else {
+            if (match && match[1]) setExtractedHandle("@" + match[1])
+        } else if (url.includes('instagram.com')) {
+            detectedPlatform = 'instagram'
+            setExtractedHandle("")
+        } else if (url.includes('tiktok.com')) {
+            detectedPlatform = 'tiktok'
+            const match = url.match(/@([^\/]+)/)
+            if (match && match[1]) setExtractedHandle("@" + match[1])
+        } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            detectedPlatform = 'youtube'
             setExtractedHandle("")
         }
-    }, [form.tweetUrl])
+
+        if (detectedPlatform !== form.platform) {
+            setForm(prev => ({ ...prev, platform: detectedPlatform }))
+        }
+    }, [form.url])
 
     const fetchCategories = async () => {
         if (!userData?.workspaceId) return
@@ -70,17 +95,18 @@ export default function NewTweetPage() {
         setIsLoading(true)
 
         try {
-            const tweetId = doc(collection(db, "tweets")).id
+            const docId = doc(collection(db, "tweets")).id
 
-            await setDoc(doc(db, "tweets", tweetId), {
-                id: tweetId,
+            await setDoc(doc(db, "tweets", docId), {
+                id: docId,
                 workspaceId: userData.workspaceId,
                 content: null, // Will be fetched later or left empty
                 authorHandle: extractedHandle || null,
                 authorName: null,
                 importance: form.importance || null,
                 categoryId: form.categoryId || null,
-                tweetUrl: form.tweetUrl,
+                sourceUrl: form.url,
+                platform: form.platform,
                 isArchived: false,
                 createdAt: new Date(),
                 updatedAt: new Date(),
@@ -88,7 +114,7 @@ export default function NewTweetPage() {
 
             router.push("/dashboard/tweets")
         } catch (error) {
-            console.error("Failed to create tweet:", error)
+            console.error("Failed to create item:", error)
             alert("حدث خطأ")
         } finally {
             setIsLoading(false)
@@ -106,36 +132,45 @@ export default function NewTweetPage() {
                 </Link>
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                        إضافة تغريدة جديدة
+                        إضافة محتوى سوشيال ميديا
                     </h1>
-                    <p className="text-slate-500">احفظ تغريدة مهمة للرجوع إليها لاحقاً</p>
+                    <p className="text-slate-500">احفظ محتوى ملهم للرجوع إليه لاحقاً</p>
                 </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <Card>
                     <CardContent className="space-y-5">
-                        {/* Tweet URL */}
+                        {/* URL */}
                         <div>
                             <Input
-                                label="رابط التغريدة"
-                                placeholder="https://twitter.com/... أو https://x.com/..."
-                                value={form.tweetUrl}
-                                onChange={(e) => setForm({ ...form, tweetUrl: e.target.value })}
+                                label="رابط المحتوى"
+                                placeholder="انسخ الرابط هنا..."
+                                value={form.url}
+                                onChange={(e) => setForm({ ...form, url: e.target.value })}
                                 required
                             />
                             {extractedHandle && (
                                 <div className="mt-2 flex items-center gap-2 text-sm text-emerald-600">
                                     <Sparkles className="h-4 w-4" />
-                                    <span>الحساب: <strong>{extractedHandle}</strong></span>
+                                    <span>تم استخراج الحساب: <strong>{extractedHandle}</strong></span>
                                 </div>
                             )}
                         </div>
 
+                        {/* Platform Select */}
+                        <Select
+                            label="المنصة"
+                            placeholder="اختر المنصة"
+                            value={form.platform}
+                            onChange={(e) => setForm({ ...form, platform: e.target.value })}
+                            options={PLATFORMS}
+                        />
+
                         {/* Importance */}
                         <Textarea
-                            label="أهمية التغريدة"
-                            placeholder="لماذا هذه التغريدة مهمة؟"
+                            label="ملاحظات / سبب الحفظ"
+                            placeholder="لماذا هذا المحتوى مهم؟"
                             value={form.importance}
                             onChange={(e) => setForm({ ...form, importance: e.target.value })}
                             className="min-h-[100px]"
@@ -161,7 +196,7 @@ export default function NewTweetPage() {
                     </Link>
                     <Button type="submit" isLoading={isLoading}>
                         <Save className="h-4 w-4" />
-                        حفظ التغريدة
+                        حفظ المحتوى
                     </Button>
                 </div>
             </form>

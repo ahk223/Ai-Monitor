@@ -26,8 +26,8 @@ interface SidebarProps {
 
 const navItems = [
     { icon: LayoutDashboard, label: "لوحة التحكم", href: "/dashboard" },
-    { icon: MessageSquareText, label: "البروبمتات", href: "/dashboard/prompts" },
-    { icon: Twitter, label: "التغريدات", href: "/dashboard/tweets" },
+    { icon: MessageSquareText, label: "المكتبة", href: "/dashboard/prompts" },
+    { icon: Twitter, label: "السوشيال ميديا", href: "/dashboard/tweets" },
     { icon: Wrench, label: "الأدوات", href: "/dashboard/tools" },
     { icon: BookOpen, label: "Playbooks", href: "/dashboard/playbooks" },
     { icon: StickyNote, label: "الملاحظات", href: "/dashboard/notes" },

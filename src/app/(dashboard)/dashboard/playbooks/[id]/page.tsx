@@ -9,23 +9,29 @@ import { Button, Input, Textarea, Card, CardContent, Badge, Modal } from "@/comp
 import {
     ArrowRight,
     Plus,
+    Share2,
     Trash2,
-    GripVertical,
+    ExternalLink,
+    MoreVertical,
+    Check,
     CheckCircle2,
     Circle,
+    Play,
+    AlertTriangle,
+    AlignLeft,
+    GripVertical,
     Youtube,
     FileText,
     Link2,
-    ExternalLink,
-    Share2,
-    Copy,
-    Loader2,
-    Edit2,
-    BookOpen,
-    Globe,
-    Lock,
+    RotateCcw,
     ChevronUp,
     ChevronDown,
+    Copy,
+    Globe,
+    Lock,
+    Loader2,
+    BookOpen,
+    Edit2,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -159,6 +165,14 @@ export default function PlaybookDetailPage() {
         }
     }
 
+    // Helper functions
+    const getYouTubeId = (url: string) => {
+        const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/)
+        return match ? match[1] : null
+    }
+
+    const getYouTubeThumbnail = (id: string) => `https://img.youtube.com/vi/${id}/mqdefault.jpg`
+
     const syncNewContent = async () => {
         if (!newContent || !playbook) return
 
@@ -239,23 +253,25 @@ export default function PlaybookDetailPage() {
         return { isDuplicate: false }
     }
 
-    const handleAddItem = async () => {
+    const handleAddItem = async (ignoreDuplicate = false) => {
         if (!newItem.title || !newItem.url) return
 
-        // Check for duplicates first
-        setCheckingDuplicate(true)
-        const duplicateCheck = await checkDuplicateUrl(newItem.url)
-        setCheckingDuplicate(false)
+        if (!ignoreDuplicate) {
+            // Check for duplicates first
+            setCheckingDuplicate(true)
+            const duplicateCheck = await checkDuplicateUrl(newItem.url)
+            setCheckingDuplicate(false)
 
-        if (duplicateCheck.isDuplicate) {
-            const locationText = duplicateCheck.location === 'current'
-                ? 'هذا الـ Playbook'
-                : `Playbook "${duplicateCheck.playbookTitle}"`
-            setDuplicateWarning({
-                message: `هذا الرابط موجود مسبقاً في ${locationText}`,
-                playbookTitle: duplicateCheck.playbookTitle
-            })
-            return // Don't add if duplicate
+            if (duplicateCheck.isDuplicate) {
+                const locationText = duplicateCheck.location === 'current'
+                    ? 'هذا الـ Playbook'
+                    : `Playbook "${duplicateCheck.playbookTitle}"`
+                setDuplicateWarning({
+                    message: `هذا الرابط موجود مسبقاً في ${locationText}`,
+                    playbookTitle: duplicateCheck.playbookTitle
+                })
+                return // Don't add if duplicate
+            }
         }
 
         setSavingItem(true)
@@ -298,7 +314,7 @@ export default function PlaybookDetailPage() {
 
         try {
             await deleteDoc(doc(db, "playbookItems", itemId))
-            setItems(items.filter(i => i.id !== itemId))
+            setItems(items.filter(item => item.id !== itemId))
         } catch (error) {
             console.error("Error deleting item:", error)
         }
@@ -309,10 +325,11 @@ export default function PlaybookDetailPage() {
         setShowEditModal(true)
     }
 
-    const handleUpdateItem = async () => {
-        if (!editingItem) return
-        setSavingItem(true)
+    const handleUpdateItem = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!editingItem || !editingItem.title || !editingItem.url) return
 
+        setSavingItem(true)
         try {
             await updateDoc(doc(db, "playbookItems", editingItem.id), {
                 title: editingItem.title,
@@ -321,12 +338,14 @@ export default function PlaybookDetailPage() {
                 updatedAt: new Date(),
             })
 
-            setItems(items.map(i =>
-                i.id === editingItem.id ? editingItem : i
+            setItems(items.map(item =>
+                item.id === editingItem.id
+                    ? { ...item, ...editingItem }
+                    : item
             ))
 
-            setShowEditModal(false)
             setEditingItem(null)
+            setShowEditModal(false)
         } catch (error) {
             console.error("Error updating item:", error)
         } finally {
@@ -335,20 +354,22 @@ export default function PlaybookDetailPage() {
     }
 
     const moveItem = async (index: number, direction: 'up' | 'down') => {
-        if (direction === 'up' && index === 0) return
-        if (direction === 'down' && index === items.length - 1) return
+        if (
+            (direction === 'up' && index === 0) ||
+            (direction === 'down' && index === items.length - 1)
+        ) return
 
         const newItems = [...items]
         const targetIndex = direction === 'up' ? index - 1 : index + 1
 
-        // Swap items
+        // Swap
         const temp = newItems[index]
         newItems[index] = newItems[targetIndex]
         newItems[targetIndex] = temp
 
-        // Update order values
-        newItems[index] = { ...newItems[index], order: index + 1 }
-        newItems[targetIndex] = { ...newItems[targetIndex], order: targetIndex + 1 }
+        // Update orders in state
+        newItems[index].order = index + 1
+        newItems[targetIndex].order = targetIndex + 1
 
         setItems(newItems)
 
@@ -507,301 +528,232 @@ export default function PlaybookDetailPage() {
                 </div>
             </div>
 
-            {/* Progress */}
-            {items.length > 0 && (
-                <Card>
-                    <CardContent>
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                التقدم
-                            </span>
-                            <span className="text-sm text-slate-500">
-                                {completedCount} / {items.length}
-                            </span>
-                        </div>
-                        <div className="h-3 w-full rounded-full bg-slate-200 dark:bg-slate-700">
-                            <div
-                                className="h-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
-                                style={{ width: `${progressPercent}%` }}
-                            />
-                        </div>
-                        <p className="mt-2 text-center text-lg font-bold text-indigo-600">
-                            {progressPercent}%
-                        </p>
-                    </CardContent>
-                </Card>
-            )}
+            {/* Progress Bar */}
+            <Card>
+                <CardContent className="py-6">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                            التقدم: {progressPercent}%
+                        </span>
+                        <span className="text-sm text-slate-500">
+                            {completedCount} من {items.length}
+                        </span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div
+                            className="h-2 rounded-full bg-indigo-600 transition-all duration-300"
+                            style={{ width: `${progressPercent}%` }}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
 
-            {/* Items */}
-            {items.length === 0 ? (
-                <Card>
-                    <CardContent className="py-12 text-center">
+            {/* Items List */}
+            <div className="space-y-4">
+                {items.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center dark:border-slate-700">
                         <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
                         <h3 className="mt-4 font-medium text-slate-900 dark:text-white">
-                            لا توجد محتويات بعد
+                            لا توجد محتويات
                         </h3>
                         <p className="mt-1 text-slate-500">
-                            ابدأ بإضافة مقاطع أو ملفات لهذا الـ Playbook
+                            ابدأ بإضافة روابط ومحتوى تعليمي
                         </p>
-                        <Button className="mt-4" onClick={() => setShowAddModal(true)}>
-                            <Plus className="h-4 w-4" />
-                            إضافة أول محتوى
-                        </Button>
-                    </CardContent>
-                </Card>
-            ) : (
-                <div className="space-y-3">
-                    {items.map((item, index) => {
-                        // Extract YouTube ID
-                        const youtubeMatch = item.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/)
-                        const youtubeId = youtubeMatch ? youtubeMatch[1] : null
+                    </div>
+                ) : (
+                    items.map((item, index) => {
+                        const youtubeId = getYouTubeId(item.url)
+                        const isCompleted = progress[item.id] || false
 
                         return (
-                            <Card key={item.id} className="group overflow-hidden">
-                                {/* YouTube Preview */}
-                                {youtubeId && (
-                                    <a
-                                        href={item.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="relative block h-32 sm:h-40 bg-slate-900"
-                                    >
-                                        <img
-                                            src={`https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`}
-                                            alt={item.title}
-                                            className="h-full w-full object-cover"
-                                        />
-                                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-all hover:bg-black/40">
-                                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-600 shadow-lg">
-                                                <svg className="h-6 w-6 text-white mr-[-2px]" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M8 5v14l11-7z" />
-                                                </svg>
+                            <Card key={item.id} className={`transition-opacity ${isCompleted ? 'opacity-75' : ''}`}>
+                                <div className="flex flex-col sm:flex-row">
+                                    {/* Content */}
+                                    <div className="flex-1 p-6">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 font-bold text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
+                                                {index + 1}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    {getUrlIcon(item.url)}
+                                                    <h3 className={`font-semibold text-slate-900 dark:text-white ${isCompleted ? 'line-through decoration-slate-400' : ''}`}>
+                                                        {item.title}
+                                                    </h3>
+                                                </div>
+                                                {item.description && (
+                                                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                                                        {item.description}
+                                                    </p>
+                                                )}
+                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                    <a
+                                                        href={item.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                                                    >
+                                                        <ExternalLink className="h-3 w-3" />
+                                                        فتح الرابط
+                                                    </a>
+                                                    {isCompleted ? (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleToggleProgress(item.id)}
+                                                            className="text-emerald-600 hover:text-emerald-700"
+                                                        >
+                                                            <RotateCcw className="h-3 w-3" />
+                                                            إلغاء الاكمال
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => handleToggleProgress(item.id)}
+                                                            className="bg-emerald-600 hover:bg-emerald-700"
+                                                        >
+                                                            <Check className="h-3 w-3" />
+                                                            إكمال
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                        {/* Progress overlay */}
-                                        {progress[item.id] && (
-                                            <div className="absolute top-2 right-2">
-                                                <CheckCircle2 className="h-6 w-6 text-emerald-500 drop-shadow-lg" />
-                                            </div>
-                                        )}
-                                    </a>
-                                )}
+                                    </div>
 
-                                <CardContent>
-                                    <div className="flex items-start gap-4">
-                                        {/* Checkbox */}
-                                        <button
-                                            onClick={() => handleToggleProgress(item.id)}
-                                            className="mt-1 flex-shrink-0"
-                                        >
-                                            {progress[item.id] ? (
-                                                <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                                            ) : (
-                                                <Circle className="h-6 w-6 text-slate-300 hover:text-slate-400" />
-                                            )}
-                                        </button>
-
-                                        {/* Order number */}
-                                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-sm font-bold text-indigo-600 dark:bg-indigo-900/30">
-                                            {index + 1}
-                                        </div>
-
-                                        {/* Content */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                {getUrlIcon(item.url)}
-                                                <h3
-                                                    className={`font-medium ${progress[item.id]
-                                                        ? "text-slate-400 line-through"
-                                                        : "text-slate-900 dark:text-white"
-                                                        }`}
-                                                >
-                                                    {item.title}
-                                                </h3>
-                                            </div>
-                                            {item.description && (
-                                                <p className="mt-1 text-sm text-slate-500">
-                                                    {item.description}
-                                                </p>
-                                            )}
+                                    {/* Preview (YouTube) */}
+                                    {youtubeId && (
+                                        <div className="w-full sm:w-64 bg-slate-100 dark:bg-slate-900 sm:border-r border-t sm:border-t-0 dark:border-slate-800">
                                             <a
                                                 href={item.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="mt-2 inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline"
+                                                className="group relative block h-40 w-full overflow-hidden sm:h-full"
                                             >
-                                                <ExternalLink className="h-3 w-3" />
-                                                فتح الرابط
+                                                <img
+                                                    src={getYouTubeThumbnail(youtubeId)}
+                                                    alt={item.title}
+                                                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                />
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20">
+                                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-600 shadow-lg">
+                                                        <Play className="h-5 w-5 text-white fill-white mr-[-2px]" />
+                                                    </div>
+                                                </div>
                                             </a>
                                         </div>
+                                    )}
 
-                                        {/* Actions */}
-                                        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {/* Reorder buttons */}
-                                            <div className="flex gap-1">
-                                                <button
-                                                    onClick={() => moveItem(index, 'up')}
-                                                    disabled={index === 0}
-                                                    className={`rounded-lg p-1.5 ${index === 0 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
-                                                    title="نقل للأعلى"
-                                                >
-                                                    <ChevronUp className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => moveItem(index, 'down')}
-                                                    disabled={index === items.length - 1}
-                                                    className={`rounded-lg p-1.5 ${index === items.length - 1 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
-                                                    title="نقل للأسفل"
-                                                >
-                                                    <ChevronDown className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                            {/* Edit/Delete buttons */}
-                                            <div className="flex gap-1">
-                                                <button
-                                                    onClick={() => openEditModal(item)}
-                                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
-                                                    title="تعديل"
-                                                >
-                                                    <Edit2 className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteItem(item.id)}
-                                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                                                    title="حذف"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        </div>
+                                    {/* Actions */}
+                                    <div className="flex items-center gap-1 border-t p-2 sm:flex-col sm:border-l sm:border-t-0 sm:w-12 dark:border-slate-800">
+                                        <button
+                                            onClick={() => moveItem(index, 'up')}
+                                            disabled={index === 0}
+                                            className="flex h-8 w-8 items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 disabled:opacity-30 disabled:hover:bg-transparent"
+                                            title="تحريك لأعلى"
+                                        >
+                                            <ChevronUp className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => moveItem(index, 'down')}
+                                            disabled={index === items.length - 1}
+                                            className="flex h-8 w-8 items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 disabled:opacity-30 disabled:hover:bg-transparent"
+                                            title="تحريك لأسهل"
+                                        >
+                                            <ChevronDown className="h-4 w-4" />
+                                        </button>
+                                        <div className="flex-1 sm:flex-none"></div>
+                                        <button
+                                            onClick={() => {
+                                                setEditingItem(item)
+                                                setShowEditModal(true)
+                                            }}
+                                            className="flex h-8 w-8 items-center justify-center rounded text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
+                                            title="تعديل"
+                                        >
+                                            <Edit2 className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteItem(item.id)}
+                                            className="flex h-8 w-8 items-center justify-center rounded text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                            title="حذف"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
                                     </div>
-                                </CardContent>
+                                </div>
                             </Card>
                         )
-                    })}
-                </div>
-            )}
+                    })
+                )}
+            </div>
 
+            {/* Add Item Modal */}
             <Modal
                 isOpen={showAddModal}
-                onClose={() => {
-                    setShowAddModal(false)
-                    setDuplicateWarning(null)
-                }}
-                title="إضافة محتوى جديد"
+                onClose={() => setShowAddModal(false)}
+                title="إضافة محتوى"
             >
                 <div className="space-y-4">
-                    {/* Duplicate Warning */}
-                    {duplicateWarning && (
-                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
-                            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                                ⚠️ {duplicateWarning.message}
-                            </p>
-                        </div>
-                    )}
-
                     <Input
                         label="العنوان"
-                        placeholder="مثال: المقطع الأول - مقدمة"
+                        placeholder="مثال: مقدمة في React"
                         value={newItem.title}
                         onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
-                        required
                     />
-                    <Input
-                        label="الرابط"
-                        placeholder="رابط YouTube أو PDF أو أي رابط آخر"
-                        value={newItem.url}
-                        onChange={(e) => {
-                            setNewItem({ ...newItem, url: e.target.value })
-                            setDuplicateWarning(null) // Clear warning when URL changes
-                        }}
-                        required
-                    />
+                    <div>
+                        <Input
+                            label="الرابط"
+                            placeholder="https://..."
+                            value={newItem.url}
+                            onChange={(e) => {
+                                setNewItem({ ...newItem, url: e.target.value })
+                                setDuplicateWarning(null) // Clear warning on change
+                            }}
+                        />
+                        {duplicateWarning && (
+                            <div className="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                <div className="flex gap-2 items-start">
+                                    <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <p className="font-medium">{duplicateWarning.message}</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAddItem(true)}
+                                            className="mt-2 text-xs font-semibold underline hover:no-underline"
+                                        >
+                                            إضافة على أي حال
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     <Textarea
-                        label="شرح (اختياري)"
-                        placeholder="شرح مختصر عن هذا المحتوى..."
+                        label="الوصف (اختياري)"
+                        placeholder="وصف مختصر للمحتوى..."
                         value={newItem.description}
                         onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                        className="min-h-[80px]"
                     />
-                    <div className="flex justify-end gap-3">
-                        <Button variant="outline" onClick={() => {
-                            setShowAddModal(false)
-                            setDuplicateWarning(null)
-                        }}>
+                    <div className="flex justify-end gap-2 mt-4">
+                        <Button variant="outline" onClick={() => setShowAddModal(false)}>
                             إلغاء
                         </Button>
-                        <Button onClick={handleAddItem} isLoading={savingItem || checkingDuplicate}>
-                            <Plus className="h-4 w-4" />
+                        <Button
+                            onClick={() => handleAddItem(false)}
+                            isLoading={savingItem || checkingDuplicate}
+                            disabled={!!duplicateWarning && !savingItem} // Disable if warning exists, user must click "Add Anyway" or change URL
+                        >
                             {checkingDuplicate ? "جاري الفحص..." : "إضافة"}
                         </Button>
                     </div>
                 </div>
             </Modal>
 
-            {/* Share Modal */}
-            <Modal
-                isOpen={showShareModal}
-                onClose={() => setShowShareModal(false)}
-                title="مشاركة الـ Playbook"
-            >
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-                        <div className="flex items-center gap-3">
-                            {playbook.isPublic ? (
-                                <Globe className="h-5 w-5 text-emerald-500" />
-                            ) : (
-                                <Lock className="h-5 w-5 text-slate-400" />
-                            )}
-                            <div>
-                                <p className="font-medium text-slate-900 dark:text-white">
-                                    {playbook.isPublic ? "مشاركة عامة" : "خاص"}
-                                </p>
-                                <p className="text-sm text-slate-500">
-                                    {playbook.isPublic
-                                        ? "أي شخص لديه الرابط يمكنه المشاهدة"
-                                        : "أنت فقط تستطيع المشاهدة"}
-                                </p>
-                            </div>
-                        </div>
-                        <Button
-                            variant={playbook.isPublic ? "outline" : "default"}
-                            size="sm"
-                            onClick={handleTogglePublic}
-                        >
-                            {playbook.isPublic ? "إيقاف المشاركة" : "تفعيل المشاركة"}
-                        </Button>
-                    </div>
-
-                    {playbook.isPublic && (
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                رابط المشاركة
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    readOnly
-                                    value={getShareUrl()}
-                                    className="flex-1 rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800"
-                                />
-                                <Button variant="outline" onClick={handleCopyLink}>
-                                    <Copy className="h-4 w-4" />
-                                    {copied ? "تم النسخ!" : "نسخ"}
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </Modal>
-
             {/* Edit Item Modal */}
             <Modal
                 isOpen={showEditModal}
-                onClose={() => {
-                    setShowEditModal(false)
-                    setEditingItem(null)
-                }}
+                onClose={() => setShowEditModal(false)}
                 title="تعديل المحتوى"
             >
                 {editingItem && (

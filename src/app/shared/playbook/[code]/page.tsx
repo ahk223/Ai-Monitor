@@ -289,38 +289,47 @@ export default function SharedPlaybookPage() {
 
                 {/* Add to my account button */}
                 <div className="text-center">
-                    {user ? (
+                    {loading ? (
+                        <div className="flex justify-center">
+                            <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+                        </div>
+                    ) : user ? (
                         alreadyCloned ? (
-                            <div className="space-y-2">
+                            <div className="flex flex-col items-center gap-3">
                                 <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                                     <Check className="h-4 w-4" />
                                     مُضاف لحسابك
                                 </div>
-                                <div>
-                                    <Link href={`/dashboard/playbooks/${clonedPlaybookId}`}>
-                                        <Button variant="outline" size="sm">
-                                            فتح في لوحة التحكم
-                                        </Button>
-                                    </Link>
-                                </div>
+                                <Link href={`/dashboard/playbooks/${clonedPlaybookId}`}>
+                                    <Button variant="outline" size="lg" className="border-indigo-200 hover:bg-indigo-50 dark:border-indigo-800 dark:hover:bg-indigo-900/20">
+                                        <ExternalLink className="mr-2 h-4 w-4 text-indigo-500" />
+                                        فتح في لوحة التحكم
+                                    </Button>
+                                </Link>
                             </div>
                         ) : (
                             <Button
                                 onClick={handleCloneToMyAccount}
                                 isLoading={isCloning}
-                                className="bg-gradient-to-r from-indigo-600 to-purple-600"
+                                size="lg"
+                                className="bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40"
                             >
-                                <Plus className="h-4 w-4" />
+                                <Plus className="h-5 w-5 mr-2" />
                                 إضافة لحسابي
                             </Button>
                         )
                     ) : (
-                        <Link href="/login">
-                            <Button variant="outline">
-                                <LogIn className="h-4 w-4" />
-                                سجل دخول لإضافته لحسابك
-                            </Button>
-                        </Link>
+                        <div className="space-y-3">
+                            <Link href="/login">
+                                <Button size="lg" className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200">
+                                    <LogIn className="h-4 w-4 mr-2" />
+                                    سجل دخول لإضافته لحسابك
+                                </Button>
+                            </Link>
+                            <p className="text-sm text-slate-500">
+                                يجب أن يكون لديك حساب لتتمكن من حفظ الـ Playbook ومتابعة تقدمك
+                            </p>
+                        </div>
                     )}
                 </div>
 

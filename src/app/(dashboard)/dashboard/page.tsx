@@ -235,7 +235,7 @@ export default function DashboardPage() {
     const getTypeName = (type: string) => {
         switch (type) {
             case "prompt": return "بروبمت"
-            case "tweet": return "تغريدة"
+            case "tweet": return "سوشيال ميديا"
             case "tool": return "أداة"
             case "playbook": return "Playbook"
             case "note": return "ملاحظة"
@@ -245,7 +245,7 @@ export default function DashboardPage() {
 
     const statsCards = [
         { title: "البروبمتات", value: stats.prompts, icon: MessageSquareText, color: "from-indigo-500 to-purple-500", href: "/dashboard/prompts" },
-        { title: "التغريدات", value: stats.tweets, icon: Twitter, color: "from-cyan-500 to-blue-500", href: "/dashboard/tweets" },
+        { title: "السوشيال ميديا", value: stats.tweets, icon: Twitter, color: "from-cyan-500 to-blue-500", href: "/dashboard/tweets" },
         { title: "الأدوات", value: stats.tools, icon: Wrench, color: "from-emerald-500 to-teal-500", href: "/dashboard/tools" },
         { title: "Playbooks", value: stats.playbooks, icon: BookOpen, color: "from-orange-500 to-red-500", href: "/dashboard/playbooks" },
         { title: "الملاحظات", value: stats.notes, icon: StickyNote, color: "from-amber-500 to-yellow-500", href: "/dashboard/notes" },
