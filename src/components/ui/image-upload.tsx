@@ -3,6 +3,9 @@
 import { useState, useRef } from "react"
 import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { storage, db } from "@/lib/firebase"
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage"
+import { doc, collection } from "firebase/firestore"
 
 interface Attachment {
     id: string
@@ -18,6 +21,7 @@ interface ImageUploadProps {
     entityType: "prompt" | "tweet" | "tool"
     entityId?: string
     maxFiles?: number
+    workspaceId?: string
 }
 
 export function ImageUpload({
@@ -27,6 +31,7 @@ export function ImageUpload({
     entityType,
     entityId,
     maxFiles = 5,
+    workspaceId,
 }: ImageUploadProps) {
     const [uploading, setUploading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -46,25 +51,37 @@ export function ImageUpload({
 
         for (const file of Array.from(files)) {
             try {
-                const formData = new FormData()
-                formData.append("file", file)
-                if (entityId) {
-                    formData.append(`${entityType}Id`, entityId)
+                // Validate file size (5MB max)
+                if (file.size > 5 * 1024 * 1024) {
+                    throw new Error("حجم الملف كبير جداً (الحد الأقصى 5MB)")
                 }
 
-                const res = await fetch("/api/upload", {
-                    method: "POST",
-                    body: formData,
-                })
-
-                if (!res.ok) {
-                    const data = await res.json()
-                    throw new Error(data.error || "فشل رفع الملف")
+                // Validate file type
+                const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"]
+                if (!allowedTypes.includes(file.type)) {
+                    throw new Error("نوع الملف غير مدعوم")
                 }
 
-                const attachment = await res.json()
+                // Generate unique ID
+                const attachmentId = doc(collection(db, "attachments")).id
+                const fileExtension = file.name.split('.').pop()
+                const storagePath = `attachments/${workspaceId || 'default'}/${attachmentId}.${fileExtension}`
+
+                // Upload to Firebase Storage
+                const storageRef = ref(storage, storagePath)
+                await uploadBytes(storageRef, file)
+                const url = await getDownloadURL(storageRef)
+
+                const attachment: Attachment = {
+                    id: attachmentId,
+                    url,
+                    originalName: file.name,
+                    mimeType: file.type,
+                }
+
                 onUpload(attachment)
             } catch (err) {
+                console.error("Upload error:", err)
                 setError(err instanceof Error ? err.message : "حدث خطأ")
             }
         }
@@ -77,10 +94,21 @@ export function ImageUpload({
 
     const handleRemove = async (id: string) => {
         try {
-            await fetch(`/api/upload?id=${id}`, { method: "DELETE" })
+            // Find the attachment
+            const attachment = attachments.find(a => a.id === id)
+            if (attachment) {
+                // Try to delete from storage (may fail if URL format is different)
+                try {
+                    const storageRef = ref(storage, `attachments/${workspaceId || 'default'}/${id}`)
+                    await deleteObject(storageRef)
+                } catch (e) {
+                    console.warn("Could not delete from storage:", e)
+                }
+            }
             onRemove(id)
         } catch (err) {
             console.error("Failed to delete:", err)
+            onRemove(id) // Remove from UI anyway
         }
     }
 

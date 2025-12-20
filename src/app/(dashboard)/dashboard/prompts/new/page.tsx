@@ -279,6 +279,7 @@ export default function NewPromptPage() {
                                     onUpload={handleAttachmentUpload}
                                     onRemove={handleRemoveAttachment}
                                     entityType="prompt"
+                                    workspaceId={userData?.workspaceId || undefined}
                                 />
                             )}
 
