@@ -1156,6 +1156,75 @@ export default function PlaybookDetailPage() {
                     </div>
                 )}
             </Modal>
+
+            {/* Share Modal */}
+            <Modal
+                isOpen={showShareModal}
+                onClose={() => setShowShareModal(false)}
+                title="مشاركة الـ Playbook"
+            >
+                <div className="space-y-4">
+                    {/* Public Toggle */}
+                    <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                        <div className="flex items-center gap-3">
+                            {playbook?.isPublic ? (
+                                <Globe className="h-5 w-5 text-green-500" />
+                            ) : (
+                                <Lock className="h-5 w-5 text-slate-400" />
+                            )}
+                            <div>
+                                <p className="font-medium text-slate-900 dark:text-white">
+                                    {playbook?.isPublic ? "عام" : "خاص"}
+                                </p>
+                                <p className="text-sm text-slate-500">
+                                    {playbook?.isPublic
+                                        ? "يمكن لأي شخص لديه الرابط عرض هذا الـ Playbook"
+                                        : "فقط أنت يمكنك رؤية هذا الـ Playbook"}
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            variant={playbook?.isPublic ? "secondary" : "primary"}
+                            size="sm"
+                            onClick={handleTogglePublic}
+                        >
+                            {playbook?.isPublic ? "إخفاء" : "نشر"}
+                        </Button>
+                    </div>
+
+                    {/* Share Link */}
+                    {playbook?.isPublic && (
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                رابط المشاركة
+                            </label>
+                            <div className="flex gap-2">
+                                <Input
+                                    value={getShareUrl()}
+                                    readOnly
+                                    className="flex-1 text-left dir-ltr text-sm"
+                                />
+                                <Button onClick={handleCopyLink} variant="outline">
+                                    {copied ? (
+                                        <Check className="h-4 w-4 text-green-500" />
+                                    ) : (
+                                        <Copy className="h-4 w-4" />
+                                    )}
+                                </Button>
+                            </div>
+                            {copied && (
+                                <p className="text-sm text-green-600">تم نسخ الرابط!</p>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="flex justify-end pt-2">
+                        <Button variant="outline" onClick={() => setShowShareModal(false)}>
+                            إغلاق
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     )
 }
