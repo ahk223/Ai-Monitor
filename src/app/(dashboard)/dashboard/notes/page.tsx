@@ -6,10 +6,11 @@ import { db } from "@/lib/firebase"
 import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore"
 import Link from "next/link"
 import { Card, CardContent, Badge, Button } from "@/components/ui"
-import { Plus, StickyNote, Trash2, Loader2 } from "lucide-react"
+import { Plus, StickyNote, Trash2, Loader2, Pencil } from "lucide-react"
 
 interface Note {
     id: string
+    title: string
     content: string
     categoryId: string | null
     createdAt: Date
@@ -124,8 +125,8 @@ export default function NotesPage() {
                     <button
                         onClick={() => setSelectedCategory("")}
                         className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${!selectedCategory
-                                ? "bg-indigo-600 text-white"
-                                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                            ? "bg-indigo-600 text-white"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
                             }`}
                     >
                         الكل
@@ -135,8 +136,8 @@ export default function NotesPage() {
                             key={cat.id}
                             onClick={() => setSelectedCategory(cat.id)}
                             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${selectedCategory === cat.id
-                                    ? "text-white"
-                                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                                ? "text-white"
+                                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
                                 }`}
                             style={selectedCategory === cat.id ? { backgroundColor: cat.color } : {}}
                         >
@@ -178,20 +179,32 @@ export default function NotesPage() {
                                         {getCategoryName(note.categoryId)}
                                     </Badge>
                                 )}
-                                <p className="whitespace-pre-wrap text-slate-700 dark:text-slate-300">
+                                <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
+                                    {note.title || "ملاحظة بدون عنوان"}
+                                </h3>
+                                <p className="whitespace-pre-wrap text-slate-600 dark:text-slate-400 text-sm line-clamp-3">
                                     {note.content}
                                 </p>
                                 <p className="mt-3 text-xs text-slate-400">
                                     {note.createdAt.toLocaleDateString("ar-SA")}
                                 </p>
 
-                                {/* Delete button */}
-                                <button
-                                    onClick={() => handleDelete(note.id)}
-                                    className="absolute top-3 left-3 rounded-lg p-2 text-slate-400 opacity-0 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 transition-opacity"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
+                                {/* Edit and Delete buttons */}
+                                <div className="absolute top-3 left-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Link href={`/dashboard/notes/${note.id}/edit`}>
+                                        <button
+                                            className="rounded-lg p-2 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/30"
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </button>
+                                    </Link>
+                                    <button
+                                        onClick={() => handleDelete(note.id)}
+                                        className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
                             </CardContent>
                         </Card>
                     ))}

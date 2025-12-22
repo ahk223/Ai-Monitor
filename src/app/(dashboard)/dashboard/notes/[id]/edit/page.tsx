@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
-import { collection, query, where, getDocs, doc, setDoc } from "firebase/firestore"
+import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore"
 import { Card, CardContent, Button, Textarea, Select, Input } from "@/components/ui"
 import { ArrowRight, Save, Loader2 } from "lucide-react"
 import Link from "next/link"
@@ -15,8 +15,10 @@ interface Category {
     color: string
 }
 
-export default function NewNotePage() {
+export default function EditNotePage() {
     const router = useRouter()
+    const params = useParams()
+    const noteId = params.id as string
     const { userData } = useAuth()
     const [title, setTitle] = useState("")
     const [content, setContent] = useState("")
@@ -26,13 +28,23 @@ export default function NewNotePage() {
     const [saving, setSaving] = useState(false)
 
     useEffect(() => {
-        if (userData?.workspaceId) {
-            fetchCategories()
+        if (userData?.workspaceId && noteId) {
+            fetchData()
         }
-    }, [userData])
+    }, [userData, noteId])
 
-    const fetchCategories = async () => {
+    const fetchData = async () => {
         try {
+            // Fetch note data
+            const noteDoc = await getDoc(doc(db, "notes", noteId))
+            if (noteDoc.exists()) {
+                const noteData = noteDoc.data()
+                setTitle(noteData.title || "")
+                setContent(noteData.content || "")
+                setCategoryId(noteData.categoryId || "")
+            }
+
+            // Fetch categories
             const catsQuery = query(
                 collection(db, "categories"),
                 where("workspaceId", "==", userData?.workspaceId)
@@ -40,7 +52,7 @@ export default function NewNotePage() {
             const catsSnap = await getDocs(catsQuery)
             setCategories(catsSnap.docs.map(doc => doc.data() as Category))
         } catch (error) {
-            console.error("Error fetching categories:", error)
+            console.error("Error fetching data:", error)
         } finally {
             setLoading(false)
         }
@@ -52,20 +64,16 @@ export default function NewNotePage() {
 
         setSaving(true)
         try {
-            const noteId = doc(collection(db, "notes")).id
-            await setDoc(doc(db, "notes", noteId), {
-                id: noteId,
-                workspaceId: userData.workspaceId,
+            await updateDoc(doc(db, "notes", noteId), {
                 title: title.trim(),
                 content: content.trim(),
                 categoryId: categoryId || null,
-                createdAt: new Date(),
                 updatedAt: new Date(),
             })
 
             router.push("/dashboard/notes")
         } catch (error) {
-            console.error("Error saving note:", error)
+            console.error("Error updating note:", error)
             alert("حدث خطأ أثناء الحفظ")
         } finally {
             setSaving(false)
@@ -90,7 +98,7 @@ export default function NewNotePage() {
                     </Button>
                 </Link>
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                    ملاحظة جديدة
+                    تعديل الملاحظة
                 </h1>
             </div>
 
@@ -133,7 +141,7 @@ export default function NewNotePage() {
                             </Link>
                             <Button type="submit" isLoading={saving}>
                                 <Save className="h-4 w-4" />
-                                حفظ الملاحظة
+                                حفظ التعديلات
                             </Button>
                         </div>
                     </form>
