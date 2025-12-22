@@ -13,6 +13,7 @@ import {
     Trash2,
     Loader2,
     Star,
+    Pencil,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -214,13 +215,23 @@ export default function ToolsPage() {
                                                 </a>
                                             )}
                                         </div>
-                                        <button
-                                            onClick={() => handleDelete(tool.id)}
-                                            className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                                            title="حذف"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            <Link href={`/dashboard/tools/${tool.id}/edit`}>
+                                                <button
+                                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/30"
+                                                    title="تعديل"
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </button>
+                                            </Link>
+                                            <button
+                                                onClick={() => handleDelete(tool.id)}
+                                                className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                                                title="حذف"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
