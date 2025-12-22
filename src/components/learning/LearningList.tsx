@@ -152,6 +152,31 @@ export function LearningList({ categoryId, categoryName }: LearningListProps) {
         }
     }
 
+    // Function to convert URLs in text to clickable links
+    const linkifyContent = (text: string) => {
+        if (!text) return null
+        const urlRegex = /(https?:\/\/[^\s]+)/g
+        const parts = text.split(urlRegex)
+
+        return parts.map((part, index) => {
+            if (part.match(urlRegex)) {
+                return (
+                    <a
+                        key={index}
+                        href={part}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline break-all"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {part.length > 50 ? part.substring(0, 50) + '...' : part}
+                    </a>
+                )
+            }
+            return part
+        })
+    }
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -186,7 +211,7 @@ export function LearningList({ categoryId, categoryName }: LearningListProps) {
                                                 {topic.title}
                                             </h4>
                                             {topic.description && (
-                                                <p className="text-sm text-slate-500 mt-1">{topic.description}</p>
+                                                <p className="text-sm text-slate-500 mt-1 break-words overflow-hidden">{linkifyContent(topic.description)}</p>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2">
