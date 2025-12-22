@@ -87,6 +87,30 @@ export default function NotesPage() {
         return cat?.color || "#6366f1"
     }
 
+    // Function to convert URLs in text to clickable links
+    const linkifyContent = (text: string) => {
+        const urlRegex = /(https?:\/\/[^\s]+)/g
+        const parts = text.split(urlRegex)
+
+        return parts.map((part, index) => {
+            if (part.match(urlRegex)) {
+                return (
+                    <a
+                        key={index}
+                        href={part}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline break-all"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {part}
+                    </a>
+                )
+            }
+            return part
+        })
+    }
+
     const filteredNotes = selectedCategory
         ? notes.filter(n => n.categoryId === selectedCategory)
         : notes
@@ -183,7 +207,7 @@ export default function NotesPage() {
                                     {note.title || "ملاحظة بدون عنوان"}
                                 </h3>
                                 <p className="whitespace-pre-wrap text-slate-600 dark:text-slate-400 text-sm line-clamp-3">
-                                    {note.content}
+                                    {linkifyContent(note.content)}
                                 </p>
                                 <p className="mt-3 text-xs text-slate-400">
                                     {note.createdAt.toLocaleDateString("ar-SA")}
