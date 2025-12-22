@@ -1184,7 +1184,7 @@ export default function PlaybookDetailPage() {
                             </div>
                         </div>
                         <Button
-                            variant={playbook?.isPublic ? "secondary" : "primary"}
+                            variant={playbook?.isPublic ? "secondary" : "default"}
                             size="sm"
                             onClick={handleTogglePublic}
                         >
