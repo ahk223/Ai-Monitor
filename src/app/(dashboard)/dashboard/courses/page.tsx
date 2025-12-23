@@ -24,7 +24,8 @@ import { useToggleFavorite } from "@/hooks/useToggleFavorite"
 
 interface Course {
     id: string
-    name: string
+    title?: string // Support both naming conventions
+    name?: string
     url: string
     tool?: string
     notes?: string
@@ -126,7 +127,7 @@ export default function CoursesPage() {
 
 
     const filteredCourses = courses.filter(course =>
-        (course.name || "").toLowerCase().includes(search.toLowerCase()) ||
+        (course.title || course.name || "").toLowerCase().includes(search.toLowerCase()) ||
         course.tool?.toLowerCase().includes(search.toLowerCase())
     )
 
@@ -202,7 +203,7 @@ export default function CoursesPage() {
 
                                 <div>
                                     <h3 className="text-lg font-bold text-slate-900 dark:text-white line-clamp-2 mb-1">
-                                        {course.name}
+                                        {course.title || course.name}
                                     </h3>
                                     {course.tool && (
                                         <div className="flex items-center gap-1 text-sm text-slate-500">
