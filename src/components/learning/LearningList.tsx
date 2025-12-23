@@ -202,19 +202,21 @@ export function LearningList({ categoryId, categoryName }: LearningListProps) {
                 <div className="grid gap-4">
                     {topics.map(topic => (
                         <Card key={topic.id} className="group transition-all hover:shadow-md dark:hover:border-slate-700">
-                            <CardContent className="p-4 flex items-start gap-4">
-                                <div className={`mt-1 h-2 w-2 rounded-full ${topic.status === 'learned' ? 'bg-green-500' : topic.status === 'learning' ? 'bg-indigo-500' : 'bg-slate-300'}`} />
-                                <div className="flex-1 space-y-1">
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <h4 className={`font-medium ${topic.status === 'learned' ? 'text-slate-500 line-through' : 'text-slate-900 dark:text-white'}`}>
+                            <CardContent className="p-4 flex items-start gap-3">
+                                <div className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${topic.status === 'learned' ? 'bg-green-500' : topic.status === 'learning' ? 'bg-indigo-500' : 'bg-slate-300'}`} />
+                                <div className="flex-1 min-w-0 space-y-2">
+                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
+                                            <h4 className={`font-medium text-base ${topic.status === 'learned' ? 'text-slate-500 line-through' : 'text-slate-900 dark:text-white'} leading-snug`}>
                                                 {topic.title}
                                             </h4>
                                             {topic.description && (
-                                                <p className="text-sm text-slate-500 mt-1 break-words overflow-hidden">{linkifyContent(topic.description)}</p>
+                                                <div className="text-sm text-slate-500 mt-1 break-words whitespace-pre-wrap leading-relaxed max-w-full">
+                                                    {linkifyContent(topic.description)}
+                                                </div>
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-shrink-0 self-start">
                                             {getStatusBadge(topic.status)}
                                             <Badge variant="secondary" className={`${getPriorityColor(topic.priority)} border border-current bg-transparent`}>
                                                 {topic.priority === 'high' ? 'مهم' : topic.priority === 'medium' ? 'عادي' : 'منخفض'}
