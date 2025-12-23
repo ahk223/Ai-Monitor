@@ -344,52 +344,53 @@ export default function DashboardPage() {
     return (
         <div className="space-y-4 md:space-y-6">
             {/* Welcome Section - Mobile First Design */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-5 md:p-8 text-white shadow-2xl">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-6 md:p-8 text-white shadow-2xl">
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-white/10 blur-3xl"></div>
                 <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
-                
-                <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-3">
-                        <Sparkles className="h-5 w-5 text-yellow-300 flex-shrink-0" />
+
+                <div className="relative z-10 flex flex-col md:block">
+                    <div className="flex items-center gap-3 mb-4">
+                        <Sparkles className="h-6 w-6 text-yellow-300 flex-shrink-0" />
                         <h1 className="text-2xl md:text-3xl font-bold leading-tight">
                             مرحباً، {userData?.name || "مستخدم"} 👋
                         </h1>
                     </div>
-                    <p className="text-base md:text-lg opacity-90 mb-4">
+                    <p className="text-base md:text-lg opacity-90 mb-5">
                         {userData?.workspaceName || "مساحة العمل"}
                     </p>
-                    <div className="flex flex-wrap items-center gap-4 text-sm opacity-80">
-                        <div className="flex items-center gap-2">
-                            <Zap className="h-4 w-4 flex-shrink-0" />
-                            <span>{totalItems} عنصر إجمالي</span>
+                    <div className="flex flex-wrap items-center gap-3 md:gap-4 text-sm md:text-base opacity-90">
+                        <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2">
+                            <Zap className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+                            <span className="font-semibold">{totalItems} عنصر إجمالي</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <FolderKanban className="h-4 w-4 flex-shrink-0" />
-                            <span>{categories.length} تصنيف</span>
+                        <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2">
+                            <FolderKanban className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+                            <span className="font-semibold">{categories.length} تصنيف</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Stats - Mobile First: 2 columns on mobile, scrollable */}
+            {/* Stats - Mobile First: Larger cards for mobile */}
             <div>
                 <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-indigo-600 flex-shrink-0" />
                     <span>الإحصائيات</span>
                 </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 md:gap-4">
+                {/* Mobile: 2 columns, Tablet: 3-4, Desktop: 7 */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 md:gap-4">
                     {statsCards.map((stat) => (
-                        <Link key={stat.title} href={stat.href}>
+                        <Link key={stat.title} href={stat.href} className="block">
                             <Card className="group relative overflow-hidden border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer h-full">
                                 <div className={`absolute inset-0 ${stat.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                                <CardContent className="relative flex flex-col items-center gap-3 py-5 md:py-6">
-                                    <div className={`flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                                        <stat.icon className="h-7 w-7 md:h-8 md:w-8 text-white" />
+                                <CardContent className="relative flex flex-col items-center justify-center gap-3 md:gap-4 py-4 md:py-6 min-h-[120px] md:min-h-[160px]">
+                                    <div className={`flex h-12 w-12 md:h-18 md:w-18 lg:h-20 lg:w-20 items-center justify-center rounded-2xl bg-gradient-to-br ${stat.color} shadow-xl group-hover:scale-110 transition-transform duration-300`}>
+                                        <stat.icon className="h-6 w-6 md:h-9 md:w-9 lg:h-10 lg:w-10 text-white" />
                                     </div>
-                                    <p className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-none">
+                                    <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-none">
                                         {stat.value}
                                     </p>
-                                    <p className="text-xs md:text-sm font-medium text-slate-600 dark:text-slate-400 text-center leading-tight px-1">{stat.title}</p>
+                                    <p className="text-xs md:text-sm lg:text-base font-semibold text-slate-700 dark:text-slate-300 text-center leading-tight px-1">{stat.title}</p>
                                 </CardContent>
                             </Card>
                         </Link>
@@ -435,7 +436,7 @@ export default function DashboardPage() {
                                         <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
                                             <div
                                                 className="h-12 w-12 md:h-14 md:w-14 rounded-xl flex items-center justify-center text-white font-bold text-lg md:text-xl shadow-lg flex-shrink-0"
-                                                style={{ 
+                                                style={{
                                                     background: `linear-gradient(135deg, ${cat.color} 0%, ${cat.color}dd 100%)`,
                                                     boxShadow: `0 4px 12px ${cat.color}40`
                                                 }}
