@@ -81,7 +81,7 @@ export default function LearningPage() {
                     {categories.length === 0 ? "لا توجد أقسام بعد. أضف أقساماً للبدء." : "لا توجد نتائج للبحث."}
                 </div>
             ) : (
-                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-6 grid-cols-1 max-w-4xl mx-auto">
                     {filteredCategories.map(cat => (
                         <Card key={cat.id} className="h-full">
                             <CardContent className="pt-6">
