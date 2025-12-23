@@ -20,9 +20,11 @@ import {
     FolderKanban,
     MoreHorizontal,
     LayoutGrid,
-    Calendar
+    Calendar,
+    Heart
 } from "lucide-react"
 import Link from "next/link"
+import { doc, updateDoc } from "firebase/firestore"
 
 // --- Types ---
 interface ContentItem {
@@ -33,6 +35,7 @@ interface ContentItem {
     type: "prompt" | "tweet" | "tool" | "playbook" | "note" | "course" | "learning_topic"
     categoryId?: string | null
     createdAt?: any
+    isFavorite?: boolean
 }
 
 interface Category {
@@ -64,7 +67,7 @@ const WelcomeBanner = ({ userName, workspaceName }: { userName?: string, workspa
 )
 
 // 2. Content Card
-const ContentCard = ({ item }: { item: ContentItem }) => {
+const ContentCard = ({ item, onToggleFavorite }: { item: ContentItem, onToggleFavorite: (id: string, type: string, currentStatus: boolean) => void }) => {
     const getTypeConfig = (type: string) => {
         switch (type) {
             case "prompt": return { icon: MessageSquareText, label: "بروبمت", color: "text-indigo-500", bg: "bg-indigo-50 dark:bg-indigo-900/20" }
@@ -95,40 +98,58 @@ const ContentCard = ({ item }: { item: ContentItem }) => {
     const Icon = config.icon
 
     return (
-        <Link href={getLink(item)} className="block h-full min-w-[260px] max-w-[260px] md:min-w-0 md:max-w-none snap-start">
-            <Card className="h-full hover:shadow-md transition-all duration-300 border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 group">
-                <CardContent className="p-4 flex flex-col h-full">
-                    <div className="flex items-start justify-between mb-3">
-                        <div className={`p-2 rounded-lg ${config.bg}`}>
-                            <Icon className={`h-4 w-4 ${config.color}`} />
-                        </div>
-                        <Badge variant="secondary" className="text-[10px] font-normal px-2 bg-slate-100 dark:bg-slate-800 text-slate-500">
-                            {config.label}
-                        </Badge>
-                    </div>
-                    
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2 line-clamp-2 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        {item.title || item.content?.substring(0, 50) || "بدون عنوان"}
-                    </h3>
-                    
-                    {item.content && item.title && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3">
-                            {item.content}
-                        </p>
-                    )}
+        <div className="block h-full min-w-[260px] max-w-[260px] md:min-w-0 md:max-w-none snap-start relative group">
+             {/* Favorite Button */}
+             <button
+                onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onToggleFavorite(item.id, item.type, item.isFavorite || false)
+                }}
+                className={`absolute top-3 left-3 z-20 p-1.5 rounded-full transition-all duration-200 ${
+                    item.isFavorite 
+                        ? "bg-rose-50 text-rose-500 opacity-100" 
+                        : "bg-slate-100/50 text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-500"
+                }`}
+            >
+                <Heart className={`h-4 w-4 ${item.isFavorite ? "fill-current" : ""}`} />
+            </button>
 
-                    <div className="mt-auto pt-2 flex items-center text-xs text-slate-400 group-hover:text-indigo-500 transition-colors">
-                        <span>عرض التفاصيل</span>
-                        <ArrowLeft className="h-3 w-3 mr-1 transition-transform group-hover:-translate-x-1" />
-                    </div>
-                </CardContent>
-            </Card>
-        </Link>
+            <Link href={getLink(item)} className="block h-full">
+                <Card className={`h-full hover:shadow-md transition-all duration-300 border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 ${item.isFavorite ? 'border-rose-100 dark:border-rose-900/30 bg-rose-50/10' : ''}`}>
+                    <CardContent className="p-4 flex flex-col h-full">
+                        <div className="flex items-start justify-between mb-3">
+                            <div className={`p-2 rounded-lg ${config.bg}`}>
+                                <Icon className={`h-4 w-4 ${config.color}`} />
+                            </div>
+                            <Badge variant="secondary" className="text-[10px] font-normal px-2 bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                {config.label}
+                            </Badge>
+                        </div>
+                        
+                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2 line-clamp-2 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors pr-6">
+                            {item.title || item.content?.substring(0, 50) || "بدون عنوان"}
+                        </h3>
+                        
+                        {item.content && item.title && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3">
+                                {item.content}
+                            </p>
+                        )}
+
+                        <div className="mt-auto pt-2 flex items-center text-xs text-slate-400 group-hover:text-indigo-500 transition-colors">
+                            <span>عرض التفاصيل</span>
+                            <ArrowLeft className="h-3 w-3 mr-1 transition-transform group-hover:-translate-x-1" />
+                        </div>
+                    </CardContent>
+                </Card>
+            </Link>
+        </div>
     )
 }
 
 // 3. Category Section
-const CategorySection = ({ category, items }: { category: Category, items: ContentItem[] }) => {
+const CategorySection = ({ category, items, onToggleFavorite }: { category: Category, items: ContentItem[], onToggleFavorite: (id: string, type: string, currentStatus: boolean) => void }) => {
     if (!items || items.length === 0) return null
 
     return (
@@ -157,7 +178,7 @@ const CategorySection = ({ category, items }: { category: Category, items: Conte
             {/* Mobile: Horizontal Scroll | Desktop: Grid */}
             <div className="flex overflow-x-auto pb-4 gap-3 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:overflow-visible snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
                 {items.slice(0, 6).map((item, idx) => (
-                    <ContentCard key={`${item.type}-${item.id}-${idx}`} item={item} />
+                    <ContentCard key={`${item.type}-${item.id}-${idx}`} item={item} onToggleFavorite={onToggleFavorite} />
                 ))}
                 
                 {items.length > 6 && (
@@ -223,10 +244,6 @@ export default function DashboardPage() {
                     where("workspaceId", "==", userData.workspaceId)
                 )
                 
-                // Add isArchived check if applicable (simulated here for brevity, best to check field existence or use try/catch in real robust app if schema varies)
-                // For simplicity assuming we filter archived in client or query works.
-                // To be safe and simple: fetch active ones. Most collections have isArchived.
-                
                 try {
                     const snap = await getDocs(q)
                     snap.docs.forEach(doc => {
@@ -250,7 +267,8 @@ export default function DashboardPage() {
                             title,
                             content,
                             categoryId: data.categoryId,
-                            createdAt: data.createdAt
+                            createdAt: data.createdAt,
+                            isFavorite: data.isFavorite || false
                         })
                     })
                 } catch (e) {
@@ -259,36 +277,87 @@ export default function DashboardPage() {
             }))
 
             // 3. Group Content
-            const grouped: Record<string, ContentItem[]> = {}
-            const uncat: ContentItem[] = []
-
-            // Initialize groups
-            catsList.forEach(c => grouped[c.id] = [])
-
-            // Sort all content by date (newest first) if available
-            allContent.sort((a, b) => {
-                const dateA = a.createdAt?.seconds || 0
-                const dateB = b.createdAt?.seconds || 0
-                return dateB - dateA
-            })
-
-            // Distribute
-            allContent.forEach(item => {
-                if (item.categoryId && grouped[item.categoryId]) {
-                    grouped[item.categoryId].push(item)
-                } else {
-                    uncat.push(item)
-                }
-            })
-
-            setContentByCategory(grouped)
-            setUncategorized(uncat)
+            organizeContent(allContent, catsList)
 
         } catch (err) {
             console.error("Dashboard fetch error:", err)
             setError("حدث خطأ أثناء تحميل البيانات")
         } finally {
             setLoading(false)
+        }
+    }
+
+    const organizeContent = (content: ContentItem[], cats: Category[]) => {
+        const grouped: Record<string, ContentItem[]> = {}
+        const uncat: ContentItem[] = []
+
+        // Initialize groups
+        cats.forEach(c => grouped[c.id] = [])
+
+        // Sort: Favorites first, then Date
+        const sortFn = (a: ContentItem, b: ContentItem) => {
+            if (a.isFavorite && !b.isFavorite) return -1
+            if (!a.isFavorite && b.isFavorite) return 1
+            
+            const dateA = a.createdAt?.seconds || 0
+            const dateB = b.createdAt?.seconds || 0
+            return dateB - dateA
+        }
+
+        content.sort(sortFn)
+
+        // Distribute
+        content.forEach(item => {
+            if (item.categoryId && grouped[item.categoryId]) {
+                grouped[item.categoryId].push(item)
+            } else {
+                uncat.push(item)
+            }
+        })
+
+        setContentByCategory(grouped)
+        setUncategorized(uncat)
+    }
+
+    const handleToggleFavorite = async (id: string, type: string, currentStatus: boolean) => {
+        // Optimistic update
+        const newStatus = !currentStatus
+        
+        // Find the original list to update
+        const allContent: ContentItem[] = []
+        Object.values(contentByCategory).forEach(list => allContent.push(...list))
+        allContent.push(...uncategorized)
+        
+        const updatedContent = allContent.map(item => 
+            item.id === id ? { ...item, isFavorite: newStatus } : item
+        )
+
+        // Re-organize (this will re-sort)
+        organizeContent(updatedContent, categories)
+
+        // Update Database
+        try {
+            // Map singular type back to collection name
+            const collectionMap: Record<string, string> = {
+                'prompt': 'prompts',
+                'tweet': 'tweets',
+                'tool': 'tools',
+                'playbook': 'playbooks',
+                'note': 'notes',
+                'course': 'courses',
+                'learning_topic': 'learningTopics'
+            }
+            
+            const collectionName = collectionMap[type]
+            if (collectionName) {
+                await updateDoc(doc(db, collectionName, id), {
+                    isFavorite: newStatus
+                })
+            }
+        } catch (error) {
+            console.error("Error toggling favorite:", error)
+            // Revert on error
+            organizeContent(allContent, categories)
         }
     }
 
@@ -337,6 +406,7 @@ export default function DashboardPage() {
                             key={category.id} 
                             category={category} 
                             items={contentByCategory[category.id]} 
+                            onToggleFavorite={handleToggleFavorite}
                         />
                     ))}
 
@@ -345,6 +415,7 @@ export default function DashboardPage() {
                         <CategorySection 
                             category={{ id: 'uncategorized', name: 'بدون تصنيف', color: '#94a3b8' }} 
                             items={uncategorized} 
+                            onToggleFavorite={handleToggleFavorite}
                         />
                     )}
                 </div>
