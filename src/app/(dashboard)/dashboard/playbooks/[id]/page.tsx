@@ -720,61 +720,65 @@ export default function PlaybookDetailPage() {
             )}
 
             {/* Header */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-start gap-4">
-                    <Link href="/dashboard/playbooks">
-                        <Button variant="ghost" size="icon">
-                            <ArrowRight className="h-5 w-5" />
+            <div className="flex flex-col gap-3 md:gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="flex items-start gap-2 md:gap-4 min-w-0 flex-1">
+                    <Link href="/dashboard/playbooks" className="flex-shrink-0">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 md:h-10 md:w-10">
+                            <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
                         </Button>
                     </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-slate-900 dark:text-white break-words leading-tight">
                             {playbook.title}
                         </h1>
                         {playbook.description && (
-                            <p className="mt-1 text-slate-500">{playbook.description}</p>
+                            <p className="mt-1 text-sm md:text-base text-slate-500 break-words">{playbook.description}</p>
                         )}
                         {playbook.toolUrl && (
                             <a
                                 href={playbook.toolUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="mt-2 inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline"
+                                className="mt-2 inline-flex items-center gap-1 text-xs md:text-sm text-indigo-600 hover:underline break-all"
                             >
-                                <ExternalLink className="h-4 w-4" />
-                                رابط الأداة
+                                <ExternalLink className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                                <span className="truncate">رابط الأداة</span>
                             </a>
                         )}
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-1.5 md:gap-2 flex-shrink-0">
                     {/* Only show archive toggle if there are archived items OR if we are currently viewing archive */}
                     {(items.some(item => progress[item.id]?.completed) || showArchived) && (
                         <Button
                             variant={showArchived ? "secondary" : "ghost"}
                             onClick={() => setShowArchived(!showArchived)}
-                            className={showArchived ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-300" : ""}
+                            size="sm"
+                            className={`text-xs md:text-sm h-8 md:h-9 ${showArchived ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-300" : ""}`}
                         >
                             {showArchived ? (
                                 <>
-                                    <ArrowRight className="h-4 w-4 mr-2" />
-                                    عرض القائمة النشطة
+                                    <ArrowRight className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                                    <span className="hidden sm:inline">عرض القائمة النشطة</span>
+                                    <span className="sm:hidden">النشطة</span>
                                 </>
                             ) : (
                                 <>
-                                    <CheckCircle2 className="h-4 w-4 mr-2 text-slate-400" />
-                                    عرض الأرشيف
+                                    <CheckCircle2 className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2 text-slate-400" />
+                                    <span className="hidden sm:inline">عرض الأرشيف</span>
+                                    <span className="sm:hidden">الأرشيف</span>
                                 </>
                             )}
                         </Button>
                     )}
-                    <Button variant="outline" onClick={() => setShowShareModal(true)}>
-                        <Share2 className="h-4 w-4" />
-                        مشاركة
+                    <Button variant="outline" size="sm" onClick={() => setShowShareModal(true)} className="h-8 md:h-9 text-xs md:text-sm">
+                        <Share2 className="h-3 w-3 md:h-4 md:w-4" />
+                        <span className="hidden sm:inline mr-1">مشاركة</span>
                     </Button>
-                    <Button onClick={() => setShowAddModal(true)}>
-                        <Plus className="h-4 w-4" />
-                        إضافة محتوى
+                    <Button size="sm" onClick={() => setShowAddModal(true)} className="h-8 md:h-9 text-xs md:text-sm">
+                        <Plus className="h-3 w-3 md:h-4 md:w-4" />
+                        <span className="hidden sm:inline mr-1">إضافة محتوى</span>
+                        <span className="sm:hidden mr-1">إضافة</span>
                     </Button>
                     <div className="relative">
                         <input
@@ -784,9 +788,10 @@ export default function PlaybookDetailPage() {
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                             disabled={importingExcel}
                         />
-                        <Button variant="outline" isLoading={importingExcel} className="gap-2">
-                            <FileSpreadsheet className="h-4 w-4" />
-                            {importingExcel ? "جاري الاستيراد..." : "استيراد Excel"}
+                        <Button variant="outline" size="sm" isLoading={importingExcel} className="gap-1 md:gap-2 h-8 md:h-9 text-xs md:text-sm">
+                            <FileSpreadsheet className="h-3 w-3 md:h-4 md:w-4" />
+                            <span className="hidden md:inline">{importingExcel ? "جاري الاستيراد..." : "استيراد Excel"}</span>
+                            <span className="md:hidden">{importingExcel ? "..." : "Excel"}</span>
                         </Button>
                     </div>
                 </div>
@@ -890,24 +895,24 @@ export default function PlaybookDetailPage() {
                         return (
                             <div
                                 key={item.id}
-                                className="relative flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 transition-all dark:border-slate-800 dark:bg-slate-950"
+                                className="relative flex flex-col gap-3 md:gap-4 rounded-xl border border-slate-200 bg-white p-3 md:p-4 transition-all dark:border-slate-800 dark:bg-slate-950"
                             >
                                 {/* Header with Title and Toggle */}
-                                <div className="flex flex-col sm:flex-row sm:items-start gap-4 justify-between">
-                                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                                <div className="flex flex-col md:flex-row md:items-start gap-3 md:gap-4 justify-between">
+                                    <div className="flex items-start gap-2 md:gap-3 flex-1 min-w-0">
                                         <button
                                             onClick={() => handleFeedbackChange(item.id, { completed: !isCompleted })}
-                                            className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 hover:border-slate-400 dark:border-slate-600 transition-all hover:bg-slate-100 dark:hover:bg-slate-800"
+                                            className="mt-0.5 md:mt-1 flex h-5 w-5 md:h-6 md:w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 hover:border-slate-400 dark:border-slate-600 transition-all hover:bg-slate-100 dark:hover:bg-slate-800"
                                             title="تحديد كمكتمل (نقل للأرشيف)"
                                         >
-                                            <div className={`h-3 w-3 rounded-full bg-slate-400 transition-opacity ${isCompleted ? 'opacity-100' : 'opacity-0'}`} />
+                                            <div className={`h-2.5 w-2.5 md:h-3 md:w-3 rounded-full bg-slate-400 transition-opacity ${isCompleted ? 'opacity-100' : 'opacity-0'}`} />
                                         </button>
-                                        <div className="flex-1 min-w-0 space-y-2">
-                                            <h3 className="font-medium text-lg leading-snug text-slate-900 dark:text-white break-words">
+                                        <div className="flex-1 min-w-0 space-y-1.5 md:space-y-2">
+                                            <h3 className="font-medium text-base md:text-lg leading-snug text-slate-900 dark:text-white break-words">
                                                 {item.title}
                                             </h3>
                                             {item.description && (
-                                                <p className="text-sm text-slate-500 line-clamp-3 leading-relaxed">
+                                                <p className="text-xs md:text-sm text-slate-500 line-clamp-3 leading-relaxed break-words">
                                                     {item.description}
                                                 </p>
                                             )}
@@ -917,57 +922,57 @@ export default function PlaybookDetailPage() {
                                                     href={item.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
+                                                    className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg bg-indigo-50 px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50 w-full sm:w-auto"
                                                 >
                                                     {getUrlIcon(item.url)}
-                                                    <span className="dir-ltr text-xs sm:text-sm truncate max-w-[200px] sm:max-w-xs text-left">
+                                                    <span className="dir-ltr text-xs truncate flex-1 sm:flex-none sm:max-w-[200px] md:max-w-xs text-left">
                                                         {getHostname(item.url)}
                                                     </span>
-                                                    <ExternalLink className="h-3 w-3" />
+                                                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                                 </a>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Actions Toolbar */}
-                                    <div className="flex items-center justify-end gap-2 border-t pt-3 sm:border-t-0 sm:pt-0 border-slate-100 dark:border-slate-800">
-                                        <div className="flex gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
+                                    <div className="flex items-center justify-end gap-1.5 md:gap-2 border-t pt-2 md:pt-3 md:border-t-0 md:pt-0 border-slate-100 dark:border-slate-800">
+                                        <div className="flex gap-0.5 md:gap-1 bg-slate-100 dark:bg-slate-900 p-0.5 md:p-1 rounded-lg">
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="h-7 w-7 p-0 text-slate-500 hover:bg-white hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300 disabled:opacity-30"
+                                                className="h-6 w-6 md:h-7 md:w-7 p-0 text-slate-500 hover:bg-white hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300 disabled:opacity-30"
                                                 onClick={() => moveItem(item.id, 'up')}
                                                 disabled={index === 0}
                                             >
-                                                <ArrowRight className="h-4 w-4 -rotate-90" />
+                                                <ArrowRight className="h-3 w-3 md:h-4 md:w-4 -rotate-90" />
                                             </Button>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="h-7 w-7 p-0 text-slate-500 hover:bg-white hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300 disabled:opacity-30"
+                                                className="h-6 w-6 md:h-7 md:w-7 p-0 text-slate-500 hover:bg-white hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300 disabled:opacity-30"
                                                 onClick={() => moveItem(item.id, 'down')}
                                                 disabled={index === items.filter(i => !progress[i.id]?.completed).length - 1}
                                             >
-                                                <ArrowRight className="h-4 w-4 rotate-90" />
+                                                <ArrowRight className="h-3 w-3 md:h-4 md:w-4 rotate-90" />
                                             </Button>
                                         </div>
-                                        <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block"></div>
-                                        <div className="flex gap-1">
+                                        <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden md:block"></div>
+                                        <div className="flex gap-0.5 md:gap-1">
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="h-8 w-8 p-0 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/20"
+                                                className="h-7 w-7 md:h-8 md:w-8 p-0 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/20"
                                                 onClick={() => openEditModal(item)}
                                             >
-                                                <Edit2 className="h-4 w-4" />
+                                                <Edit2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
                                             </Button>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="h-8 w-8 p-0 text-slate-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                                                className="h-7 w-7 md:h-8 md:w-8 p-0 text-slate-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
                                                 onClick={() => handleDeleteItem(item.id)}
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
                                             </Button>
                                         </div>
                                     </div>
