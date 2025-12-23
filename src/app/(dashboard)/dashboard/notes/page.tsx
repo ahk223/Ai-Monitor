@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
-import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore"
+import { collection, query, where, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore"
 import Link from "next/link"
 import { Card, CardContent, Badge, Button } from "@/components/ui"
-import { Plus, StickyNote, Trash2, Loader2, Pencil } from "lucide-react"
+import { Plus, StickyNote, Trash2, Loader2, Pencil, Heart } from "lucide-react"
 
 interface Note {
     id: string
@@ -14,6 +14,7 @@ interface Note {
     content: string
     categoryId: string | null
     createdAt: Date
+    isFavorite?: boolean
 }
 
 interface Category {
@@ -47,7 +48,15 @@ export default function NotesPage() {
                 ...doc.data(),
                 createdAt: doc.data().createdAt?.toDate() || new Date(),
             })) as Note[]
-            notesList.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            notesList.sort((a, b) => {
+                const aIsFavorite = a.isFavorite ?? false
+                const bIsFavorite = b.isFavorite ?? false
+                
+                if (aIsFavorite && !bIsFavorite) return -1
+                if (!aIsFavorite && bIsFavorite) return 1
+                
+                return b.createdAt.getTime() - a.createdAt.getTime()
+            })
             setNotes(notesList)
 
             // Fetch categories
@@ -72,6 +81,34 @@ export default function NotesPage() {
             setNotes(notes.filter(n => n.id !== noteId))
         } catch (error) {
             console.error("Error deleting note:", error)
+        }
+    }
+
+    const handleToggleFavorite = async (id: string) => {
+        try {
+            const note = notes.find(n => n.id === id)
+            if (!note) return
+
+            const newFavoriteStatus = !(note.isFavorite ?? false)
+            await updateDoc(doc(db, "notes", id), { isFavorite: newFavoriteStatus })
+            
+            setNotes(prevNotes => {
+                const updated = prevNotes.map(n => 
+                    n.id === id ? { ...n, isFavorite: newFavoriteStatus } : n
+                )
+                updated.sort((a, b) => {
+                    const aIsFavorite = a.isFavorite ?? false
+                    const bIsFavorite = b.isFavorite ?? false
+                    
+                    if (aIsFavorite && !bIsFavorite) return -1
+                    if (!aIsFavorite && bIsFavorite) return 1
+                    
+                    return b.createdAt.getTime() - a.createdAt.getTime()
+                })
+                return updated
+            })
+        } catch (error) {
+            console.error("Error toggling favorite:", error)
         }
     }
 
@@ -213,8 +250,21 @@ export default function NotesPage() {
                                     {note.createdAt.toLocaleDateString("ar-SA")}
                                 </p>
 
+                                {/* Favorite Button */}
+                                <button
+                                    onClick={() => handleToggleFavorite(note.id)}
+                                    className={`absolute top-2 left-2 rounded-lg p-1.5 transition-colors z-10 ${
+                                        note.isFavorite
+                                            ? "text-red-500 hover:bg-red-50 hover:text-red-600 bg-white/90"
+                                            : "text-slate-400 hover:bg-white/90 hover:text-slate-600 bg-white/70"
+                                    }`}
+                                    title={note.isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+                                >
+                                    <Heart className={`h-4 w-4 ${note.isFavorite ? "fill-red-500" : ""}`} />
+                                </button>
+                                
                                 {/* Edit and Delete buttons */}
-                                <div className="absolute top-3 left-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <Link href={`/dashboard/notes/${note.id}/edit`}>
                                         <button
                                             className="rounded-lg p-2 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/30"

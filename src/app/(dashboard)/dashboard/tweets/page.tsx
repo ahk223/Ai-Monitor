@@ -16,7 +16,8 @@ import {
     Instagram,
     Video,
     Share2,
-    Pencil
+    Pencil,
+    Heart
 } from "lucide-react"
 import Link from "next/link"
 
@@ -29,6 +30,7 @@ interface Tweet {
     platform?: string
     createdAt: Date
     isArchived: boolean
+    isFavorite?: boolean
 }
 
 interface Category {
@@ -80,6 +82,12 @@ export default function SocialMediaPage() {
             })) as Tweet[]
 
             itemsList.sort((a, b) => {
+                const aIsFavorite = a.isFavorite ?? false
+                const bIsFavorite = b.isFavorite ?? false
+                
+                if (aIsFavorite && !bIsFavorite) return -1
+                if (!aIsFavorite && bIsFavorite) return 1
+                
                 const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
                 const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
                 return dateB.getTime() - dateA.getTime()
@@ -104,6 +112,36 @@ export default function SocialMediaPage() {
         }
     }
 
+    const handleToggleFavorite = async (id: string) => {
+        try {
+            const item = items.find(t => t.id === id)
+            if (!item) return
+
+            const newFavoriteStatus = !(item.isFavorite ?? false)
+            await updateDoc(doc(db, "tweets", id), { isFavorite: newFavoriteStatus })
+            
+            setItems(prevItems => {
+                const updated = prevItems.map(t => 
+                    t.id === id ? { ...t, isFavorite: newFavoriteStatus } : t
+                )
+                updated.sort((a, b) => {
+                    const aIsFavorite = a.isFavorite ?? false
+                    const bIsFavorite = b.isFavorite ?? false
+                    
+                    if (aIsFavorite && !bIsFavorite) return -1
+                    if (!aIsFavorite && bIsFavorite) return 1
+                    
+                    const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
+                    const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
+                    return dateB.getTime() - dateA.getTime()
+                })
+                return updated
+            })
+        } catch (error) {
+            console.error("Error toggling favorite:", error)
+        }
+    }
+
     const getCategoryById = (id: string | null) => {
         if (!id) return null
         return categories.find(c => c.id === id)
@@ -123,6 +161,31 @@ export default function SocialMediaPage() {
             default:
                 return <Share2 className="h-4 w-4 text-slate-500" />
         }
+    }
+
+    // Function to convert URLs in text to clickable links
+    const linkifyContent = (text: string) => {
+        if (!text) return text
+        const urlRegex = /(https?:\/\/[^\s]+)/g
+        const parts = text.split(urlRegex)
+
+        return parts.map((part, index) => {
+            if (part.match(urlRegex)) {
+                return (
+                    <a
+                        key={index}
+                        href={part}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline break-all"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {part}
+                    </a>
+                )
+            }
+            return part
+        })
     }
 
     const filteredItems = items.filter(item => {
@@ -191,7 +254,18 @@ export default function SocialMediaPage() {
                     {filteredItems.map(item => {
                         const category = getCategoryById(item.categoryId)
                         return (
-                            <Card key={item.id} hover className="group">
+                            <Card key={item.id} hover className="group relative">
+                                <button
+                                    onClick={() => handleToggleFavorite(item.id)}
+                                    className={`absolute top-2 left-2 rounded-lg p-1.5 transition-colors z-10 ${
+                                        item.isFavorite
+                                            ? "text-red-500 hover:bg-red-50 hover:text-red-600 bg-white/90"
+                                            : "text-slate-400 hover:bg-white/90 hover:text-slate-600 bg-white/70"
+                                    }`}
+                                    title={item.isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+                                >
+                                    <Heart className={`h-4 w-4 ${item.isFavorite ? "fill-red-500" : ""}`} />
+                                </button>
                                 <CardContent>
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex items-center gap-2" title={item.platform || 'Other'}>
@@ -217,7 +291,7 @@ export default function SocialMediaPage() {
                                     </div>
 
                                     <p className="line-clamp-4 text-slate-700 dark:text-slate-300 min-h-[5rem]">
-                                        {item.content || item.sourceUrl}
+                                        {linkifyContent(item.content || item.sourceUrl || "")}
                                     </p>
 
                                     <div className="mt-4 flex items-center justify-between border-t pt-3 dark:border-slate-800">

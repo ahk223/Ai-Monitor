@@ -5,13 +5,14 @@ import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore"
 import { Card, CardContent, Button, Input } from "@/components/ui"
-import { FolderKanban, Plus, Search } from "lucide-react"
+import { FolderKanban, Plus, Search, Heart } from "lucide-react"
 import Link from "next/link"
 
 interface Category {
     id: string
     name: string
     color: string
+    isFavorite?: boolean
 }
 
 export default function CategoriesPage() {
@@ -35,7 +36,20 @@ export default function CategoriesPage() {
                 where("workspaceId", "==", userData.workspaceId)
             )
             const snap = await getDocs(q)
-            setCategories(snap.docs.map(doc => doc.data() as Category))
+            const cats = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Category))
+            
+            // Sort: favorites first, then by name
+            cats.sort((a, b) => {
+                const aIsFavorite = a.isFavorite ?? false
+                const bIsFavorite = b.isFavorite ?? false
+                
+                if (aIsFavorite && !bIsFavorite) return -1
+                if (!aIsFavorite && bIsFavorite) return 1
+                
+                return a.name.localeCompare(b.name)
+            })
+            
+            setCategories(cats)
         } catch (error) {
             console.error("Error fetching categories:", error)
         } finally {
@@ -84,18 +98,23 @@ export default function CategoriesPage() {
                     {filteredCategories.map(cat => (
                         <Link key={cat.id} href={`/dashboard/categories/${cat.id}`}>
                             <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
-                                <CardContent className="pt-6 flex items-center gap-4">
-                                    <div
-                                        className="h-12 w-12 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm"
-                                        style={{ backgroundColor: cat.color }}
-                                    >
-                                        {cat.name.charAt(0)}
+                                <CardContent className="pt-6 flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-4 flex-1">
+                                        <div
+                                            className="h-12 w-12 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm"
+                                            style={{ backgroundColor: cat.color }}
+                                        >
+                                            {cat.name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-lg text-slate-900 dark:text-white">
+                                                {cat.name}
+                                            </h3>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-semibold text-lg text-slate-900 dark:text-white">
-                                            {cat.name}
-                                        </h3>
-                                    </div>
+                                    {cat.isFavorite && (
+                                        <Heart className="h-5 w-5 text-red-500 fill-red-500 flex-shrink-0" />
+                                    )}
                                 </CardContent>
                             </Card>
                         </Link>

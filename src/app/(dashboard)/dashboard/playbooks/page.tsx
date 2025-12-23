@@ -12,6 +12,7 @@ import {
     Trash2,
     Loader2,
     ChevronLeft,
+    Heart,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -21,6 +22,7 @@ interface Playbook {
     description: string | null
     createdAt: Date
     isArchived: boolean
+    isFavorite?: boolean
 }
 
 interface PlaybookStep {
@@ -60,6 +62,12 @@ export default function PlaybooksPage() {
             })) as Playbook[]
 
             playbooksList.sort((a, b) => {
+                const aIsFavorite = a.isFavorite ?? false
+                const bIsFavorite = b.isFavorite ?? false
+                
+                if (aIsFavorite && !bIsFavorite) return -1
+                if (!aIsFavorite && bIsFavorite) return 1
+                
                 const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
                 const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
                 return dateB.getTime() - dateA.getTime()
@@ -96,11 +104,66 @@ export default function PlaybooksPage() {
         }
     }
 
+    const handleToggleFavorite = async (id: string) => {
+        try {
+            const playbook = playbooks.find(p => p.id === id)
+            if (!playbook) return
+
+            const newFavoriteStatus = !(playbook.isFavorite ?? false)
+            await updateDoc(doc(db, "playbooks", id), { isFavorite: newFavoriteStatus })
+            
+            setPlaybooks(prevPlaybooks => {
+                const updated = prevPlaybooks.map(p => 
+                    p.id === id ? { ...p, isFavorite: newFavoriteStatus } : p
+                )
+                updated.sort((a, b) => {
+                    const aIsFavorite = a.isFavorite ?? false
+                    const bIsFavorite = b.isFavorite ?? false
+                    
+                    if (aIsFavorite && !bIsFavorite) return -1
+                    if (!aIsFavorite && bIsFavorite) return 1
+                    
+                    const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
+                    const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
+                    return dateB.getTime() - dateA.getTime()
+                })
+                return updated
+            })
+        } catch (error) {
+            console.error("Error toggling favorite:", error)
+        }
+    }
+
     const filteredPlaybooks = playbooks.filter(playbook => {
         return !search ||
             playbook.title.toLowerCase().includes(search.toLowerCase()) ||
             (playbook.description && playbook.description.toLowerCase().includes(search.toLowerCase()))
     })
+
+    // Function to convert URLs in text to clickable links
+    const linkifyContent = (text: string) => {
+        if (!text) return text
+        const urlRegex = /(https?:\/\/[^\s]+)/g
+        const parts = text.split(urlRegex)
+
+        return parts.map((part, index) => {
+            if (part.match(urlRegex)) {
+                return (
+                    <a
+                        key={index}
+                        href={part}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline break-all"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {part}
+                    </a>
+                )
+            }
+            return part
+        })
+    }
 
     if (loading) {
         return (
@@ -162,7 +225,18 @@ export default function PlaybooksPage() {
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredPlaybooks.map(playbook => (
-                        <Card key={playbook.id} hover className="group">
+                        <Card key={playbook.id} hover className="group relative">
+                            <button
+                                onClick={() => handleToggleFavorite(playbook.id)}
+                                className={`absolute top-2 left-2 rounded-lg p-1.5 transition-colors z-10 ${
+                                    playbook.isFavorite
+                                        ? "text-red-500 hover:bg-red-50 hover:text-red-600 bg-white/90"
+                                        : "text-slate-400 hover:bg-white/90 hover:text-slate-600 bg-white/70"
+                                }`}
+                                title={playbook.isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+                            >
+                                <Heart className={`h-4 w-4 ${playbook.isFavorite ? "fill-red-500" : ""}`} />
+                            </button>
                             <CardContent>
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-center gap-3">
@@ -182,7 +256,7 @@ export default function PlaybooksPage() {
 
                                 {playbook.description && (
                                     <p className="mt-3 line-clamp-2 text-sm text-slate-500">
-                                        {playbook.description}
+                                        {linkifyContent(playbook.description)}
                                     </p>
                                 )}
 

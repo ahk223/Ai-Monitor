@@ -14,6 +14,7 @@ import {
     Loader2,
     Star,
     Pencil,
+    Heart,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -26,6 +27,7 @@ interface Tool {
     categoryId: string | null
     createdAt: Date
     isArchived: boolean
+    isFavorite?: boolean
 }
 
 interface Category {
@@ -73,6 +75,12 @@ export default function ToolsPage() {
             })) as Tool[]
 
             toolsList.sort((a, b) => {
+                const aIsFavorite = a.isFavorite ?? false
+                const bIsFavorite = b.isFavorite ?? false
+                
+                if (aIsFavorite && !bIsFavorite) return -1
+                if (!aIsFavorite && bIsFavorite) return 1
+                
                 const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
                 const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
                 return dateB.getTime() - dateA.getTime()
@@ -97,9 +105,64 @@ export default function ToolsPage() {
         }
     }
 
+    const handleToggleFavorite = async (id: string) => {
+        try {
+            const tool = tools.find(t => t.id === id)
+            if (!tool) return
+
+            const newFavoriteStatus = !(tool.isFavorite ?? false)
+            await updateDoc(doc(db, "tools", id), { isFavorite: newFavoriteStatus })
+            
+            setTools(prevTools => {
+                const updated = prevTools.map(t => 
+                    t.id === id ? { ...t, isFavorite: newFavoriteStatus } : t
+                )
+                updated.sort((a, b) => {
+                    const aIsFavorite = a.isFavorite ?? false
+                    const bIsFavorite = b.isFavorite ?? false
+                    
+                    if (aIsFavorite && !bIsFavorite) return -1
+                    if (!aIsFavorite && bIsFavorite) return 1
+                    
+                    const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
+                    const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
+                    return dateB.getTime() - dateA.getTime()
+                })
+                return updated
+            })
+        } catch (error) {
+            console.error("Error toggling favorite:", error)
+        }
+    }
+
     const getCategoryById = (id: string | null) => {
         if (!id) return null
         return categories.find(c => c.id === id)
+    }
+
+    // Function to convert URLs in text to clickable links
+    const linkifyContent = (text: string) => {
+        if (!text) return text
+        const urlRegex = /(https?:\/\/[^\s]+)/g
+        const parts = text.split(urlRegex)
+
+        return parts.map((part, index) => {
+            if (part.match(urlRegex)) {
+                return (
+                    <a
+                        key={index}
+                        href={part}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline break-all"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {part}
+                    </a>
+                )
+            }
+            return part
+        })
     }
 
     const filteredTools = tools.filter(tool => {
@@ -170,7 +233,18 @@ export default function ToolsPage() {
                     {filteredTools.map(tool => {
                         const category = getCategoryById(tool.categoryId)
                         return (
-                            <Card key={tool.id} hover className="group">
+                            <Card key={tool.id} hover className="group relative">
+                                <button
+                                    onClick={() => handleToggleFavorite(tool.id)}
+                                    className={`absolute top-2 left-2 rounded-lg p-1.5 transition-colors z-10 ${
+                                        tool.isFavorite
+                                            ? "text-red-500 hover:bg-red-50 hover:text-red-600 bg-white/90"
+                                            : "text-slate-400 hover:bg-white/90 hover:text-slate-600 bg-white/70"
+                                    }`}
+                                    title={tool.isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+                                >
+                                    <Heart className={`h-4 w-4 ${tool.isFavorite ? "fill-red-500" : ""}`} />
+                                </button>
                                 <CardContent>
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-center gap-3">
@@ -193,7 +267,7 @@ export default function ToolsPage() {
 
                                     {tool.description && (
                                         <p className="mt-3 line-clamp-2 text-sm text-slate-500">
-                                            {tool.description}
+                                            {linkifyContent(tool.description)}
                                         </p>
                                     )}
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore"
+import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore"
 import { Card, CardContent, Badge, Button } from "@/components/ui"
 import {
     MessageSquareText,
@@ -15,7 +15,8 @@ import {
     ArrowRight,
     StickyNote,
     Share2,
-    GraduationCap
+    GraduationCap,
+    Heart
 } from "lucide-react"
 import Link from "next/link"
 import { CourseList } from "@/components/courses/CourseList"
@@ -26,6 +27,7 @@ interface Category {
     id: string
     name: string
     color: string
+    isFavorite?: boolean
 }
 
 interface ContentItem {
@@ -38,6 +40,7 @@ interface ContentItem {
     images?: string[] // For prompts
     image?: string // For generic use
     url?: string
+    isFavorite?: boolean // For prompts
 }
 
 export default function CategoryDetailsPage() {
@@ -51,6 +54,7 @@ export default function CategoryDetailsPage() {
     const [filteredContent, setFilteredContent] = useState<ContentItem[]>([])
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState("all")
+    const [attachments, setAttachments] = useState<Record<string, any[]>>({})
 
     useEffect(() => {
         if (userData?.workspaceId && categoryId) {
@@ -106,22 +110,106 @@ export default function CategoryDetailsPage() {
             const allContent: ContentItem[] = []
 
             // Prompts
-            results[0].docs.forEach(d => allContent.push({ ...d.data(), id: d.id, type: "prompt" } as any))
+            const promptDocs = results[0].docs
+            promptDocs.forEach(d => {
+                const data = d.data()
+                allContent.push({ 
+                    ...data, 
+                    id: d.id, 
+                    type: "prompt",
+                    isFavorite: data.isFavorite ?? false
+                } as ContentItem)
+            })
+            
+            // Fetch attachments for prompts
+            if (promptDocs.length > 0) {
+                const promptIds = promptDocs.map(d => d.id)
+                const attachmentsQuery = query(collection(db, "attachments"))
+                const attachmentsSnap = await getDocs(attachmentsQuery)
+                const attachmentsMap: Record<string, any[]> = {}
+                
+                attachmentsSnap.docs.forEach(doc => {
+                    const data = doc.data()
+                    if (data.promptId && promptIds.includes(data.promptId)) {
+                        if (!attachmentsMap[data.promptId]) {
+                            attachmentsMap[data.promptId] = []
+                        }
+                        attachmentsMap[data.promptId].push(data)
+                    }
+                })
+                setAttachments(attachmentsMap)
+            }
             // Tweets
-            results[1].docs.forEach(d => allContent.push({ ...d.data(), id: d.id, type: "tweet" } as any))
+            results[1].docs.forEach(d => {
+                const data = d.data()
+                allContent.push({ 
+                    ...data, 
+                    id: d.id, 
+                    type: "tweet",
+                    isFavorite: data.isFavorite ?? false
+                } as ContentItem)
+            })
             // Tools
-            results[2].docs.forEach(d => allContent.push({ ...d.data(), id: d.id, type: "tool" } as any))
+            results[2].docs.forEach(d => {
+                const data = d.data()
+                allContent.push({ 
+                    ...data, 
+                    id: d.id, 
+                    type: "tool",
+                    isFavorite: data.isFavorite ?? false
+                } as ContentItem)
+            })
             // Playbooks
-            results[3].docs.forEach(d => allContent.push({ ...d.data(), id: d.id, type: "playbook" } as any))
+            results[3].docs.forEach(d => {
+                const data = d.data()
+                allContent.push({ 
+                    ...data, 
+                    id: d.id, 
+                    type: "playbook",
+                    isFavorite: data.isFavorite ?? false
+                } as ContentItem)
+            })
             // Notes
-            results[4].docs.forEach(d => allContent.push({ ...d.data(), id: d.id, type: "note" } as any))
+            results[4].docs.forEach(d => {
+                const data = d.data()
+                allContent.push({ 
+                    ...data, 
+                    id: d.id, 
+                    type: "note",
+                    isFavorite: data.isFavorite ?? false
+                } as ContentItem)
+            })
             // Courses
-            results[5].docs.forEach(d => allContent.push({ ...d.data(), id: d.id, type: "course" } as any))
+            results[5].docs.forEach(d => {
+                const data = d.data()
+                allContent.push({ 
+                    ...data, 
+                    id: d.id, 
+                    type: "course",
+                    isFavorite: data.isFavorite ?? false
+                } as ContentItem)
+            })
             // Learning Topics
-            results[6].docs.forEach(d => allContent.push({ ...d.data(), id: d.id, type: "learning_topic" } as any))
+            results[6].docs.forEach(d => {
+                const data = d.data()
+                allContent.push({ 
+                    ...data, 
+                    id: d.id, 
+                    type: "learning_topic",
+                    isFavorite: data.isFavorite ?? false
+                } as ContentItem)
+            })
 
-            // Sort by createdAt desc
+            // Sort: favorites first, then by createdAt desc
             allContent.sort((a, b) => {
+                const aIsFavorite = a.isFavorite ?? false
+                const bIsFavorite = b.isFavorite ?? false
+                
+                // If one is favorite and the other isn't, favorite comes first
+                if (aIsFavorite && !bIsFavorite) return -1
+                if (!aIsFavorite && bIsFavorite) return 1
+                
+                // If both have same favorite status, sort by createdAt
                 const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0)
                 const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0)
                 return dateB.getTime() - dateA.getTime()
@@ -202,11 +290,100 @@ export default function CategoryDetailsPage() {
 
     // Helper to get image URL if exists
     const getItemImage = (item: ContentItem) => {
-        if (item.type === "prompt" && item.images && item.images.length > 0) {
-            return item.images[0]
+        if (item.type === "prompt") {
+            // First check attachments
+            const promptAttachments = attachments[item.id] || []
+            const imageAttachments = promptAttachments.filter((a: any) => a.mimeType?.startsWith("image/"))
+            if (imageAttachments.length > 0) {
+                return imageAttachments[0].url
+            }
+            // Fallback to images array if exists
+            if (item.images && item.images.length > 0) {
+                return item.images[0]
+            }
         }
         // Could add logic for generic 'image' field if added to other types
         return null
+    }
+
+    const handleToggleCategoryFavorite = async () => {
+        if (!category) return
+        
+        try {
+            const newFavoriteStatus = !(category.isFavorite ?? false)
+            await updateDoc(doc(db, "categories", categoryId), { isFavorite: newFavoriteStatus })
+            setCategory({ ...category, isFavorite: newFavoriteStatus })
+        } catch (error) {
+            console.error("Error toggling favorite:", error)
+        }
+    }
+
+    const handleToggleFavorite = async (itemId: string, itemType: string, e: React.MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        
+        try {
+            const item = content.find(c => c.id === itemId && c.type === itemType)
+            if (!item) return
+
+            const newFavoriteStatus = !(item.isFavorite ?? false)
+            
+            // Determine collection name based on type
+            let collectionName = ""
+            switch (itemType) {
+                case "prompt":
+                    collectionName = "prompts"
+                    break
+                case "tweet":
+                    collectionName = "tweets"
+                    break
+                case "tool":
+                    collectionName = "tools"
+                    break
+                case "playbook":
+                    collectionName = "playbooks"
+                    break
+                case "note":
+                    collectionName = "notes"
+                    break
+                case "course":
+                    collectionName = "courses"
+                    break
+                case "learning_topic":
+                    collectionName = "learningTopics"
+                    break
+                default:
+                    return
+            }
+            
+            if (collectionName) {
+                await updateDoc(doc(db, collectionName, itemId), { isFavorite: newFavoriteStatus })
+                
+                // Update local state and re-sort
+                setContent(prevContent => {
+                    const updated = prevContent.map(c => 
+                        c.id === itemId && c.type === itemType
+                            ? { ...c, isFavorite: newFavoriteStatus }
+                            : c
+                    )
+                    // Re-sort: favorites first, then by createdAt
+                    updated.sort((a, b) => {
+                        const aIsFavorite = a.isFavorite ?? false
+                        const bIsFavorite = b.isFavorite ?? false
+                        
+                        if (aIsFavorite && !bIsFavorite) return -1
+                        if (!aIsFavorite && bIsFavorite) return 1
+                        
+                        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0)
+                        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0)
+                        return dateB.getTime() - dateA.getTime()
+                    })
+                    return updated
+                })
+            }
+        } catch (error) {
+            console.error("Error toggling favorite:", error)
+        }
     }
 
     if (loading) {
@@ -233,24 +410,37 @@ export default function CategoryDetailsPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <Link href="/dashboard">
-                    <Button variant="ghost" size="icon">
-                        <ArrowRight className="h-5 w-5" />
-                    </Button>
-                </Link>
-                <div>
-                    <h1 className="flex items-center gap-3 text-2xl font-bold text-slate-900 dark:text-white">
-                        <span
-                            className="inline-block h-4 w-4 rounded-full"
-                            style={{ backgroundColor: category.color }}
-                        />
-                        {category.name}
-                    </h1>
-                    <p className="text-slate-500">
-                        {content.length} عنصر في هذا التصنيف
-                    </p>
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <Link href="/dashboard">
+                        <Button variant="ghost" size="icon">
+                            <ArrowRight className="h-5 w-5" />
+                        </Button>
+                    </Link>
+                    <div>
+                        <h1 className="flex items-center gap-3 text-2xl font-bold text-slate-900 dark:text-white">
+                            <span
+                                className="inline-block h-4 w-4 rounded-full"
+                                style={{ backgroundColor: category.color }}
+                            />
+                            {category.name}
+                        </h1>
+                        <p className="text-slate-500">
+                            {content.length} عنصر في هذا التصنيف
+                        </p>
+                    </div>
                 </div>
+                <button
+                    onClick={handleToggleCategoryFavorite}
+                    className={`rounded-lg p-2 transition-colors ${
+                        category.isFavorite
+                            ? "text-red-500 hover:bg-red-50 hover:text-red-600"
+                            : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                    }`}
+                    title={category.isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+                >
+                    <Heart className={`h-5 w-5 ${category.isFavorite ? "fill-red-500" : ""}`} />
+                </button>
             </div>
 
             {/* Actions for current filter */}
@@ -308,36 +498,50 @@ export default function CategoryDetailsPage() {
                                     : { href: getLink(item) }
 
                                 return (
-                                    <LinkComponent key={`${item.type}-${item.id}`} {...linkProps as any} className="block h-full">
-                                        <Card hover className="relative flex flex-col h-full overflow-hidden transition-all hover:-translate-y-1 hover:shadow-md group">
-                                            {/* Image Preview */}
-                                            {imageUrl && (
-                                                <div className="h-32 w-full bg-slate-100 dark:bg-slate-800 relative">
-                                                    <img
-                                                        src={imageUrl}
-                                                        alt={getTitle(item)}
-                                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                    />
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                </div>
-                                            )}
+                                    <div key={`${item.type}-${item.id}`} className="relative h-full">
+                                        <LinkComponent {...linkProps as any} className="block h-full">
+                                            <Card hover className="relative flex flex-col h-full overflow-hidden transition-all hover:-translate-y-1 hover:shadow-md group">
+                                                {/* Image Preview */}
+                                                {imageUrl && (
+                                                    <div className="relative h-44 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 p-3">
+                                                        <img
+                                                            src={imageUrl}
+                                                            alt={getTitle(item)}
+                                                            className="h-full w-full object-contain rounded-lg"
+                                                        />
+                                                    </div>
+                                                )}
 
-                                            <div className="flex-1 flex flex-col justify-between p-4 bg-white dark:bg-slate-950">
-                                                <div className="flex items-start justify-between mb-3 gap-2">
-                                                    <Icon className="h-5 w-5 text-slate-400 flex-shrink-0 mt-0.5" />
-                                                    <Badge variant="secondary" className={`${getTypeColor(item.type)} border-0 whitespace-nowrap`}>
-                                                        {getTypeLabel(item.type)}
-                                                    </Badge>
-                                                </div>
+                                                <div className="flex-1 flex flex-col justify-between p-4 bg-white dark:bg-slate-950">
+                                                    <div className="flex items-start justify-between mb-3 gap-2">
+                                                        <Icon className="h-5 w-5 text-slate-400 flex-shrink-0 mt-0.5" />
+                                                        <Badge variant="secondary" className={`${getTypeColor(item.type)} border-0 whitespace-nowrap`}>
+                                                            {getTypeLabel(item.type)}
+                                                        </Badge>
+                                                    </div>
 
-                                                <div>
-                                                    <h3 className="font-bold text-lg text-slate-900 dark:text-white line-clamp-2 text-right leading-relaxed group-hover:text-indigo-600 transition-colors">
-                                                        {getTitle(item)}
-                                                    </h3>
+                                                    <div>
+                                                        <h3 className="font-bold text-lg text-slate-900 dark:text-white line-clamp-2 text-right leading-relaxed group-hover:text-indigo-600 transition-colors">
+                                                            {getTitle(item)}
+                                                        </h3>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </Card>
-                                    </LinkComponent>
+                                            </Card>
+                                        </LinkComponent>
+                                        
+                                        {/* Favorite Button for all items */}
+                                        <button
+                                            onClick={(e) => handleToggleFavorite(item.id, item.type, e)}
+                                            className={`absolute top-2 left-2 rounded-lg p-1.5 transition-colors z-10 ${
+                                                item.isFavorite
+                                                    ? "text-red-500 hover:bg-red-50 hover:text-red-600 bg-white/90"
+                                                    : "text-slate-400 hover:bg-white/90 hover:text-slate-600 bg-white/70"
+                                            }`}
+                                            title={item.isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+                                        >
+                                            <Heart className={`h-4 w-4 ${item.isFavorite ? "fill-red-500" : ""}`} />
+                                        </button>
+                                    </div>
                                 )
                             })}
                         </div>

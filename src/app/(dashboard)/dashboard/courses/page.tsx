@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
-import { collection, query, where, getDocs, doc, deleteDoc } from "firebase/firestore"
+import { collection, query, where, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore"
 import { Card, CardContent, Button, Badge } from "@/components/ui"
 import {
     Plus,
@@ -14,7 +14,8 @@ import {
     Loader2,
     Wrench,
     Tag,
-    FileText
+    FileText,
+    Heart
 } from "lucide-react"
 import Link from "next/link"
 
@@ -26,6 +27,7 @@ interface Course {
     notes?: string
     categoryId?: string
     createdAt: any
+    isFavorite?: boolean
 }
 
 interface Category {
@@ -60,8 +62,14 @@ export default function CoursesPage() {
             const coursesSnap = await getDocs(coursesQuery)
             const coursesList = coursesSnap.docs.map(doc => doc.data() as Course)
 
-            // Sort by created at desc
+            // Sort: favorites first, then by created at desc
             coursesList.sort((a, b) => {
+                const aIsFavorite = a.isFavorite ?? false
+                const bIsFavorite = b.isFavorite ?? false
+                
+                if (aIsFavorite && !bIsFavorite) return -1
+                if (!aIsFavorite && bIsFavorite) return 1
+                
                 const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt)
                 const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt)
                 return dateB.getTime() - dateA.getTime()
@@ -95,6 +103,36 @@ export default function CoursesPage() {
         }
     }
 
+    const handleToggleFavorite = async (id: string) => {
+        try {
+            const course = courses.find(c => c.id === id)
+            if (!course) return
+
+            const newFavoriteStatus = !(course.isFavorite ?? false)
+            await updateDoc(doc(db, "courses", id), { isFavorite: newFavoriteStatus })
+            
+            setCourses(prevCourses => {
+                const updated = prevCourses.map(c => 
+                    c.id === id ? { ...c, isFavorite: newFavoriteStatus } : c
+                )
+                updated.sort((a, b) => {
+                    const aIsFavorite = a.isFavorite ?? false
+                    const bIsFavorite = b.isFavorite ?? false
+                    
+                    if (aIsFavorite && !bIsFavorite) return -1
+                    if (!aIsFavorite && bIsFavorite) return 1
+                    
+                    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt)
+                    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt)
+                    return dateB.getTime() - dateA.getTime()
+                })
+                return updated
+            })
+        } catch (error) {
+            console.error("Error toggling favorite:", error)
+        }
+    }
+
     const getCategoryName = (id?: string) => {
         if (!id) return null
         return categories.find(c => c.id === id)?.name
@@ -104,6 +142,31 @@ export default function CoursesPage() {
         if (!id) return "bg-slate-100 text-slate-700"
         const cat = categories.find(c => c.id === id)
         return cat ? `bg-[${cat.color}]/10 text-[${cat.color}]` : "bg-slate-100 text-slate-700"
+    }
+
+    // Function to convert URLs in text to clickable links
+    const linkifyContent = (text: string) => {
+        if (!text) return text
+        const urlRegex = /(https?:\/\/[^\s]+)/g
+        const parts = text.split(urlRegex)
+
+        return parts.map((part, index) => {
+            if (part.match(urlRegex)) {
+                return (
+                    <a
+                        key={index}
+                        href={part}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline break-all"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {part}
+                    </a>
+                )
+            }
+            return part
+        })
     }
 
     const filteredCourses = courses.filter(course =>
@@ -157,7 +220,18 @@ export default function CoursesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredCourses.length > 0 ? (
                     filteredCourses.map(course => (
-                        <Card key={course.id} hover className="flex flex-col h-full">
+                        <Card key={course.id} hover className="flex flex-col h-full relative">
+                            <button
+                                onClick={() => handleToggleFavorite(course.id)}
+                                className={`absolute top-2 left-2 rounded-lg p-1.5 transition-colors z-10 ${
+                                    course.isFavorite
+                                        ? "text-red-500 hover:bg-red-50 hover:text-red-600 bg-white/90"
+                                        : "text-slate-400 hover:bg-white/90 hover:text-slate-600 bg-white/70"
+                                }`}
+                                title={course.isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+                            >
+                                <Heart className={`h-4 w-4 ${course.isFavorite ? "fill-red-500" : ""}`} />
+                            </button>
                             <CardContent className="flex flex-col h-full gap-4 pt-6">
                                 <div className="flex items-start justify-between">
                                     <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
@@ -185,7 +259,7 @@ export default function CoursesPage() {
                                 {course.notes && (
                                     <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg text-sm text-slate-600 dark:text-slate-400 line-clamp-3">
                                         <FileText className="h-3 w-3 inline-block ml-1 mb-0.5" />
-                                        {course.notes}
+                                        {linkifyContent(course.notes)}
                                     </div>
                                 )}
 
