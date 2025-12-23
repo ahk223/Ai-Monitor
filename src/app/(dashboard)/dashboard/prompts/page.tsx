@@ -16,6 +16,7 @@ import {
     Filter,
     Loader2,
     Image as ImageIcon,
+    Heart,
 } from "lucide-react"
 import Link from "next/link"
 import { formatRelativeTime } from "@/lib/utils"
@@ -29,6 +30,7 @@ interface Prompt {
     categoryId: string | null
     createdAt: Date
     isArchived: boolean
+    isFavorite?: boolean
 }
 
 interface Category {
@@ -84,8 +86,16 @@ export default function PromptsPage() {
                 id: doc.id,
             })) as Prompt[]
 
-            // Sort by createdAt
+            // Sort: favorites first, then by createdAt
             promptsList.sort((a, b) => {
+                const aIsFavorite = a.isFavorite ?? false
+                const bIsFavorite = b.isFavorite ?? false
+                
+                // If one is favorite and the other isn't, favorite comes first
+                if (aIsFavorite && !bIsFavorite) return -1
+                if (!aIsFavorite && bIsFavorite) return 1
+                
+                // If both have same favorite status, sort by createdAt
                 const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
                 const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
                 return dateB.getTime() - dateA.getTime()
@@ -134,6 +144,38 @@ export default function PromptsPage() {
             setPrompts(prompts.filter(p => p.id !== id))
         } catch (error) {
             console.error("Error deleting prompt:", error)
+        }
+    }
+
+    const handleToggleFavorite = async (id: string) => {
+        try {
+            const prompt = prompts.find(p => p.id === id)
+            if (!prompt) return
+
+            const newFavoriteStatus = !(prompt.isFavorite ?? false)
+            await updateDoc(doc(db, "prompts", id), { isFavorite: newFavoriteStatus })
+            
+            // Update local state
+            setPrompts(prevPrompts => {
+                const updated = prevPrompts.map(p => 
+                    p.id === id ? { ...p, isFavorite: newFavoriteStatus } : p
+                )
+                // Re-sort after update
+                updated.sort((a, b) => {
+                    const aIsFavorite = a.isFavorite ?? false
+                    const bIsFavorite = b.isFavorite ?? false
+                    
+                    if (aIsFavorite && !bIsFavorite) return -1
+                    if (!aIsFavorite && bIsFavorite) return 1
+                    
+                    const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
+                    const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
+                    return dateB.getTime() - dateA.getTime()
+                })
+                return updated
+            })
+        } catch (error) {
+            console.error("Error toggling favorite:", error)
         }
     }
 
@@ -284,6 +326,20 @@ export default function PromptsPage() {
                                             </Badge>
                                         )}
                                         <div className="flex gap-1">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault()
+                                                    handleToggleFavorite(prompt.id)
+                                                }}
+                                                className={`rounded-lg p-1.5 transition-colors ${
+                                                    prompt.isFavorite
+                                                        ? "text-red-500 hover:bg-red-50 hover:text-red-600"
+                                                        : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                                                }`}
+                                                title={prompt.isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+                                            >
+                                                <Heart className={`h-4 w-4 ${prompt.isFavorite ? "fill-red-500" : ""}`} />
+                                            </button>
                                             <button
                                                 onClick={() => handleCopy(prompt.content)}
                                                 className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"

@@ -118,12 +118,17 @@ export default function EditPromptPage() {
         setIsLoading(true)
 
         try {
+            // Get current prompt to preserve isFavorite
+            const currentPromptDoc = await getDoc(doc(db, "prompts", promptId))
+            const currentPrompt = currentPromptDoc.data()
+            
             // Update prompt document
             await updateDoc(doc(db, "prompts", promptId), {
                 title: form.title,
                 description: form.description || null,
                 content: form.content,
                 categoryId: form.categoryId || null,
+                isFavorite: currentPrompt?.isFavorite ?? false,
                 updatedAt: new Date(),
             })
 

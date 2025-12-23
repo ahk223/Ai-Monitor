@@ -92,6 +92,7 @@ export default function NewPromptPage() {
                 rating: null,
                 usageCount: 0,
                 isArchived: false,
+                isFavorite: false,
                 createdAt: new Date(),
                 updatedAt: new Date(),
             })
