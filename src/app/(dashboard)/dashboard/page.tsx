@@ -113,7 +113,7 @@ const ContentCard = ({ item, onToggleFavorite }: { item: ContentItem, onToggleFa
     const editLink = getEditLink(item)
 
     return (
-        <div className="block h-full min-w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:min-w-[280px] sm:max-w-[280px] md:min-w-0 md:max-w-none snap-start relative group">
+        <div className="block h-full w-full sm:w-[280px] sm:flex-shrink-0 md:w-auto md:flex-shrink snap-start relative group">
              {/* Favorite Button (Left) */}
              <button
                 onClick={(e) => {
@@ -227,8 +227,8 @@ const CategorySection = ({
                 </Link>
             </div>
 
-            {/* Mobile: Horizontal Scroll | Desktop: Grid */}
-            <div className="flex overflow-x-auto pb-4 gap-2 md:gap-3 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:overflow-visible snap-x snap-mandatory -mx-2 sm:-mx-4 px-2 sm:px-4 md:mx-0 md:px-0 scrollbar-hide">
+            {/* Mobile: One card per row (vertical scroll) | Desktop: Grid */}
+            <div className="flex flex-col sm:flex-row sm:overflow-x-auto pb-4 gap-3 sm:gap-2 md:gap-3 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:overflow-visible sm:snap-x sm:snap-mandatory -mx-2 sm:-mx-4 px-2 sm:px-4 md:mx-0 md:px-0 scrollbar-hide">
                 {items.slice(0, 6).map((item, idx) => (
                     <ContentCard key={`${item.type}-${item.id}-${idx}`} item={item} onToggleFavorite={onToggleFavorite} />
                 ))}
