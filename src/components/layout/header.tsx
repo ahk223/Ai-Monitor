@@ -38,20 +38,23 @@ export function Header({ user }: HeaderProps) {
 
     return (
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-4 lg:px-6 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
-            {/* Search - hidden on small mobile, show on medium+ */}
-            <div className="relative hidden sm:block w-full max-w-md">
-                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                    type="text"
-                    placeholder="ابحث في كل شيء..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pr-10 pl-4 text-sm outline-none transition-all focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-900"
-                />
-            </div>
+            {/* Left side (RTL start) - Search and Spacer */}
+            <div className="flex items-center flex-1 gap-4">
+                {/* Spacer for Sidebar Toggle Button - visible on mobile/tablet (matches sidebar toggle visibility) */}
+                <div className="w-10 lg:hidden flex-shrink-0" />
 
-            {/* Mobile: Logo placeholder for spacing */}
-            <div className="sm:hidden w-10" />
+                {/* Search - hidden on small mobile, show on medium+ */}
+                <div className="relative hidden sm:block w-full max-w-md">
+                    <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="ابحث في كل شيء..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pr-10 pl-4 text-sm outline-none transition-all focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-900"
+                    />
+                </div>
+            </div>
 
             {/* Actions */}
             <div className="flex items-center gap-2 lg:gap-3">
