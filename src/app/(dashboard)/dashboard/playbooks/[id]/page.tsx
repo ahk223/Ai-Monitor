@@ -895,11 +895,11 @@ export default function PlaybookDetailPage() {
                         return (
                             <div
                                 key={item.id}
-                                className="relative flex flex-col gap-3 md:gap-4 rounded-xl border border-slate-200 bg-white p-3 md:p-4 transition-all dark:border-slate-800 dark:bg-slate-950"
+                                className="relative flex flex-col gap-3 md:gap-4 rounded-xl border border-slate-200 bg-white p-3 md:p-4 transition-all dark:border-slate-800 dark:bg-slate-950 w-full max-w-full overflow-hidden"
                             >
                                 {/* Header with Title and Toggle */}
-                                <div className="flex flex-col md:flex-row md:items-start gap-3 md:gap-4 justify-between">
-                                    <div className="flex items-start gap-2 md:gap-3 flex-1 min-w-0">
+                                <div className="flex flex-col md:flex-row md:items-start gap-3 md:gap-4 justify-between w-full">
+                                    <div className="flex items-start gap-2 md:gap-3 flex-1 min-w-0 w-full max-w-full">
                                         <button
                                             onClick={() => handleFeedbackChange(item.id, { completed: !isCompleted })}
                                             className="mt-0.5 md:mt-1 flex h-5 w-5 md:h-6 md:w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 hover:border-slate-400 dark:border-slate-600 transition-all hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -907,25 +907,25 @@ export default function PlaybookDetailPage() {
                                         >
                                             <div className={`h-2.5 w-2.5 md:h-3 md:w-3 rounded-full bg-slate-400 transition-opacity ${isCompleted ? 'opacity-100' : 'opacity-0'}`} />
                                         </button>
-                                        <div className="flex-1 min-w-0 space-y-1.5 md:space-y-2">
-                                            <h3 className="font-medium text-base md:text-lg leading-snug text-slate-900 dark:text-white break-words">
+                                        <div className="flex-1 min-w-0 w-full max-w-full space-y-1.5 md:space-y-2 overflow-hidden">
+                                            <h3 className="font-medium text-base md:text-lg leading-snug text-slate-900 dark:text-white break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                                                 {item.title}
                                             </h3>
                                             {item.description && (
-                                                <p className="text-xs md:text-sm text-slate-500 line-clamp-3 leading-relaxed break-words">
+                                                <p className="text-xs md:text-sm text-slate-500 line-clamp-3 leading-relaxed break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                                                     {item.description}
                                                 </p>
                                             )}
 
-                                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                                            <div className="flex flex-wrap items-center gap-2 pt-1 w-full">
                                                 <a
                                                     href={item.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg bg-indigo-50 px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50 w-full sm:w-auto"
+                                                    className="inline-flex items-center gap-1.5 md:gap-2 rounded-lg bg-indigo-50 px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50 w-full sm:w-auto min-w-0 max-w-full overflow-hidden"
                                                 >
-                                                    {getUrlIcon(item.url)}
-                                                    <span className="dir-ltr text-xs truncate flex-1 sm:flex-none sm:max-w-[200px] md:max-w-xs text-left">
+                                                    <span className="flex-shrink-0">{getUrlIcon(item.url)}</span>
+                                                    <span className="dir-ltr text-xs truncate flex-1 min-w-0 sm:flex-none sm:max-w-[200px] md:max-w-xs text-left overflow-hidden">
                                                         {getHostname(item.url)}
                                                     </span>
                                                     <ExternalLink className="h-3 w-3 flex-shrink-0" />
@@ -935,7 +935,7 @@ export default function PlaybookDetailPage() {
                                     </div>
 
                                     {/* Actions Toolbar */}
-                                    <div className="flex items-center justify-end gap-1.5 md:gap-2 border-t pt-2 md:pt-3 md:border-t-0 md:pt-0 border-slate-100 dark:border-slate-800">
+                                    <div className="flex items-center justify-end gap-1.5 md:gap-2 border-t pt-2 md:pt-3 md:border-t-0 md:pt-0 border-slate-100 dark:border-slate-800 flex-shrink-0">
                                         <div className="flex gap-0.5 md:gap-1 bg-slate-100 dark:bg-slate-900 p-0.5 md:p-1 rounded-lg">
                                             <Button
                                                 variant="ghost"
@@ -980,7 +980,7 @@ export default function PlaybookDetailPage() {
 
                                 {/* Video Embed */}
                                 {videoId && (
-                                    <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-lg bg-slate-900 border border-slate-800">
+                                    <div className="relative mt-2 aspect-video w-full max-w-full overflow-hidden rounded-lg bg-slate-900 border border-slate-800">
                                         {playingVideoId === item.id ? (
                                             <iframe
                                                 src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
