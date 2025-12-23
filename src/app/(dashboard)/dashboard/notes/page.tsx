@@ -7,7 +7,7 @@ import { collection, query, where, getDocs, deleteDoc, doc, updateDoc } from "fi
 import Link from "next/link"
 import { Card, CardContent, Badge, Button } from "@/components/ui"
 import { Plus, StickyNote, Trash2, Loader2, Pencil, Heart } from "lucide-react"
-import { linkifyContent } from "@/lib/utils"
+import { linkifyContent } from "@/lib/linkify"
 import { useToast, ConfirmModal } from "@/components/ui"
 import { useToggleFavorite } from "@/hooks/useToggleFavorite"
 

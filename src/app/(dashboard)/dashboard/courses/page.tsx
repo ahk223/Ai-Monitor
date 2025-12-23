@@ -18,7 +18,7 @@ import {
     Heart
 } from "lucide-react"
 import Link from "next/link"
-import { linkifyContent } from "@/lib/utils"
+import { linkifyContent } from "@/lib/linkify"
 import { useToast, ConfirmModal } from "@/components/ui"
 import { useToggleFavorite } from "@/hooks/useToggleFavorite"
 
