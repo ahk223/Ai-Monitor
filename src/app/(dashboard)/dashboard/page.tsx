@@ -3,28 +3,28 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
-import { collection, query, where, getDocs } from "firebase/firestore"
-import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from "@/components/ui"
+import { collection, query, where, getDocs, limit, orderBy } from "firebase/firestore"
+import { Card, CardContent, Badge, Button } from "@/components/ui"
 import {
     MessageSquareText,
     Twitter,
     Wrench,
     BookOpen,
     StickyNote,
-    ArrowUpRight,
+    ArrowLeft,
     Loader2,
     AlertCircle,
-    ChevronDown,
-    ChevronUp,
     GraduationCap,
     ListTodo,
     Sparkles,
-    TrendingUp,
     FolderKanban,
-    Zap,
+    MoreHorizontal,
+    LayoutGrid,
+    Calendar
 } from "lucide-react"
 import Link from "next/link"
 
+// --- Types ---
 interface ContentItem {
     id: string
     title?: string
@@ -32,6 +32,7 @@ interface ContentItem {
     url?: string
     type: "prompt" | "tweet" | "tool" | "playbook" | "note" | "course" | "learning_topic"
     categoryId?: string | null
+    createdAt?: any
 }
 
 interface Category {
@@ -40,219 +41,44 @@ interface Category {
     color: string
 }
 
-interface Stats {
-    prompts: number
-    tweets: number
-    tools: number
-    playbooks: number
-    notes: number
-    courses: number
-    learningTopics: number
-}
+// --- Components ---
 
-export default function DashboardPage() {
-    const { userData } = useAuth()
-    const [stats, setStats] = useState<Stats>({ prompts: 0, tweets: 0, tools: 0, playbooks: 0, notes: 0, courses: 0, learningTopics: 0 })
-    const [categories, setCategories] = useState<Category[]>([])
-    const [contentByCategory, setContentByCategory] = useState<Record<string, ContentItem[]>>({})
-    const [uncategorized, setUncategorized] = useState<ContentItem[]>([])
-    const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+// 1. Welcome Banner
+const WelcomeBanner = ({ userName, workspaceName }: { userName?: string, workspaceName?: string }) => (
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 p-6 text-white shadow-xl mb-8">
+        <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-5 w-5 text-yellow-300 animate-pulse" />
+                <h1 className="text-xl md:text-2xl font-bold">
+                    أهلاً بك، {userName || "مستخدم"}
+                </h1>
+            </div>
+            <p className="text-indigo-100 text-sm md:text-base">
+                {workspaceName || "مساحة العمل الخاصة بك"}
+            </p>
+        </div>
+        {/* Abstract Shapes */}
+        <div className="absolute right-0 top-0 -mt-10 -mr-10 h-32 w-32 rounded-full bg-white/10 blur-3xl"></div>
+        <div className="absolute left-0 bottom-0 -mb-10 -ml-10 h-32 w-32 rounded-full bg-indigo-500/30 blur-3xl"></div>
+    </div>
+)
 
-    useEffect(() => {
-        if (userData && !userData.workspaceId) {
-            setLoading(false)
-            return
-        }
-
-        if (userData?.workspaceId) {
-            fetchDashboardData()
-        }
-    }, [userData])
-
-    const fetchDashboardData = async () => {
-        if (!userData?.workspaceId) return
-
-        try {
-            setError(null)
-
-            // Fetch categories
-            const categoriesQuery = query(
-                collection(db, "categories"),
-                where("workspaceId", "==", userData.workspaceId)
-            )
-            const categoriesSnap = await getDocs(categoriesQuery)
-            const catsList = categoriesSnap.docs.map(doc => doc.data() as Category)
-            setCategories(catsList)
-
-            // Initialize expanded state
-            const expanded: Record<string, boolean> = {}
-            catsList.forEach(cat => expanded[cat.id] = true)
-            setExpandedCategories(expanded)
-
-            // Fetch all content
-            const allContent: ContentItem[] = []
-
-            // Prompts
-            const promptsQuery = query(
-                collection(db, "prompts"),
-                where("workspaceId", "==", userData.workspaceId),
-                where("isArchived", "==", false)
-            )
-            const promptsSnap = await getDocs(promptsQuery)
-            promptsSnap.docs.forEach(doc => {
-                const data = doc.data()
-                allContent.push({
-                    id: data.id,
-                    title: data.title,
-                    type: "prompt",
-                    categoryId: data.categoryId,
-                })
-            })
-
-            // Tweets
-            const tweetsQuery = query(
-                collection(db, "tweets"),
-                where("workspaceId", "==", userData.workspaceId),
-                where("isArchived", "==", false)
-            )
-            const tweetsSnap = await getDocs(tweetsQuery)
-            tweetsSnap.docs.forEach(doc => {
-                const data = doc.data()
-                allContent.push({
-                    id: data.id,
-                    title: data.url,
-                    url: data.url,
-                    type: "tweet",
-                    categoryId: data.categoryId,
-                })
-            })
-
-            // Tools
-            const toolsQuery = query(
-                collection(db, "tools"),
-                where("workspaceId", "==", userData.workspaceId),
-                where("isArchived", "==", false)
-            )
-            const toolsSnap = await getDocs(toolsQuery)
-            toolsSnap.docs.forEach(doc => {
-                const data = doc.data()
-                allContent.push({
-                    id: data.id,
-                    title: data.name,
-                    type: "tool",
-                    categoryId: data.categoryId,
-                })
-            })
-
-            // Playbooks
-            const playbooksQuery = query(
-                collection(db, "playbooks"),
-                where("workspaceId", "==", userData.workspaceId),
-                where("isArchived", "==", false)
-            )
-            const playbooksSnap = await getDocs(playbooksQuery)
-            playbooksSnap.docs.forEach(doc => {
-                const data = doc.data()
-                allContent.push({
-                    id: data.id,
-                    title: data.title,
-                    type: "playbook",
-                    categoryId: data.categoryId,
-                })
-            })
-
-            // Notes
-            const notesQuery = query(
-                collection(db, "notes"),
-                where("workspaceId", "==", userData.workspaceId)
-            )
-            const notesSnap = await getDocs(notesQuery)
-            notesSnap.docs.forEach(doc => {
-                const data = doc.data()
-                allContent.push({
-                    id: data.id,
-                    content: data.content,
-                    type: "note",
-                    categoryId: data.categoryId,
-                })
-            })
-
-            // Courses
-            const coursesQuery = query(
-                collection(db, "courses"),
-                where("workspaceId", "==", userData.workspaceId)
-            )
-            const coursesSnap = await getDocs(coursesQuery)
-            coursesSnap.docs.forEach(doc => {
-                const data = doc.data()
-                allContent.push({
-                    id: data.id,
-                    title: data.title,
-                    type: "course",
-                    categoryId: data.categoryId,
-                })
-            })
-
-            // Learning Topics
-            const topicsQuery = query(
-                collection(db, "learningTopics"),
-                where("workspaceId", "==", userData.workspaceId)
-            )
-            const topicsSnap = await getDocs(topicsQuery)
-            topicsSnap.docs.forEach(doc => {
-                const data = doc.data()
-                allContent.push({
-                    id: data.id,
-                    title: data.title,
-                    type: "learning_topic",
-                    categoryId: data.categoryId,
-                })
-            })
-
-            // Set stats
-            setStats({
-                prompts: promptsSnap.size,
-                tweets: tweetsSnap.size,
-                tools: toolsSnap.size,
-                playbooks: playbooksSnap.size,
-                notes: notesSnap.size,
-                courses: coursesSnap.size,
-                learningTopics: topicsSnap.size,
-            })
-
-            // Group by category
-            const byCategory: Record<string, ContentItem[]> = {}
-            const uncat: ContentItem[] = []
-
-            catsList.forEach(cat => {
-                byCategory[cat.id] = []
-            })
-
-            allContent.forEach(item => {
-                if (item.categoryId && byCategory[item.categoryId]) {
-                    byCategory[item.categoryId].push(item)
-                } else {
-                    uncat.push(item)
-                }
-            })
-
-            setContentByCategory(byCategory)
-            setUncategorized(uncat)
-        } catch (err) {
-            console.error("Error fetching dashboard data:", err)
-            setError("فشل تحميل البيانات. تأكد من اتصالك بالإنترنت.")
-        } finally {
-            setLoading(false)
+// 2. Content Card
+const ContentCard = ({ item }: { item: ContentItem }) => {
+    const getTypeConfig = (type: string) => {
+        switch (type) {
+            case "prompt": return { icon: MessageSquareText, label: "بروبمت", color: "text-indigo-500", bg: "bg-indigo-50 dark:bg-indigo-900/20" }
+            case "tweet": return { icon: Twitter, label: "سوشيال", color: "text-sky-500", bg: "bg-sky-50 dark:bg-sky-900/20" }
+            case "tool": return { icon: Wrench, label: "أداة", color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20" }
+            case "playbook": return { icon: BookOpen, label: "Playbook", color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-900/20" }
+            case "note": return { icon: StickyNote, label: "ملاحظة", color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-900/20" }
+            case "course": return { icon: GraduationCap, label: "كورس", color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20" }
+            case "learning_topic": return { icon: ListTodo, label: "تعلم", color: "text-pink-500", bg: "bg-pink-50 dark:bg-pink-900/20" }
+            default: return { icon: LayoutGrid, label: "عنصر", color: "text-slate-500", bg: "bg-slate-50" }
         }
     }
 
-    const toggleCategory = (catId: string) => {
-        setExpandedCategories(prev => ({ ...prev, [catId]: !prev[catId] }))
-    }
-
-    const getItemLink = (item: ContentItem) => {
+    const getLink = (item: ContentItem) => {
         switch (item.type) {
             case "prompt": return `/dashboard/prompts/${item.id}`
             case "tweet": return `/dashboard/tweets`
@@ -265,282 +91,264 @@ export default function DashboardPage() {
         }
     }
 
-    const getTypeIcon = (type: string) => {
-        switch (type) {
-            case "prompt": return <MessageSquareText className="h-4 w-4 text-indigo-500" />
-            case "tweet": return <Twitter className="h-4 w-4 text-cyan-500" />
-            case "tool": return <Wrench className="h-4 w-4 text-emerald-500" />
-            case "playbook": return <BookOpen className="h-4 w-4 text-orange-500" />
-            case "note": return <StickyNote className="h-4 w-4 text-amber-500" />
-            case "course": return <GraduationCap className="h-4 w-4 text-blue-500" />
-            case "learning_topic": return <ListTodo className="h-4 w-4 text-pink-500" />
-            default: return null
-        }
-    }
+    const config = getTypeConfig(item.type)
+    const Icon = config.icon
 
-    const getTypeName = (type: string) => {
-        switch (type) {
-            case "prompt": return "بروبمت"
-            case "tweet": return "سوشيال ميديا"
-            case "tool": return "أداة"
-            case "playbook": return "Playbook"
-            case "note": return "ملاحظة"
-            case "course": return "كورس"
-            case "learning_topic": return "للتعلم"
-            default: return ""
-        }
-    }
+    return (
+        <Link href={getLink(item)} className="block h-full min-w-[260px] max-w-[260px] md:min-w-0 md:max-w-none snap-start">
+            <Card className="h-full hover:shadow-md transition-all duration-300 border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 group">
+                <CardContent className="p-4 flex flex-col h-full">
+                    <div className="flex items-start justify-between mb-3">
+                        <div className={`p-2 rounded-lg ${config.bg}`}>
+                            <Icon className={`h-4 w-4 ${config.color}`} />
+                        </div>
+                        <Badge variant="secondary" className="text-[10px] font-normal px-2 bg-slate-100 dark:bg-slate-800 text-slate-500">
+                            {config.label}
+                        </Badge>
+                    </div>
+                    
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2 line-clamp-2 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        {item.title || item.content?.substring(0, 50) || "بدون عنوان"}
+                    </h3>
+                    
+                    {item.content && item.title && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3">
+                            {item.content}
+                        </p>
+                    )}
 
-    const statsCards = [
-        { title: "البروبمتات", value: stats.prompts, icon: MessageSquareText, color: "from-indigo-500 to-purple-500", bgColor: "bg-indigo-50 dark:bg-indigo-900/20", href: "/dashboard/prompts" },
-        { title: "Playbooks", value: stats.playbooks, icon: BookOpen, color: "from-orange-500 to-red-500", bgColor: "bg-orange-50 dark:bg-orange-900/20", href: "/dashboard/playbooks" },
-        { title: "الكورسات", value: stats.courses, icon: GraduationCap, color: "from-blue-500 to-cyan-500", bgColor: "bg-blue-50 dark:bg-blue-900/20", href: "/dashboard/courses" },
-        { title: "للتعلم", value: stats.learningTopics, icon: ListTodo, color: "from-pink-500 to-rose-500", bgColor: "bg-pink-50 dark:bg-pink-900/20", href: "/dashboard/learning" },
-        { title: "الأدوات", value: stats.tools, icon: Wrench, color: "from-emerald-500 to-teal-500", bgColor: "bg-emerald-50 dark:bg-emerald-900/20", href: "/dashboard/tools" },
-        { title: "السوشيال ميديا", value: stats.tweets, icon: Twitter, color: "from-cyan-500 to-blue-500", bgColor: "bg-cyan-50 dark:bg-cyan-900/20", href: "/dashboard/tweets" },
-        { title: "الملاحظات", value: stats.notes, icon: StickyNote, color: "from-amber-500 to-yellow-500", bgColor: "bg-amber-50 dark:bg-amber-900/20", href: "/dashboard/notes" },
-    ]
+                    <div className="mt-auto pt-2 flex items-center text-xs text-slate-400 group-hover:text-indigo-500 transition-colors">
+                        <span>عرض التفاصيل</span>
+                        <ArrowLeft className="h-3 w-3 mr-1 transition-transform group-hover:-translate-x-1" />
+                    </div>
+                </CardContent>
+            </Card>
+        </Link>
+    )
+}
 
-    if (!loading && userData && !userData.workspaceId) {
-        return (
-            <div className="flex flex-col items-center justify-center py-20 px-4">
-                <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2 text-center">
-                    لا توجد مساحة عمل
-                </h2>
-                <p className="text-slate-500 mb-4 text-center max-w-md">
-                    يبدو أن حسابك غير مرتبط بمساحة عمل. قد تحتاج إلى إنشاء حساب جديد.
-                </p>
-                <Link href="/register">
-                    <Button>إنشاء حساب جديد</Button>
+// 3. Category Section
+const CategorySection = ({ category, items }: { category: Category, items: ContentItem[] }) => {
+    if (!items || items.length === 0) return null
+
+    return (
+        <section className="mb-8">
+            <div className="flex items-center justify-between mb-4 px-1">
+                <div className="flex items-center gap-3">
+                    <div 
+                        className="w-1.5 h-6 rounded-full" 
+                        style={{ backgroundColor: category.color }}
+                    />
+                    <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white">
+                        {category.name}
+                    </h2>
+                    <Badge variant="outline" className="text-xs rounded-full px-2 py-0.5 border-slate-200 dark:border-slate-700">
+                        {items.length}
+                    </Badge>
+                </div>
+                <Link href={`/dashboard/categories/${category.id}`}>
+                    <Button variant="ghost" size="sm" className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-xs md:text-sm">
+                        عرض الكل
+                        <ArrowLeft className="h-3 w-3 mr-1" />
+                    </Button>
                 </Link>
             </div>
-        )
+
+            {/* Mobile: Horizontal Scroll | Desktop: Grid */}
+            <div className="flex overflow-x-auto pb-4 gap-3 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:overflow-visible snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
+                {items.slice(0, 6).map((item, idx) => (
+                    <ContentCard key={`${item.type}-${item.id}-${idx}`} item={item} />
+                ))}
+                
+                {items.length > 6 && (
+                    <Link href={`/dashboard/categories/${category.id}`} className="min-w-[100px] flex items-center justify-center snap-start">
+                        <div className="flex flex-col items-center gap-2 text-slate-400 hover:text-indigo-600 transition-colors p-4">
+                            <div className="p-3 rounded-full bg-slate-100 dark:bg-slate-800">
+                                <MoreHorizontal className="h-5 w-5" />
+                            </div>
+                            <span className="text-xs font-medium">المزيد</span>
+                        </div>
+                    </Link>
+                )}
+            </div>
+        </section>
+    )
+}
+
+// --- Main Page Component ---
+export default function DashboardPage() {
+    const { userData } = useAuth()
+    const [categories, setCategories] = useState<Category[]>([])
+    const [contentByCategory, setContentByCategory] = useState<Record<string, ContentItem[]>>({})
+    const [uncategorized, setUncategorized] = useState<ContentItem[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
+    useEffect(() => {
+        if (userData && !userData.workspaceId) {
+            setLoading(false)
+            return
+        }
+
+        if (userData?.workspaceId) {
+            fetchData()
+        }
+    }, [userData])
+
+    const fetchData = async () => {
+        if (!userData?.workspaceId) return
+
+        try {
+            setLoading(true)
+            
+            // 1. Fetch Categories
+            const categoriesQuery = query(
+                collection(db, "categories"),
+                where("workspaceId", "==", userData.workspaceId)
+            )
+            const categoriesSnap = await getDocs(categoriesQuery)
+            const catsList = categoriesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Category))
+            
+            // Sort categories alphabetically
+            catsList.sort((a, b) => a.name.localeCompare(b.name))
+            setCategories(catsList)
+
+            // 2. Fetch Content from all collections
+            const collections = ["prompts", "tweets", "tools", "playbooks", "notes", "courses", "learningTopics"]
+            const allContent: ContentItem[] = []
+
+            await Promise.all(collections.map(async (colName) => {
+                let q = query(
+                    collection(db, colName),
+                    where("workspaceId", "==", userData.workspaceId)
+                )
+                
+                // Add isArchived check if applicable (simulated here for brevity, best to check field existence or use try/catch in real robust app if schema varies)
+                // For simplicity assuming we filter archived in client or query works.
+                // To be safe and simple: fetch active ones. Most collections have isArchived.
+                
+                try {
+                    const snap = await getDocs(q)
+                    snap.docs.forEach(doc => {
+                        const data = doc.data()
+                        if (data.isArchived) return
+
+                        let title = data.title || data.name || data.url || ""
+                        let content = data.content || data.description || ""
+                        
+                        // Fix for tweets that might not have title
+                        if (colName === 'tweets' && !title && data.url) title = data.url
+                        
+                        // Fix for notes that mainly have content
+                        if (colName === 'notes' && !title && data.content) {
+                            title = data.content.substring(0, 60) + (data.content.length > 60 ? "..." : "")
+                        }
+
+                        allContent.push({
+                            id: doc.id,
+                            type: colName === 'learningTopics' ? 'learning_topic' : colName.replace('s', '') as any, // simple plural to singular
+                            title,
+                            content,
+                            categoryId: data.categoryId,
+                            createdAt: data.createdAt
+                        })
+                    })
+                } catch (e) {
+                    console.error(`Error fetching ${colName}`, e)
+                }
+            }))
+
+            // 3. Group Content
+            const grouped: Record<string, ContentItem[]> = {}
+            const uncat: ContentItem[] = []
+
+            // Initialize groups
+            catsList.forEach(c => grouped[c.id] = [])
+
+            // Sort all content by date (newest first) if available
+            allContent.sort((a, b) => {
+                const dateA = a.createdAt?.seconds || 0
+                const dateB = b.createdAt?.seconds || 0
+                return dateB - dateA
+            })
+
+            // Distribute
+            allContent.forEach(item => {
+                if (item.categoryId && grouped[item.categoryId]) {
+                    grouped[item.categoryId].push(item)
+                } else {
+                    uncat.push(item)
+                }
+            })
+
+            setContentByCategory(grouped)
+            setUncategorized(uncat)
+
+        } catch (err) {
+            console.error("Dashboard fetch error:", err)
+            setError("حدث خطأ أثناء تحميل البيانات")
+        } finally {
+            setLoading(false)
+        }
     }
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-20">
+            <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
                 <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+                <p className="text-slate-500 text-sm">جاري تحضير مكتبتك...</p>
             </div>
         )
     }
 
     if (error) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 px-4">
-                <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2 text-center">
-                    حدث خطأ
-                </h2>
-                <p className="text-slate-500 mb-4 text-center">{error}</p>
-                <Button onClick={fetchDashboardData}>إعادة المحاولة</Button>
+            <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 px-4 text-center">
+                <AlertCircle className="h-12 w-12 text-red-500 opacity-50" />
+                <p className="text-slate-600 font-medium">{error}</p>
+                <Button variant="outline" onClick={fetchData}>محاولة مرة أخرى</Button>
             </div>
         )
     }
 
-    const totalItems = stats.prompts + stats.tweets + stats.tools + stats.playbooks + stats.notes + stats.courses + stats.learningTopics
+    const hasContent = Object.values(contentByCategory).some(list => list.length > 0) || uncategorized.length > 0
 
     return (
-        <div className="space-y-4 md:space-y-6">
-            {/* Welcome Section - Mobile First Design */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-6 md:p-8 text-white shadow-2xl">
-                <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-white/10 blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
+        <div className="pb-20 md:pb-8">
+            <WelcomeBanner 
+                userName={userData?.name} 
+                workspaceName={userData?.workspaceName} 
+            />
 
-                <div className="relative z-10 flex flex-col md:block">
-                    <div className="flex items-center gap-3 mb-4">
-                        <Sparkles className="h-6 w-6 text-yellow-300 flex-shrink-0" />
-                        <h1 className="text-2xl md:text-3xl font-bold leading-tight">
-                            مرحباً، {userData?.name || "مستخدم"} 👋
-                        </h1>
-                    </div>
-                    <p className="text-base md:text-lg opacity-90 mb-5">
-                        {userData?.workspaceName || "مساحة العمل"}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-3 md:gap-4 text-sm md:text-base opacity-90">
-                        <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2">
-                            <Zap className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
-                            <span className="font-semibold">{totalItems} عنصر إجمالي</span>
-                        </div>
-                        <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2">
-                            <FolderKanban className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
-                            <span className="font-semibold">{categories.length} تصنيف</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Stats - Mobile First: Larger cards for mobile */}
-            <div>
-                <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-indigo-600 flex-shrink-0" />
-                    <span>الإحصائيات</span>
-                </h2>
-                {/* Mobile: 2 columns, Tablet: 3-4, Desktop: 7 */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 md:gap-4">
-                    {statsCards.map((stat) => (
-                        <Link key={stat.title} href={stat.href} className="block">
-                            <Card className="group relative overflow-hidden border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer h-full">
-                                <div className={`absolute inset-0 ${stat.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                                <CardContent className="relative flex flex-col items-center justify-center gap-3 md:gap-4 py-4 md:py-6 min-h-[120px] md:min-h-[160px]">
-                                    <div className={`flex h-12 w-12 md:h-18 md:w-18 lg:h-20 lg:w-20 items-center justify-center rounded-2xl bg-gradient-to-br ${stat.color} shadow-xl group-hover:scale-110 transition-transform duration-300`}>
-                                        <stat.icon className="h-6 w-6 md:h-9 md:w-9 lg:h-10 lg:w-10 text-white" />
-                                    </div>
-                                    <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-none">
-                                        {stat.value}
-                                    </p>
-                                    <p className="text-xs md:text-sm lg:text-base font-semibold text-slate-700 dark:text-slate-300 text-center leading-tight px-1">{stat.title}</p>
-                                </CardContent>
-                            </Card>
-                        </Link>
-                    ))}
-                </div>
-            </div>
-
-            {/* Content by Category - Mobile First */}
-            <div className="space-y-3 md:space-y-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <FolderKanban className="h-5 w-5 text-indigo-600 flex-shrink-0" />
-                        <span>المحتوى حسب التصنيف</span>
-                    </h2>
-                    <Link href="/dashboard/categories" className="w-full sm:w-auto">
-                        <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                            <span className="hidden md:inline">عرض جميع التصنيفات</span>
-                            <span className="md:hidden">جميع التصنيفات</span>
-                            <ArrowUpRight className="h-4 w-4" />
-                        </Button>
+            {!hasContent ? (
+                <div className="text-center py-16 px-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50">
+                    <FolderKanban className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200">المكتبة فارغة</h3>
+                    <p className="text-slate-500 text-sm mt-1 mb-6">ابدأ بإضافة محتوى جديد وتصنيفه لترتيب معرفتك</p>
+                    <Link href="/dashboard/categories">
+                        <Button>استعراض التصنيفات</Button>
                     </Link>
                 </div>
+            ) : (
+                <div className="space-y-2">
+                    {/* Render Categories with Content */}
+                    {categories.map(category => (
+                        <CategorySection 
+                            key={category.id} 
+                            category={category} 
+                            items={contentByCategory[category.id]} 
+                        />
+                    ))}
 
-                {categories.length === 0 && uncategorized.length === 0 ? (
-                    <Card className="border-2 border-dashed">
-                        <CardContent className="py-12 md:py-16 text-center">
-                            <FolderKanban className="h-16 w-16 mx-auto text-slate-300 mb-4" />
-                            <p className="text-slate-500 text-base md:text-lg mb-2">لا يوجد محتوى بعد</p>
-                            <p className="text-sm text-slate-400">ابدأ بإضافة محتوى جديد إلى مكتبتك</p>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <>
-                        {/* Categories - Mobile First */}
-                        {categories.map(cat => {
-                            const itemCount = contentByCategory[cat.id]?.length || 0
-                            return (
-                                <Card key={cat.id} className="border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300">
-                                    <div
-                                        className="w-full flex items-center justify-between p-4 md:p-5 cursor-pointer"
-                                        onClick={() => toggleCategory(cat.id)}
-                                    >
-                                        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
-                                            <div
-                                                className="h-12 w-12 md:h-14 md:w-14 rounded-xl flex items-center justify-center text-white font-bold text-lg md:text-xl shadow-lg flex-shrink-0"
-                                                style={{
-                                                    background: `linear-gradient(135deg, ${cat.color} 0%, ${cat.color}dd 100%)`,
-                                                    boxShadow: `0 4px 12px ${cat.color}40`
-                                                }}
-                                            >
-                                                {cat.name.charAt(0)}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <Link
-                                                    href={`/dashboard/categories/${cat.id}`}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="font-bold text-base md:text-lg text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors block truncate"
-                                                >
-                                                    {cat.name}
-                                                </Link>
-                                                <p className="text-sm text-slate-500 mt-1">
-                                                    {itemCount} {itemCount === 1 ? 'عنصر' : 'عناصر'}
-                                                </p>
-                                            </div>
-                                            <Badge className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm flex-shrink-0 ml-2">
-                                                {itemCount}
-                                            </Badge>
-                                        </div>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                toggleCategory(cat.id)
-                                            }}
-                                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
-                                        >
-                                            {expandedCategories[cat.id] ? (
-                                                <ChevronUp className="h-5 w-5 text-slate-400" />
-                                            ) : (
-                                                <ChevronDown className="h-5 w-5 text-slate-400" />
-                                            )}
-                                        </button>
-                                    </div>
-
-                                    {expandedCategories[cat.id] && itemCount > 0 && (
-                                        <CardContent className="border-t border-slate-200 dark:border-slate-700 pt-0">
-                                            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                                                {contentByCategory[cat.id].map(item => (
-                                                    <Link
-                                                        key={`${item.type}-${item.id}`}
-                                                        href={getItemLink(item)}
-                                                        className="flex items-center gap-3 md:gap-4 py-3 md:py-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group"
-                                                    >
-                                                        <div className="flex-shrink-0">
-                                                            {getTypeIcon(item.type)}
-                                                        </div>
-                                                        <span className="flex-1 text-sm md:text-base text-slate-700 dark:text-slate-300 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                                            {item.title || item.content?.substring(0, 50) + "..."}
-                                                        </span>
-                                                        <Badge variant="secondary" className="text-xs flex-shrink-0 hidden md:inline-flex">
-                                                            {getTypeName(item.type)}
-                                                        </Badge>
-                                                        <ArrowUpRight className="h-4 w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                                                    </Link>
-                                                ))}
-                                            </div>
-                                        </CardContent>
-                                    )}
-                                </Card>
-                            )
-                        })}
-
-                        {/* Uncategorized - Mobile First */}
-                        {uncategorized.length > 0 && (
-                            <Card className="border-2 border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10">
-                                <CardHeader className="p-4 md:p-6">
-                                    <CardTitle className="flex items-center gap-3 text-base md:text-lg">
-                                        <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                                        <span>بدون تصنيف</span>
-                                        <Badge variant="secondary" className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
-                                            {uncategorized.length}
-                                        </Badge>
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-4 md:p-6 pt-0">
-                                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                                        {uncategorized.map(item => (
-                                            <Link
-                                                key={`${item.type}-${item.id}`}
-                                                href={getItemLink(item)}
-                                                className="flex items-center gap-3 md:gap-4 py-3 md:py-4 hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors group"
-                                            >
-                                                <div className="flex-shrink-0">
-                                                    {getTypeIcon(item.type)}
-                                                </div>
-                                                <span className="flex-1 text-sm md:text-base text-slate-700 dark:text-slate-300 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                                    {item.title || item.content?.substring(0, 50) + "..."}
-                                                </span>
-                                                <Badge variant="secondary" className="text-xs flex-shrink-0 hidden md:inline-flex">
-                                                    {getTypeName(item.type)}
-                                                </Badge>
-                                                <ArrowUpRight className="h-4 w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                                            </Link>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </>
-                )}
-            </div>
+                    {/* Uncategorized Content */}
+                    {uncategorized.length > 0 && (
+                        <CategorySection 
+                            category={{ id: 'uncategorized', name: 'بدون تصنيف', color: '#94a3b8' }} 
+                            items={uncategorized} 
+                        />
+                    )}
+                </div>
+            )}
         </div>
     )
 }
