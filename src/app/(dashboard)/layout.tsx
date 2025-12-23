@@ -34,7 +34,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <Sidebar />
             <div className="flex flex-1 flex-col lg:mr-64">
                 <Header user={{ name: userData.name, email: userData.email }} />
-                <main className="flex-1 p-4 lg:p-6">
+                <main className="flex-1 p-2 sm:p-3 md:p-4 lg:p-6">
                     {children}
                 </main>
             </div>

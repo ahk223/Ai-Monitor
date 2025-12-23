@@ -342,39 +342,39 @@ export default function DashboardPage() {
     const totalItems = stats.prompts + stats.tweets + stats.tools + stats.playbooks + stats.notes + stats.courses + stats.learningTopics
 
     return (
-        <div className="space-y-3 sm:space-y-4 md:space-y-6 -mx-2 sm:mx-0 px-2 sm:px-0">
+        <div className="space-y-3 sm:space-y-4 md:space-y-6">
             {/* Welcome Section - Enhanced & Mobile Responsive */}
-            <div className="relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-3 sm:p-4 md:p-6 lg:p-8 text-white shadow-xl sm:shadow-2xl">
-                {/* Decorative elements - smaller on mobile */}
-                <div className="absolute top-0 right-0 -mt-2 -mr-2 sm:-mt-4 sm:-mr-4 h-16 w-16 sm:h-24 sm:w-24 md:h-32 md:w-32 rounded-full bg-white/10 blur-2xl sm:blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 -mb-2 -ml-2 sm:-mb-4 sm:-ml-4 h-20 w-20 sm:h-32 sm:w-32 md:h-40 md:w-40 rounded-full bg-white/10 blur-2xl sm:blur-3xl"></div>
+            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 sm:p-6 md:p-8 text-white shadow-2xl">
+                {/* Decorative elements */}
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 sm:h-32 sm:w-32 rounded-full bg-white/10 blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-32 w-32 sm:h-40 sm:w-40 rounded-full bg-white/10 blur-3xl"></div>
                 
                 <div className="relative z-10">
-                    <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                         <div className="flex-1 w-full min-w-0">
-                            <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
-                                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-yellow-300 flex-shrink-0" />
-                                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold break-words leading-tight">
+                            <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                                <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-300 flex-shrink-0" />
+                                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold break-words leading-tight">
                                     مرحباً، {userData?.name || "مستخدم"} 👋
                                 </h1>
                             </div>
-                            <p className="text-xs sm:text-sm md:text-base lg:text-lg opacity-90 mb-2 sm:mb-3 md:mb-4 leading-snug">
+                            <p className="text-sm sm:text-base md:text-lg opacity-90 mb-3 sm:mb-4 leading-snug">
                                 {userData?.workspaceName || "مساحة العمل"}
                             </p>
-                            <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 text-[10px] sm:text-xs md:text-sm opacity-80">
-                                <div className="flex items-center gap-1.5 sm:gap-2">
-                                    <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-                                    <span className="whitespace-nowrap">{totalItems} عنصر</span>
+                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm opacity-80">
+                                <div className="flex items-center gap-2">
+                                    <Zap className="h-4 w-4 flex-shrink-0" />
+                                    <span className="whitespace-nowrap">{totalItems} عنصر إجمالي</span>
                                 </div>
-                                <div className="flex items-center gap-1.5 sm:gap-2">
-                                    <FolderKanban className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+                                <div className="flex items-center gap-2">
+                                    <FolderKanban className="h-4 w-4 flex-shrink-0" />
                                     <span className="whitespace-nowrap">{categories.length} تصنيف</span>
                                 </div>
                             </div>
                         </div>
-                        <div className="hidden lg:block flex-shrink-0">
-                            <div className="rounded-xl md:rounded-2xl bg-white/20 backdrop-blur-sm p-3 md:p-4 border border-white/30">
-                                <TrendingUp className="h-6 w-6 md:h-8 md:w-8" />
+                        <div className="hidden md:block flex-shrink-0">
+                            <div className="rounded-2xl bg-white/20 backdrop-blur-sm p-4 border border-white/30">
+                                <TrendingUp className="h-8 w-8" />
                             </div>
                         </div>
                     </div>
@@ -383,27 +383,30 @@ export default function DashboardPage() {
 
             {/* Stats - Enhanced & Mobile Responsive */}
             <div>
-                <h2 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-2 sm:mb-3 md:mb-4 flex items-center gap-1.5 sm:gap-2">
-                    <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-indigo-600 flex-shrink-0" />
+                <h2 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0" />
                     <span>الإحصائيات</span>
                 </h2>
-                <div className="grid gap-2 sm:gap-3 md:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7">
-                    {statsCards.map((stat) => (
-                        <Link key={stat.title} href={stat.href}>
-                            <Card className="group relative overflow-hidden border border-slate-200 dark:border-slate-700 sm:border-2 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 hover:shadow-lg sm:hover:shadow-xl hover:-translate-y-0.5 sm:hover:-translate-y-1 cursor-pointer">
-                                <div className={`absolute inset-0 ${stat.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                                <CardContent className="relative flex flex-col items-center gap-1.5 sm:gap-2 md:gap-3 py-2.5 sm:py-3 md:py-4 lg:py-5">
-                                    <div className={`flex h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 lg:h-14 lg:w-14 items-center justify-center rounded-lg sm:rounded-xl md:rounded-2xl bg-gradient-to-br ${stat.color} shadow-md sm:shadow-lg group-hover:scale-105 sm:group-hover:scale-110 transition-transform duration-300`}>
-                                        <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 text-white" />
-                                    </div>
-                                    <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-none">
-                                        {stat.value}
-                                    </p>
-                                    <p className="text-[9px] sm:text-[10px] md:text-xs font-medium text-slate-600 dark:text-slate-400 text-center leading-tight px-0.5 sm:px-1 line-clamp-2">{stat.title}</p>
-                                </CardContent>
-                            </Card>
-                        </Link>
-                    ))}
+                {/* Mobile: Scrollable horizontal grid, Desktop: Normal grid */}
+                <div className="overflow-x-auto -mx-2 sm:mx-0 px-2 sm:px-0">
+                    <div className="grid gap-3 sm:gap-4 grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 min-w-max sm:min-w-0">
+                        {statsCards.map((stat) => (
+                            <Link key={stat.title} href={stat.href} className="min-w-[100px] sm:min-w-0">
+                                <Card className="group relative overflow-hidden border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer h-full">
+                                    <div className={`absolute inset-0 ${stat.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                                    <CardContent className="relative flex flex-col items-center gap-2 sm:gap-3 py-4 sm:py-5">
+                                        <div className={`flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                                            <stat.icon className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+                                        </div>
+                                        <p className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-none">
+                                            {stat.value}
+                                        </p>
+                                        <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 text-center leading-tight px-1">{stat.title}</p>
+                                    </CardContent>
+                                </Card>
+                            </Link>
+                        ))}
+                    </div>
                 </div>
             </div>
 
