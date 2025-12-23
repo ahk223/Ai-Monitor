@@ -303,9 +303,9 @@ export default function DashboardPage() {
 
     if (!loading && userData && !userData.workspaceId) {
         return (
-            <div className="flex flex-col items-center justify-center py-20">
+            <div className="flex flex-col items-center justify-center py-20 px-4">
                 <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2 text-center">
                     لا توجد مساحة عمل
                 </h2>
                 <p className="text-slate-500 mb-4 text-center max-w-md">
@@ -328,12 +328,12 @@ export default function DashboardPage() {
 
     if (error) {
         return (
-            <div className="flex flex-col items-center justify-center py-20">
+            <div className="flex flex-col items-center justify-center py-20 px-4">
                 <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2 text-center">
                     حدث خطأ
                 </h2>
-                <p className="text-slate-500 mb-4">{error}</p>
+                <p className="text-slate-500 mb-4 text-center">{error}</p>
                 <Button onClick={fetchDashboardData}>إعادة المحاولة</Button>
             </div>
         )
@@ -342,116 +342,102 @@ export default function DashboardPage() {
     const totalItems = stats.prompts + stats.tweets + stats.tools + stats.playbooks + stats.notes + stats.courses + stats.learningTopics
 
     return (
-        <div className="space-y-3 sm:space-y-4 md:space-y-6">
-            {/* Welcome Section - Enhanced & Mobile Responsive */}
-            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 sm:p-6 md:p-8 text-white shadow-2xl">
-                {/* Decorative elements */}
-                <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 sm:h-32 sm:w-32 rounded-full bg-white/10 blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-32 w-32 sm:h-40 sm:w-40 rounded-full bg-white/10 blur-3xl"></div>
+        <div className="space-y-4 md:space-y-6">
+            {/* Welcome Section - Mobile First Design */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-5 md:p-8 text-white shadow-2xl">
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-white/10 blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
                 
                 <div className="relative z-10">
-                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                        <div className="flex-1 w-full min-w-0">
-                            <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                                <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-300 flex-shrink-0" />
-                                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold break-words leading-tight">
-                                    مرحباً، {userData?.name || "مستخدم"} 👋
-                                </h1>
-                            </div>
-                            <p className="text-sm sm:text-base md:text-lg opacity-90 mb-3 sm:mb-4 leading-snug">
-                                {userData?.workspaceName || "مساحة العمل"}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm opacity-80">
-                                <div className="flex items-center gap-2">
-                                    <Zap className="h-4 w-4 flex-shrink-0" />
-                                    <span className="whitespace-nowrap">{totalItems} عنصر إجمالي</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <FolderKanban className="h-4 w-4 flex-shrink-0" />
-                                    <span className="whitespace-nowrap">{categories.length} تصنيف</span>
-                                </div>
-                            </div>
+                    <div className="flex items-center gap-2 mb-3">
+                        <Sparkles className="h-5 w-5 text-yellow-300 flex-shrink-0" />
+                        <h1 className="text-2xl md:text-3xl font-bold leading-tight">
+                            مرحباً، {userData?.name || "مستخدم"} 👋
+                        </h1>
+                    </div>
+                    <p className="text-base md:text-lg opacity-90 mb-4">
+                        {userData?.workspaceName || "مساحة العمل"}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-4 text-sm opacity-80">
+                        <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4 flex-shrink-0" />
+                            <span>{totalItems} عنصر إجمالي</span>
                         </div>
-                        <div className="hidden md:block flex-shrink-0">
-                            <div className="rounded-2xl bg-white/20 backdrop-blur-sm p-4 border border-white/30">
-                                <TrendingUp className="h-8 w-8" />
-                            </div>
+                        <div className="flex items-center gap-2">
+                            <FolderKanban className="h-4 w-4 flex-shrink-0" />
+                            <span>{categories.length} تصنيف</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Stats - Enhanced & Mobile Responsive */}
+            {/* Stats - Mobile First: 2 columns on mobile, scrollable */}
             <div>
-                <h2 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0" />
+                <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-indigo-600 flex-shrink-0" />
                     <span>الإحصائيات</span>
                 </h2>
-                {/* Mobile: Scrollable horizontal grid, Desktop: Normal grid */}
-                <div className="overflow-x-auto -mx-2 sm:mx-0 px-2 sm:px-0">
-                    <div className="grid gap-3 sm:gap-4 grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 min-w-max sm:min-w-0">
-                        {statsCards.map((stat) => (
-                            <Link key={stat.title} href={stat.href} className="min-w-[100px] sm:min-w-0">
-                                <Card className="group relative overflow-hidden border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer h-full">
-                                    <div className={`absolute inset-0 ${stat.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                                    <CardContent className="relative flex flex-col items-center gap-2 sm:gap-3 py-4 sm:py-5">
-                                        <div className={`flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                                            <stat.icon className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-                                        </div>
-                                        <p className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-none">
-                                            {stat.value}
-                                        </p>
-                                        <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 text-center leading-tight px-1">{stat.title}</p>
-                                    </CardContent>
-                                </Card>
-                            </Link>
-                        ))}
-                    </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 md:gap-4">
+                    {statsCards.map((stat) => (
+                        <Link key={stat.title} href={stat.href}>
+                            <Card className="group relative overflow-hidden border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer h-full">
+                                <div className={`absolute inset-0 ${stat.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                                <CardContent className="relative flex flex-col items-center gap-3 py-5 md:py-6">
+                                    <div className={`flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                                        <stat.icon className="h-7 w-7 md:h-8 md:w-8 text-white" />
+                                    </div>
+                                    <p className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-none">
+                                        {stat.value}
+                                    </p>
+                                    <p className="text-xs md:text-sm font-medium text-slate-600 dark:text-slate-400 text-center leading-tight px-1">{stat.title}</p>
+                                </CardContent>
+                            </Card>
+                        </Link>
+                    ))}
                 </div>
             </div>
 
-            {/* Content by Category - Enhanced & Mobile Responsive */}
-            <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 md:gap-4">
-                    <h2 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-1.5 sm:gap-2">
-                        <FolderKanban className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-indigo-600 flex-shrink-0" />
+            {/* Content by Category - Mobile First */}
+            <div className="space-y-3 md:space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <FolderKanban className="h-5 w-5 text-indigo-600 flex-shrink-0" />
                         <span>المحتوى حسب التصنيف</span>
                     </h2>
                     <Link href="/dashboard/categories" className="w-full sm:w-auto">
-                        <Button variant="outline" size="sm" className="w-full sm:w-auto text-[10px] sm:text-xs md:text-sm h-8 sm:h-9 md:h-10 px-2 sm:px-3 md:px-4">
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto">
                             <span className="hidden md:inline">عرض جميع التصنيفات</span>
-                            <span className="hidden sm:inline md:hidden">جميع التصنيفات</span>
-                            <span className="sm:hidden">التصنيفات</span>
-                            <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                            <span className="md:hidden">جميع التصنيفات</span>
+                            <ArrowUpRight className="h-4 w-4" />
                         </Button>
                     </Link>
                 </div>
 
                 {categories.length === 0 && uncategorized.length === 0 ? (
-                    <Card className="border border-dashed sm:border-2">
-                        <CardContent className="py-8 sm:py-12 md:py-16 text-center">
-                            <FolderKanban className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 mx-auto text-slate-300 mb-3 sm:mb-4" />
-                            <p className="text-slate-500 text-sm sm:text-base md:text-lg mb-1.5 sm:mb-2">لا يوجد محتوى بعد</p>
-                            <p className="text-xs sm:text-sm text-slate-400">ابدأ بإضافة محتوى جديد إلى مكتبتك</p>
+                    <Card className="border-2 border-dashed">
+                        <CardContent className="py-12 md:py-16 text-center">
+                            <FolderKanban className="h-16 w-16 mx-auto text-slate-300 mb-4" />
+                            <p className="text-slate-500 text-base md:text-lg mb-2">لا يوجد محتوى بعد</p>
+                            <p className="text-sm text-slate-400">ابدأ بإضافة محتوى جديد إلى مكتبتك</p>
                         </CardContent>
                     </Card>
                 ) : (
                     <>
-                        {/* Categories - Enhanced & Mobile Responsive */}
+                        {/* Categories - Mobile First */}
                         {categories.map(cat => {
                             const itemCount = contentByCategory[cat.id]?.length || 0
                             return (
-                                <Card key={cat.id} className="border border-slate-200 dark:border-slate-700 sm:border-2 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300">
+                                <Card key={cat.id} className="border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300">
                                     <div
-                                        className="w-full flex items-center justify-between p-2.5 sm:p-3 md:p-4 lg:p-5 cursor-pointer"
+                                        className="w-full flex items-center justify-between p-4 md:p-5 cursor-pointer"
                                         onClick={() => toggleCategory(cat.id)}
                                     >
-                                        <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3 lg:gap-4 flex-1 min-w-0">
+                                        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
                                             <div
-                                                className="h-9 w-9 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-lg sm:rounded-xl flex items-center justify-center text-white font-bold text-sm sm:text-base md:text-lg shadow-md sm:shadow-lg flex-shrink-0"
+                                                className="h-12 w-12 md:h-14 md:w-14 rounded-xl flex items-center justify-center text-white font-bold text-lg md:text-xl shadow-lg flex-shrink-0"
                                                 style={{ 
                                                     background: `linear-gradient(135deg, ${cat.color} 0%, ${cat.color}dd 100%)`,
-                                                    boxShadow: `0 2px 8px ${cat.color}30, 0 4px 12px ${cat.color}40`
+                                                    boxShadow: `0 4px 12px ${cat.color}40`
                                                 }}
                                             >
                                                 {cat.name.charAt(0)}
@@ -460,15 +446,15 @@ export default function DashboardPage() {
                                                 <Link
                                                     href={`/dashboard/categories/${cat.id}`}
                                                     onClick={(e) => e.stopPropagation()}
-                                                    className="font-bold text-xs sm:text-sm md:text-base lg:text-lg text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors block truncate leading-tight"
+                                                    className="font-bold text-base md:text-lg text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors block truncate"
                                                 >
                                                     {cat.name}
                                                 </Link>
-                                                <p className="text-[10px] sm:text-xs md:text-sm text-slate-500 mt-0.5 sm:mt-1 leading-tight">
+                                                <p className="text-sm text-slate-500 mt-1">
                                                     {itemCount} {itemCount === 1 ? 'عنصر' : 'عناصر'}
                                                 </p>
                                             </div>
-                                            <Badge className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] sm:text-xs md:text-sm flex-shrink-0 ml-1.5 sm:ml-2 px-1.5 sm:px-2">
+                                            <Badge className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm flex-shrink-0 ml-2">
                                                 {itemCount}
                                             </Badge>
                                         </div>
@@ -477,35 +463,35 @@ export default function DashboardPage() {
                                                 e.stopPropagation()
                                                 toggleCategory(cat.id)
                                             }}
-                                            className="p-1 sm:p-1.5 md:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
+                                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
                                         >
                                             {expandedCategories[cat.id] ? (
-                                                <ChevronUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-slate-400" />
+                                                <ChevronUp className="h-5 w-5 text-slate-400" />
                                             ) : (
-                                                <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-slate-400" />
+                                                <ChevronDown className="h-5 w-5 text-slate-400" />
                                             )}
                                         </button>
                                     </div>
 
                                     {expandedCategories[cat.id] && itemCount > 0 && (
-                                        <CardContent className="border-t border-slate-200 dark:border-slate-700 pt-0 px-2.5 sm:px-3 md:px-4 lg:px-6">
+                                        <CardContent className="border-t border-slate-200 dark:border-slate-700 pt-0">
                                             <div className="divide-y divide-slate-100 dark:divide-slate-800">
                                                 {contentByCategory[cat.id].map(item => (
                                                     <Link
                                                         key={`${item.type}-${item.id}`}
                                                         href={getItemLink(item)}
-                                                        className="flex items-center gap-1.5 sm:gap-2 md:gap-3 lg:gap-4 py-2 sm:py-2.5 md:py-3 lg:py-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group"
+                                                        className="flex items-center gap-3 md:gap-4 py-3 md:py-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group"
                                                     >
                                                         <div className="flex-shrink-0">
                                                             {getTypeIcon(item.type)}
                                                         </div>
-                                                        <span className="flex-1 text-[11px] sm:text-xs md:text-sm text-slate-700 dark:text-slate-300 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-snug">
-                                                            {item.title || item.content?.substring(0, 35) + "..."}
+                                                        <span className="flex-1 text-sm md:text-base text-slate-700 dark:text-slate-300 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                                            {item.title || item.content?.substring(0, 50) + "..."}
                                                         </span>
-                                                        <Badge variant="secondary" className="text-[9px] sm:text-[10px] md:text-xs flex-shrink-0 hidden md:inline-flex px-1.5">
+                                                        <Badge variant="secondary" className="text-xs flex-shrink-0 hidden md:inline-flex">
                                                             {getTypeName(item.type)}
                                                         </Badge>
-                                                        <ArrowUpRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-4 md:w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                                                        <ArrowUpRight className="h-4 w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                                                     </Link>
                                                 ))}
                                             </div>
@@ -515,36 +501,36 @@ export default function DashboardPage() {
                             )
                         })}
 
-                        {/* Uncategorized - Enhanced & Mobile Responsive */}
+                        {/* Uncategorized - Mobile First */}
                         {uncategorized.length > 0 && (
-                            <Card className="border border-amber-200 dark:border-amber-800 sm:border-2 bg-amber-50/50 dark:bg-amber-900/10">
-                                <CardHeader className="p-2.5 sm:p-3 md:p-4 lg:p-6">
-                                    <CardTitle className="flex items-center gap-1.5 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base">
-                                        <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                            <Card className="border-2 border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10">
+                                <CardHeader className="p-4 md:p-6">
+                                    <CardTitle className="flex items-center gap-3 text-base md:text-lg">
+                                        <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                                         <span>بدون تصنيف</span>
-                                        <Badge variant="secondary" className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-[10px] sm:text-xs md:text-sm px-1.5 sm:px-2">
+                                        <Badge variant="secondary" className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
                                             {uncategorized.length}
                                         </Badge>
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-2.5 sm:p-3 md:p-4 lg:p-6 pt-0">
+                                <CardContent className="p-4 md:p-6 pt-0">
                                     <div className="divide-y divide-slate-100 dark:divide-slate-800">
                                         {uncategorized.map(item => (
                                             <Link
                                                 key={`${item.type}-${item.id}`}
                                                 href={getItemLink(item)}
-                                                className="flex items-center gap-1.5 sm:gap-2 md:gap-3 lg:gap-4 py-2 sm:py-2.5 md:py-3 lg:py-4 hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors group"
+                                                className="flex items-center gap-3 md:gap-4 py-3 md:py-4 hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors group"
                                             >
                                                 <div className="flex-shrink-0">
                                                     {getTypeIcon(item.type)}
                                                 </div>
-                                                <span className="flex-1 text-[11px] sm:text-xs md:text-sm text-slate-700 dark:text-slate-300 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-snug">
-                                                    {item.title || item.content?.substring(0, 35) + "..."}
+                                                <span className="flex-1 text-sm md:text-base text-slate-700 dark:text-slate-300 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                                    {item.title || item.content?.substring(0, 50) + "..."}
                                                 </span>
-                                                <Badge variant="secondary" className="text-[9px] sm:text-[10px] md:text-xs flex-shrink-0 hidden md:inline-flex px-1.5">
+                                                <Badge variant="secondary" className="text-xs flex-shrink-0 hidden md:inline-flex">
                                                     {getTypeName(item.type)}
                                                 </Badge>
-                                                <ArrowUpRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-4 md:w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                                                <ArrowUpRight className="h-4 w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                                             </Link>
                                         ))}
                                     </div>
