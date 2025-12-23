@@ -481,8 +481,8 @@ export default function DashboardPage() {
     return (
         <div className="pb-20 md:pb-8">
             <WelcomeBanner 
-                userName={userData?.name} 
-                workspaceName={userData?.workspaceName} 
+                userName={userData?.name || undefined} 
+                workspaceName={userData?.workspaceName || undefined} 
             />
 
             {!hasContent ? (
