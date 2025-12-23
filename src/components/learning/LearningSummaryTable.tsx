@@ -232,15 +232,15 @@ export function LearningSummaryTable() {
                                         </div>
                                     </td>
                                     <td className="px-4 py-3">
-                                        {categories[topic.categoryId] && (
-                                            <Badge variant="outline" className="font-normal" style={{ 
-                                                backgroundColor: `${categories[topic.categoryId].color}10`,
-                                                color: categories[topic.categoryId].color,
-                                                borderColor: `${categories[topic.categoryId].color}30`
-                                            }}>
-                                                {categories[topic.categoryId].name}
-                                            </Badge>
-                                        )}
+                                    {categories[topic.categoryId] && (
+                                        <Badge variant="secondary" className="font-normal border" style={{ 
+                                            backgroundColor: `${categories[topic.categoryId].color}10`,
+                                            color: categories[topic.categoryId].color,
+                                            borderColor: `${categories[topic.categoryId].color}30`
+                                        }}>
+                                            {categories[topic.categoryId].name}
+                                        </Badge>
+                                    )}
                                     </td>
                                     <td className="px-4 py-3">
                                         {getStatusBadge(topic.status)}

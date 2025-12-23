@@ -214,7 +214,7 @@ const CategorySection = ({
                     <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white">
                         {category.name}
                     </h2>
-                    <Badge variant="outline" className="text-xs rounded-full px-2 py-0.5 border-slate-200 dark:border-slate-700">
+                    <Badge variant="secondary" className="text-xs rounded-full px-2 py-0.5 border border-slate-200 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300">
                         {items.length}
                     </Badge>
                 </div>
