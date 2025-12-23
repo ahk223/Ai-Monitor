@@ -37,45 +37,45 @@ export function Header({ user }: HeaderProps) {
     }
 
     return (
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-4 lg:px-6 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
+        <header className="sticky top-0 z-30 flex h-12 md:h-14 lg:h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-2 sm:px-3 md:px-4 lg:px-6 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
             {/* Left side (RTL start) - Search and Spacer */}
-            <div className="flex items-center flex-1 gap-4">
+            <div className="flex items-center flex-1 gap-2 md:gap-4 min-w-0">
                 {/* Spacer for Sidebar Toggle Button - visible on mobile/tablet (matches sidebar toggle visibility) */}
-                <div className="w-10 lg:hidden flex-shrink-0" />
+                <div className="w-8 md:w-10 lg:hidden flex-shrink-0" />
 
                 {/* Search - hidden on small mobile, show on medium+ */}
                 <div className="relative hidden sm:block w-full max-w-md">
-                    <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Search className="absolute right-2 md:right-3 top-1/2 h-3 w-3 md:h-4 md:w-4 -translate-y-1/2 text-slate-400" />
                     <input
                         type="text"
                         placeholder="ابحث في كل شيء..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pr-10 pl-4 text-sm outline-none transition-all focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-900"
+                        className="h-8 md:h-9 lg:h-10 w-full rounded-lg md:rounded-xl border border-slate-200 bg-slate-50 pr-8 md:pr-10 pl-3 md:pl-4 text-xs md:text-sm outline-none transition-all focus:border-indigo-500 focus:bg-white focus:ring-2 md:focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-900"
                     />
                 </div>
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2 lg:gap-3">
+            <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 lg:gap-3 flex-shrink-0">
                 {/* Mobile search link */}
                 <Link href="/dashboard/search" className="sm:hidden">
-                    <button className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-400">
-                        <Search className="h-5 w-5" />
+                    <button className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-400">
+                        <Search className="h-4 w-4 md:h-4.5 md:w-4.5" />
                     </button>
                 </Link>
 
-                {/* Dark Mode Toggle */}
+                {/* Dark Mode Toggle - Hidden on very small screens */}
                 {mounted && (
                     <button
                         onClick={toggleTheme}
-                        className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+                        className="hidden xs:flex h-8 w-8 md:h-9 md:w-9 lg:h-10 lg:w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
                         title={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
                     >
                         {theme === "dark" ? (
-                            <Sun className="h-5 w-5" />
+                            <Sun className="h-4 w-4 md:h-4.5 md:w-4.5 lg:h-5 lg:w-5" />
                         ) : (
-                            <Moon className="h-5 w-5" />
+                            <Moon className="h-4 w-4 md:h-4.5 md:w-4.5 lg:h-5 lg:w-5" />
                         )}
                     </button>
                 )}
@@ -84,10 +84,10 @@ export function Header({ user }: HeaderProps) {
                 <div className="relative">
                     <Button
                         size="icon"
-                        className="rounded-full"
+                        className="h-8 w-8 md:h-9 md:w-9 lg:h-10 lg:w-10 rounded-full"
                         onClick={() => setShowQuickAdd(!showQuickAdd)}
                     >
-                        <Plus className="h-5 w-5" />
+                        <Plus className="h-4 w-4 md:h-4.5 md:w-4.5 lg:h-5 lg:w-5" />
                     </Button>
 
                     {/* Dropdown */}
@@ -153,9 +153,9 @@ export function Header({ user }: HeaderProps) {
                 </div>
 
                 {/* Notifications - hidden on very small screens */}
-                <button className="hidden xs:flex relative h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800">
-                    <Bell className="h-5 w-5" />
-                    <span className="absolute -top-1 -left-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                <button className="hidden sm:flex relative h-8 w-8 md:h-9 md:w-9 lg:h-10 lg:w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800">
+                    <Bell className="h-4 w-4 md:h-4.5 md:w-4.5 lg:h-5 lg:w-5" />
+                    <span className="absolute -top-0.5 -left-0.5 md:-top-1 md:-left-1 flex h-4 w-4 md:h-5 md:w-5 items-center justify-center rounded-full bg-red-500 text-[10px] md:text-xs text-white">
                         3
                     </span>
                 </button>
@@ -164,13 +164,13 @@ export function Header({ user }: HeaderProps) {
                 <div className="relative">
                     <button
                         onClick={() => setShowProfileMenu(!showProfileMenu)}
-                        className="flex items-center gap-2 lg:gap-3 rounded-xl border border-slate-200 bg-slate-50 py-1.5 pr-1.5 pl-2 lg:pl-4 dark:border-slate-700 dark:bg-slate-900 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        className="flex items-center gap-1 md:gap-2 lg:gap-3 rounded-lg md:rounded-xl border border-slate-200 bg-slate-50 py-1 md:py-1.5 pr-1 md:pr-1.5 pl-1.5 md:pl-2 lg:pl-4 dark:border-slate-700 dark:bg-slate-900 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                     >
-                        <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[80px] lg:max-w-none truncate">
+                        <span className="hidden md:block text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[60px] lg:max-w-none truncate">
                             {userName}
                         </span>
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600">
-                            <User className="h-4 w-4 text-white" />
+                        <div className="flex h-7 w-7 md:h-8 md:w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600">
+                            <User className="h-3 w-3 md:h-4 md:w-4 text-white" />
                         </div>
                     </button>
 

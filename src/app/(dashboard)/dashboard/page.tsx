@@ -113,7 +113,7 @@ const ContentCard = ({ item, onToggleFavorite }: { item: ContentItem, onToggleFa
     const editLink = getEditLink(item)
 
     return (
-        <div className="block h-full min-w-[200px] max-w-[200px] sm:min-w-[220px] sm:max-w-[220px] md:min-w-0 md:max-w-none snap-start relative group">
+        <div className="block h-full min-w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:min-w-[280px] sm:max-w-[280px] md:min-w-0 md:max-w-none snap-start relative group">
              {/* Favorite Button (Left) */}
              <button
                 onClick={(e) => {
