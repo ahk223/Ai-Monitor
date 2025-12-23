@@ -21,7 +21,8 @@ import {
     MoreHorizontal,
     LayoutGrid,
     Calendar,
-    Heart
+    Heart,
+    Edit2
 } from "lucide-react"
 import Link from "next/link"
 import { doc, updateDoc } from "firebase/firestore"
@@ -95,12 +96,25 @@ const ContentCard = ({ item, onToggleFavorite }: { item: ContentItem, onToggleFa
         }
     }
 
+    const getEditLink = (item: ContentItem) => {
+        switch (item.type) {
+            case "prompt": return `/dashboard/prompts/${item.id}/edit`
+            case "tweet": return `/dashboard/tweets/${item.id}/edit`
+            case "tool": return `/dashboard/tools/${item.id}/edit`
+            case "playbook": return `/dashboard/playbooks/${item.id}/edit`
+            case "note": return `/dashboard/notes/${item.id}/edit`
+            case "course": return `/dashboard/courses/${item.id}/edit`
+            default: return null
+        }
+    }
+
     const config = getTypeConfig(item.type)
     const Icon = config.icon
+    const editLink = getEditLink(item)
 
     return (
         <div className="block h-full min-w-[260px] max-w-[260px] md:min-w-0 md:max-w-none snap-start relative group">
-             {/* Favorite Button */}
+             {/* Favorite Button (Left) */}
              <button
                 onClick={(e) => {
                     e.preventDefault()
@@ -112,9 +126,22 @@ const ContentCard = ({ item, onToggleFavorite }: { item: ContentItem, onToggleFa
                         ? "bg-rose-50 text-rose-500 opacity-100" 
                         : "bg-slate-100/50 text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-500"
                 }`}
+                title="إضافة للمفضلة"
             >
                 <Heart className={`h-4 w-4 ${item.isFavorite ? "fill-current" : ""}`} />
             </button>
+
+            {/* Edit Button (Right) */}
+            {editLink && (
+                <Link
+                    href={editLink}
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute top-3 right-3 z-20 p-1.5 rounded-full bg-slate-100/50 text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-indigo-50 hover:text-indigo-600 transition-all duration-200"
+                    title="تعديل"
+                >
+                    <Edit2 className="h-4 w-4" />
+                </Link>
+            )}
 
             <Link href={getLink(item)} className="block h-full">
                 <Card className={`h-full hover:shadow-md transition-all duration-300 border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 ${item.isFavorite ? 'border-rose-100 dark:border-rose-900/30 bg-rose-50/10' : ''}`}>
