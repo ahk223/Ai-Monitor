@@ -42,6 +42,7 @@ interface Category {
     id: string
     name: string
     color: string
+    isFavorite?: boolean
 }
 
 // --- Components ---
@@ -149,13 +150,36 @@ const ContentCard = ({ item, onToggleFavorite }: { item: ContentItem, onToggleFa
 }
 
 // 3. Category Section
-const CategorySection = ({ category, items, onToggleFavorite }: { category: Category, items: ContentItem[], onToggleFavorite: (id: string, type: string, currentStatus: boolean) => void }) => {
+const CategorySection = ({ 
+    category, 
+    items, 
+    onToggleFavorite, 
+    onToggleCategoryFavorite 
+}: { 
+    category: Category, 
+    items: ContentItem[], 
+    onToggleFavorite: (id: string, type: string, currentStatus: boolean) => void,
+    onToggleCategoryFavorite?: (id: string, currentStatus: boolean) => void
+}) => {
     if (!items || items.length === 0) return null
 
     return (
         <section className="mb-8">
             <div className="flex items-center justify-between mb-4 px-1">
                 <div className="flex items-center gap-3">
+                    {onToggleCategoryFavorite && category.id !== 'uncategorized' && (
+                        <button
+                            onClick={() => onToggleCategoryFavorite(category.id, category.isFavorite || false)}
+                            className={`p-1.5 rounded-full transition-all duration-200 ${
+                                category.isFavorite 
+                                    ? "bg-rose-50 text-rose-500" 
+                                    : "text-slate-300 hover:text-rose-400 hover:bg-rose-50"
+                            }`}
+                        >
+                            <Heart className={`h-5 w-5 ${category.isFavorite ? "fill-current" : ""}`} />
+                        </button>
+                    )}
+                    
                     <div 
                         className="w-1.5 h-6 rounded-full" 
                         style={{ backgroundColor: category.color }}
@@ -228,10 +252,18 @@ export default function DashboardPage() {
                 where("workspaceId", "==", userData.workspaceId)
             )
             const categoriesSnap = await getDocs(categoriesQuery)
-            const catsList = categoriesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Category))
+            const catsList = categoriesSnap.docs.map(doc => ({ 
+                ...doc.data(), 
+                id: doc.id,
+                isFavorite: doc.data().isFavorite || false 
+            } as Category))
             
-            // Sort categories alphabetically
-            catsList.sort((a, b) => a.name.localeCompare(b.name))
+            // Sort categories: Favorites first, then Alphabetical
+            catsList.sort((a, b) => {
+                if (a.isFavorite && !b.isFavorite) return -1
+                if (!a.isFavorite && b.isFavorite) return 1
+                return a.name.localeCompare(b.name)
+            })
             setCategories(catsList)
 
             // 2. Fetch Content from all collections
@@ -361,6 +393,43 @@ export default function DashboardPage() {
         }
     }
 
+    const handleToggleCategoryFavorite = async (id: string, currentStatus: boolean) => {
+        const newStatus = !currentStatus
+
+        // Optimistic Update
+        const updatedCats = categories.map(c => 
+            c.id === id ? { ...c, isFavorite: newStatus } : c
+        )
+
+        // Sort: Favorites first
+        updatedCats.sort((a, b) => {
+            if (a.isFavorite && !b.isFavorite) return -1
+            if (!a.isFavorite && b.isFavorite) return 1
+            return a.name.localeCompare(b.name)
+        })
+
+        setCategories(updatedCats)
+
+        // Update Database
+        try {
+            await updateDoc(doc(db, "categories", id), {
+                isFavorite: newStatus
+            })
+        } catch (error) {
+            console.error("Error toggling category favorite:", error)
+            // Revert
+            const reverted = categories.map(c => 
+                c.id === id ? { ...c, isFavorite: currentStatus } : c
+            )
+            reverted.sort((a, b) => {
+                if (a.isFavorite && !b.isFavorite) return -1
+                if (!a.isFavorite && b.isFavorite) return 1
+                return a.name.localeCompare(b.name)
+            })
+            setCategories(reverted)
+        }
+    }
+
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
@@ -407,6 +476,7 @@ export default function DashboardPage() {
                             category={category} 
                             items={contentByCategory[category.id]} 
                             onToggleFavorite={handleToggleFavorite}
+                            onToggleCategoryFavorite={handleToggleCategoryFavorite}
                         />
                     ))}
 
