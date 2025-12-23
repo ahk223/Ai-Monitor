@@ -6,3 +6,5 @@ export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 export { Badge } from "./badge"
 export { Modal } from "./modal"
 export { ImageUpload } from "./image-upload"
+export { ToastProvider, useToast } from "./toast"
+export { ConfirmModal } from "./confirm-modal"

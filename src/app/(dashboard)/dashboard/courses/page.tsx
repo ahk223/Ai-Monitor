@@ -18,6 +18,9 @@ import {
     Heart
 } from "lucide-react"
 import Link from "next/link"
+import { linkifyContent } from "@/lib/utils"
+import { useToast, ConfirmModal } from "@/components/ui"
+import { useToggleFavorite } from "@/hooks/useToggleFavorite"
 
 interface Course {
     id: string
@@ -38,10 +41,18 @@ interface Category {
 
 export default function CoursesPage() {
     const { userData } = useAuth()
+    const { showToast } = useToast()
     const [courses, setCourses] = useState<Course[]>([])
     const [categories, setCategories] = useState<Category[]>([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string | null }>({ isOpen: false, id: null })
+    
+    const { toggleFavorite } = useToggleFavorite(courses, setCourses, {
+        collectionName: "courses",
+        onSuccess: () => showToast("تم تحديث المفضلة بنجاح", "success"),
+        onError: () => showToast("حدث خطأ أثناء تحديث المفضلة", "error"),
+    })
 
     useEffect(() => {
         document.title = "الكورسات | AI Knowledge Hub"
@@ -92,44 +103,13 @@ export default function CoursesPage() {
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm("هل أنت متأكد من حذف هذا الكورس؟")) return
-
         try {
             await deleteDoc(doc(db, "courses", id))
             setCourses(courses.filter(c => c.id !== id))
+            showToast("تم حذف الكورس بنجاح", "success")
         } catch (error) {
             console.error("Error deleting course:", error)
-            alert("حدث خطأ أثناء الحذف")
-        }
-    }
-
-    const handleToggleFavorite = async (id: string) => {
-        try {
-            const course = courses.find(c => c.id === id)
-            if (!course) return
-
-            const newFavoriteStatus = !(course.isFavorite ?? false)
-            await updateDoc(doc(db, "courses", id), { isFavorite: newFavoriteStatus })
-            
-            setCourses(prevCourses => {
-                const updated = prevCourses.map(c => 
-                    c.id === id ? { ...c, isFavorite: newFavoriteStatus } : c
-                )
-                updated.sort((a, b) => {
-                    const aIsFavorite = a.isFavorite ?? false
-                    const bIsFavorite = b.isFavorite ?? false
-                    
-                    if (aIsFavorite && !bIsFavorite) return -1
-                    if (!aIsFavorite && bIsFavorite) return 1
-                    
-                    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt)
-                    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt)
-                    return dateB.getTime() - dateA.getTime()
-                })
-                return updated
-            })
-        } catch (error) {
-            console.error("Error toggling favorite:", error)
+            showToast("حدث خطأ أثناء الحذف", "error")
         }
     }
 
@@ -144,30 +124,6 @@ export default function CoursesPage() {
         return cat ? `bg-[${cat.color}]/10 text-[${cat.color}]` : "bg-slate-100 text-slate-700"
     }
 
-    // Function to convert URLs in text to clickable links
-    const linkifyContent = (text: string) => {
-        if (!text) return text
-        const urlRegex = /(https?:\/\/[^\s]+)/g
-        const parts = text.split(urlRegex)
-
-        return parts.map((part, index) => {
-            if (part.match(urlRegex)) {
-                return (
-                    <a
-                        key={index}
-                        href={part}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline break-all"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {part}
-                    </a>
-                )
-            }
-            return part
-        })
-    }
 
     const filteredCourses = courses.filter(course =>
         (course.name || "").toLowerCase().includes(search.toLowerCase()) ||
@@ -222,7 +178,7 @@ export default function CoursesPage() {
                     filteredCourses.map(course => (
                         <Card key={course.id} hover className="flex flex-col h-full relative">
                             <button
-                                onClick={() => handleToggleFavorite(course.id)}
+                                onClick={() => toggleFavorite(course.id)}
                                 className={`absolute top-2 left-2 rounded-lg p-1.5 transition-colors z-10 ${
                                     course.isFavorite
                                         ? "text-red-500 hover:bg-red-50 hover:text-red-600 bg-white/90"
@@ -283,7 +239,7 @@ export default function CoursesPage() {
                                             </button>
                                         </Link>
                                         <button
-                                            onClick={() => handleDelete(course.id)}
+                                            onClick={() => setDeleteModal({ isOpen: true, id: course.id })}
                                             className="text-slate-400 hover:text-red-500 transition-colors"
                                             title="حذف"
                                         >
@@ -301,6 +257,23 @@ export default function CoursesPage() {
                     </div>
                 )}
             </div>
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, id: null })}
+                onConfirm={() => {
+                    if (deleteModal.id) {
+                        handleDelete(deleteModal.id)
+                        setDeleteModal({ isOpen: false, id: null })
+                    }
+                }}
+                title="حذف الكورس"
+                message="هل أنت متأكد من حذف هذا الكورس؟ لا يمكن التراجع عن هذه العملية."
+                confirmText="حذف"
+                cancelText="إلغاء"
+                variant="danger"
+            />
         </div>
     )
 }

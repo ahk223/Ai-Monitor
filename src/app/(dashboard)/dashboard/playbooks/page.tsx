@@ -15,6 +15,9 @@ import {
     Heart,
 } from "lucide-react"
 import Link from "next/link"
+import { linkifyContent } from "@/lib/utils"
+import { useToast, ConfirmModal } from "@/components/ui"
+import { useToggleFavorite } from "@/hooks/useToggleFavorite"
 
 interface Playbook {
     id: string
@@ -34,10 +37,18 @@ interface PlaybookStep {
 
 export default function PlaybooksPage() {
     const { userData } = useAuth()
+    const { showToast } = useToast()
     const [playbooks, setPlaybooks] = useState<Playbook[]>([])
     const [stepCounts, setStepCounts] = useState<Record<string, number>>({})
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string | null }>({ isOpen: false, id: null })
+    
+    const { toggleFavorite } = useToggleFavorite(playbooks, setPlaybooks, {
+        collectionName: "playbooks",
+        onSuccess: () => showToast("تم تحديث المفضلة بنجاح", "success"),
+        onError: () => showToast("حدث خطأ أثناء تحديث المفضلة", "error"),
+    })
 
     useEffect(() => {
         if (userData?.workspaceId) {
@@ -94,43 +105,13 @@ export default function PlaybooksPage() {
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm("هل أنت متأكد من حذف هذا الـ Playbook؟")) return
-
         try {
             await updateDoc(doc(db, "playbooks", id), { isArchived: true })
             setPlaybooks(playbooks.filter(p => p.id !== id))
+            showToast("تم حذف الـ Playbook بنجاح", "success")
         } catch (error) {
             console.error("Error deleting playbook:", error)
-        }
-    }
-
-    const handleToggleFavorite = async (id: string) => {
-        try {
-            const playbook = playbooks.find(p => p.id === id)
-            if (!playbook) return
-
-            const newFavoriteStatus = !(playbook.isFavorite ?? false)
-            await updateDoc(doc(db, "playbooks", id), { isFavorite: newFavoriteStatus })
-            
-            setPlaybooks(prevPlaybooks => {
-                const updated = prevPlaybooks.map(p => 
-                    p.id === id ? { ...p, isFavorite: newFavoriteStatus } : p
-                )
-                updated.sort((a, b) => {
-                    const aIsFavorite = a.isFavorite ?? false
-                    const bIsFavorite = b.isFavorite ?? false
-                    
-                    if (aIsFavorite && !bIsFavorite) return -1
-                    if (!aIsFavorite && bIsFavorite) return 1
-                    
-                    const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
-                    const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
-                    return dateB.getTime() - dateA.getTime()
-                })
-                return updated
-            })
-        } catch (error) {
-            console.error("Error toggling favorite:", error)
+            showToast("حدث خطأ أثناء الحذف", "error")
         }
     }
 
@@ -140,30 +121,6 @@ export default function PlaybooksPage() {
             (playbook.description && playbook.description.toLowerCase().includes(search.toLowerCase()))
     })
 
-    // Function to convert URLs in text to clickable links
-    const linkifyContent = (text: string) => {
-        if (!text) return text
-        const urlRegex = /(https?:\/\/[^\s]+)/g
-        const parts = text.split(urlRegex)
-
-        return parts.map((part, index) => {
-            if (part.match(urlRegex)) {
-                return (
-                    <a
-                        key={index}
-                        href={part}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline break-all"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {part}
-                    </a>
-                )
-            }
-            return part
-        })
-    }
 
     if (loading) {
         return (
@@ -227,7 +184,7 @@ export default function PlaybooksPage() {
                     {filteredPlaybooks.map(playbook => (
                         <Card key={playbook.id} hover className="group relative">
                             <button
-                                onClick={() => handleToggleFavorite(playbook.id)}
+                                onClick={() => toggleFavorite(playbook.id)}
                                 className={`absolute top-2 left-2 rounded-lg p-1.5 transition-colors z-10 ${
                                     playbook.isFavorite
                                         ? "text-red-500 hover:bg-red-50 hover:text-red-600 bg-white/90"
@@ -278,7 +235,7 @@ export default function PlaybooksPage() {
                                             </button>
                                         </Link>
                                         <button
-                                            onClick={() => handleDelete(playbook.id)}
+                                            onClick={() => setDeleteModal({ isOpen: true, id: playbook.id })}
                                             className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
                                             title="حذف"
                                         >
@@ -291,6 +248,23 @@ export default function PlaybooksPage() {
                     ))}
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, id: null })}
+                onConfirm={() => {
+                    if (deleteModal.id) {
+                        handleDelete(deleteModal.id)
+                        setDeleteModal({ isOpen: false, id: null })
+                    }
+                }}
+                title="حذف الـ Playbook"
+                message="هل أنت متأكد من حذف هذا الـ Playbook؟ لا يمكن التراجع عن هذه العملية."
+                confirmText="حذف"
+                cancelText="إلغاء"
+                variant="danger"
+            />
         </div>
     )
 }

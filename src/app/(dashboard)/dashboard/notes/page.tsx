@@ -7,6 +7,9 @@ import { collection, query, where, getDocs, deleteDoc, doc, updateDoc } from "fi
 import Link from "next/link"
 import { Card, CardContent, Badge, Button } from "@/components/ui"
 import { Plus, StickyNote, Trash2, Loader2, Pencil, Heart } from "lucide-react"
+import { linkifyContent } from "@/lib/utils"
+import { useToast, ConfirmModal } from "@/components/ui"
+import { useToggleFavorite } from "@/hooks/useToggleFavorite"
 
 interface Note {
     id: string
@@ -25,10 +28,18 @@ interface Category {
 
 export default function NotesPage() {
     const { userData } = useAuth()
+    const { showToast } = useToast()
     const [notes, setNotes] = useState<Note[]>([])
     const [categories, setCategories] = useState<Category[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedCategory, setSelectedCategory] = useState<string>("")
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string | null }>({ isOpen: false, id: null })
+    
+    const { toggleFavorite } = useToggleFavorite(notes, setNotes, {
+        collectionName: "notes",
+        onSuccess: () => showToast("تم تحديث المفضلة بنجاح", "success"),
+        onError: () => showToast("حدث خطأ أثناء تحديث المفضلة", "error"),
+    })
 
     useEffect(() => {
         if (userData?.workspaceId) {
@@ -74,41 +85,13 @@ export default function NotesPage() {
     }
 
     const handleDelete = async (noteId: string) => {
-        if (!confirm("هل أنت متأكد من حذف هذه الملاحظة؟")) return
-
         try {
             await deleteDoc(doc(db, "notes", noteId))
             setNotes(notes.filter(n => n.id !== noteId))
+            showToast("تم حذف الملاحظة بنجاح", "success")
         } catch (error) {
             console.error("Error deleting note:", error)
-        }
-    }
-
-    const handleToggleFavorite = async (id: string) => {
-        try {
-            const note = notes.find(n => n.id === id)
-            if (!note) return
-
-            const newFavoriteStatus = !(note.isFavorite ?? false)
-            await updateDoc(doc(db, "notes", id), { isFavorite: newFavoriteStatus })
-            
-            setNotes(prevNotes => {
-                const updated = prevNotes.map(n => 
-                    n.id === id ? { ...n, isFavorite: newFavoriteStatus } : n
-                )
-                updated.sort((a, b) => {
-                    const aIsFavorite = a.isFavorite ?? false
-                    const bIsFavorite = b.isFavorite ?? false
-                    
-                    if (aIsFavorite && !bIsFavorite) return -1
-                    if (!aIsFavorite && bIsFavorite) return 1
-                    
-                    return b.createdAt.getTime() - a.createdAt.getTime()
-                })
-                return updated
-            })
-        } catch (error) {
-            console.error("Error toggling favorite:", error)
+            showToast("حدث خطأ أثناء الحذف", "error")
         }
     }
 
@@ -122,30 +105,6 @@ export default function NotesPage() {
         if (!categoryId) return "#6366f1"
         const cat = categories.find(c => c.id === categoryId)
         return cat?.color || "#6366f1"
-    }
-
-    // Function to convert URLs in text to clickable links
-    const linkifyContent = (text: string) => {
-        const urlRegex = /(https?:\/\/[^\s]+)/g
-        const parts = text.split(urlRegex)
-
-        return parts.map((part, index) => {
-            if (part.match(urlRegex)) {
-                return (
-                    <a
-                        key={index}
-                        href={part}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline break-all"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {part}
-                    </a>
-                )
-            }
-            return part
-        })
     }
 
     const filteredNotes = selectedCategory
@@ -252,7 +211,7 @@ export default function NotesPage() {
 
                                 {/* Favorite Button */}
                                 <button
-                                    onClick={() => handleToggleFavorite(note.id)}
+                                    onClick={() => toggleFavorite(note.id)}
                                     className={`absolute top-2 left-2 rounded-lg p-1.5 transition-colors z-10 ${
                                         note.isFavorite
                                             ? "text-red-500 hover:bg-red-50 hover:text-red-600 bg-white/90"
@@ -273,7 +232,7 @@ export default function NotesPage() {
                                         </button>
                                     </Link>
                                     <button
-                                        onClick={() => handleDelete(note.id)}
+                                        onClick={() => setDeleteModal({ isOpen: true, id: note.id })}
                                         className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
                                     >
                                         <Trash2 className="h-4 w-4" />
@@ -284,6 +243,23 @@ export default function NotesPage() {
                     ))}
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, id: null })}
+                onConfirm={() => {
+                    if (deleteModal.id) {
+                        handleDelete(deleteModal.id)
+                        setDeleteModal({ isOpen: false, id: null })
+                    }
+                }}
+                title="حذف الملاحظة"
+                message="هل أنت متأكد من حذف هذه الملاحظة؟ لا يمكن التراجع عن هذه العملية."
+                confirmText="حذف"
+                cancelText="إلغاء"
+                variant="danger"
+            />
         </div>
     )
 }

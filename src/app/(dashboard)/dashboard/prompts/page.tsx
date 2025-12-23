@@ -19,7 +19,10 @@ import {
     Heart,
 } from "lucide-react"
 import Link from "next/link"
-import { formatRelativeTime } from "@/lib/utils"
+import { formatRelativeTime, linkifyContent } from "@/lib/utils"
+import { useToast } from "@/components/ui"
+import { ConfirmModal } from "@/components/ui"
+import { useToggleFavorite } from "@/hooks/useToggleFavorite"
 
 interface Prompt {
     id: string
@@ -48,12 +51,20 @@ interface Attachment {
 
 export default function PromptsPage() {
     const { userData } = useAuth()
+    const { showToast } = useToast()
     const [prompts, setPrompts] = useState<Prompt[]>([])
     const [categories, setCategories] = useState<Category[]>([])
     const [attachments, setAttachments] = useState<Record<string, Attachment[]>>({})
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
     const [selectedCategory, setSelectedCategory] = useState("")
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string | null }>({ isOpen: false, id: null })
+    
+    const { toggleFavorite } = useToggleFavorite(prompts, setPrompts, {
+        collectionName: "prompts",
+        onSuccess: () => showToast("تم تحديث المفضلة بنجاح", "success"),
+        onError: () => showToast("حدث خطأ أثناء تحديث المفضلة", "error"),
+    })
 
     useEffect(() => {
         if (userData?.workspaceId) {
@@ -103,24 +114,35 @@ export default function PromptsPage() {
 
             setPrompts(promptsList)
 
-            // Fetch attachments for all prompts
+            // Fetch attachments for all prompts (in batches due to Firestore 'in' limit of 10)
             const promptIds = promptsList.map(p => p.id)
             if (promptIds.length > 0) {
                 const attachmentsMap: Record<string, Attachment[]> = {}
 
-                // Fetch all attachments (we'll filter client-side)
-                const attachmentsQuery = query(collection(db, "attachments"))
-                const attachmentsSnap = await getDocs(attachmentsQuery)
+                // Firestore 'in' query supports max 10 items, so we batch them
+                const batchSize = 10
+                for (let i = 0; i < promptIds.length; i += batchSize) {
+                    const batch = promptIds.slice(i, i + batchSize)
+                    try {
+                        const attachmentsQuery = query(
+                            collection(db, "attachments"),
+                            where("promptId", "in", batch)
+                        )
+                        const attachmentsSnap = await getDocs(attachmentsQuery)
 
-                attachmentsSnap.docs.forEach(doc => {
-                    const data = doc.data() as Attachment
-                    if (data.promptId && promptIds.includes(data.promptId)) {
-                        if (!attachmentsMap[data.promptId]) {
-                            attachmentsMap[data.promptId] = []
-                        }
-                        attachmentsMap[data.promptId].push(data)
+                        attachmentsSnap.docs.forEach(doc => {
+                            const data = doc.data() as Attachment
+                            if (data.promptId) {
+                                if (!attachmentsMap[data.promptId]) {
+                                    attachmentsMap[data.promptId] = []
+                                }
+                                attachmentsMap[data.promptId].push(data)
+                            }
+                        })
+                    } catch (error) {
+                        console.error("Error fetching attachments batch:", error)
                     }
-                })
+                }
 
                 setAttachments(attachmentsMap)
             }
@@ -132,50 +154,22 @@ export default function PromptsPage() {
     }
 
     const handleCopy = async (content: string) => {
-        await navigator.clipboard.writeText(content)
-        // TODO: Show toast
-    }
-
-    const handleDelete = async (id: string) => {
-        if (!confirm("هل أنت متأكد من حذف هذا البروبمت؟")) return
-
         try {
-            await updateDoc(doc(db, "prompts", id), { isArchived: true })
-            setPrompts(prompts.filter(p => p.id !== id))
+            await navigator.clipboard.writeText(content)
+            showToast("تم نسخ المحتوى بنجاح", "success")
         } catch (error) {
-            console.error("Error deleting prompt:", error)
+            showToast("فشل نسخ المحتوى", "error")
         }
     }
 
-    const handleToggleFavorite = async (id: string) => {
+    const handleDelete = async (id: string) => {
         try {
-            const prompt = prompts.find(p => p.id === id)
-            if (!prompt) return
-
-            const newFavoriteStatus = !(prompt.isFavorite ?? false)
-            await updateDoc(doc(db, "prompts", id), { isFavorite: newFavoriteStatus })
-            
-            // Update local state
-            setPrompts(prevPrompts => {
-                const updated = prevPrompts.map(p => 
-                    p.id === id ? { ...p, isFavorite: newFavoriteStatus } : p
-                )
-                // Re-sort after update
-                updated.sort((a, b) => {
-                    const aIsFavorite = a.isFavorite ?? false
-                    const bIsFavorite = b.isFavorite ?? false
-                    
-                    if (aIsFavorite && !bIsFavorite) return -1
-                    if (!aIsFavorite && bIsFavorite) return 1
-                    
-                    const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
-                    const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
-                    return dateB.getTime() - dateA.getTime()
-                })
-                return updated
-            })
+            await updateDoc(doc(db, "prompts", id), { isArchived: true })
+            setPrompts(prompts.filter(p => p.id !== id))
+            showToast("تم حذف البروبمت بنجاح", "success")
         } catch (error) {
-            console.error("Error toggling favorite:", error)
+            console.error("Error deleting prompt:", error)
+            showToast("حدث خطأ أثناء الحذف", "error")
         }
     }
 
@@ -311,12 +305,12 @@ export default function PromptsPage() {
 
                                     {prompt.description && (
                                         <p className="mt-2 line-clamp-2 text-sm text-slate-500">
-                                            {prompt.description}
+                                            {linkifyContent(prompt.description)}
                                         </p>
                                     )}
 
                                     <p className="mt-2 line-clamp-3 font-mono text-xs text-slate-600 dark:text-slate-400">
-                                        {prompt.content}
+                                        {linkifyContent(prompt.content)}
                                     </p>
 
                                     <div className="mt-4 flex items-center justify-between">
@@ -329,7 +323,7 @@ export default function PromptsPage() {
                                             <button
                                                 onClick={(e) => {
                                                     e.preventDefault()
-                                                    handleToggleFavorite(prompt.id)
+                                                    toggleFavorite(prompt.id)
                                                 }}
                                                 className={`rounded-lg p-1.5 transition-colors ${
                                                     prompt.isFavorite
@@ -353,7 +347,7 @@ export default function PromptsPage() {
                                                 </button>
                                             </Link>
                                             <button
-                                                onClick={() => handleDelete(prompt.id)}
+                                                onClick={() => setDeleteModal({ isOpen: true, id: prompt.id })}
                                                 className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
                                                 title="حذف"
                                             >
@@ -367,6 +361,23 @@ export default function PromptsPage() {
                     })}
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, id: null })}
+                onConfirm={() => {
+                    if (deleteModal.id) {
+                        handleDelete(deleteModal.id)
+                        setDeleteModal({ isOpen: false, id: null })
+                    }
+                }}
+                title="حذف البروبمت"
+                message="هل أنت متأكد من حذف هذا البروبمت؟ لا يمكن التراجع عن هذه العملية."
+                confirmText="حذف"
+                cancelText="إلغاء"
+                variant="danger"
+            />
         </div>
     )
 }

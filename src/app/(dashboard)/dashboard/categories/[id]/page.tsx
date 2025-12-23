@@ -121,22 +121,35 @@ export default function CategoryDetailsPage() {
                 } as ContentItem)
             })
             
-            // Fetch attachments for prompts
+            // Fetch attachments for prompts (in batches due to Firestore 'in' limit of 10)
             if (promptDocs.length > 0) {
                 const promptIds = promptDocs.map(d => d.id)
-                const attachmentsQuery = query(collection(db, "attachments"))
-                const attachmentsSnap = await getDocs(attachmentsQuery)
                 const attachmentsMap: Record<string, any[]> = {}
                 
-                attachmentsSnap.docs.forEach(doc => {
-                    const data = doc.data()
-                    if (data.promptId && promptIds.includes(data.promptId)) {
-                        if (!attachmentsMap[data.promptId]) {
-                            attachmentsMap[data.promptId] = []
-                        }
-                        attachmentsMap[data.promptId].push(data)
+                // Firestore 'in' query supports max 10 items, so we batch them
+                const batchSize = 10
+                for (let i = 0; i < promptIds.length; i += batchSize) {
+                    const batch = promptIds.slice(i, i + batchSize)
+                    try {
+                        const attachmentsQuery = query(
+                            collection(db, "attachments"),
+                            where("promptId", "in", batch)
+                        )
+                        const attachmentsSnap = await getDocs(attachmentsQuery)
+                        
+                        attachmentsSnap.docs.forEach(doc => {
+                            const data = doc.data()
+                            if (data.promptId) {
+                                if (!attachmentsMap[data.promptId]) {
+                                    attachmentsMap[data.promptId] = []
+                                }
+                                attachmentsMap[data.promptId].push(data)
+                            }
+                        })
+                    } catch (error) {
+                        console.error("Error fetching attachments batch:", error)
                     }
-                })
+                }
                 setAttachments(attachmentsMap)
             }
             // Tweets

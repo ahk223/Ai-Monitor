@@ -20,6 +20,9 @@ import {
     Heart
 } from "lucide-react"
 import Link from "next/link"
+import { linkifyContent } from "@/lib/utils"
+import { useToast, ConfirmModal } from "@/components/ui"
+import { useToggleFavorite } from "@/hooks/useToggleFavorite"
 
 interface Tweet {
     id: string
@@ -41,10 +44,18 @@ interface Category {
 
 export default function SocialMediaPage() {
     const { userData } = useAuth()
+    const { showToast } = useToast()
     const [items, setItems] = useState<Tweet[]>([])
     const [categories, setCategories] = useState<Category[]>([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string | null }>({ isOpen: false, id: null })
+    
+    const { toggleFavorite } = useToggleFavorite(items, setItems, {
+        collectionName: "tweets",
+        onSuccess: () => showToast("تم تحديث المفضلة بنجاح", "success"),
+        onError: () => showToast("حدث خطأ أثناء تحديث المفضلة", "error"),
+    })
 
     useEffect(() => {
         document.title = "محتوى السوشيال ميديا | AI Knowledge Hub"
@@ -102,43 +113,13 @@ export default function SocialMediaPage() {
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm("هل أنت متأكد من حذف هذا المحتوى؟")) return
-
         try {
             await updateDoc(doc(db, "tweets", id), { isArchived: true })
             setItems(items.filter(t => t.id !== id))
+            showToast("تم حذف المحتوى بنجاح", "success")
         } catch (error) {
             console.error("Error deleting item:", error)
-        }
-    }
-
-    const handleToggleFavorite = async (id: string) => {
-        try {
-            const item = items.find(t => t.id === id)
-            if (!item) return
-
-            const newFavoriteStatus = !(item.isFavorite ?? false)
-            await updateDoc(doc(db, "tweets", id), { isFavorite: newFavoriteStatus })
-            
-            setItems(prevItems => {
-                const updated = prevItems.map(t => 
-                    t.id === id ? { ...t, isFavorite: newFavoriteStatus } : t
-                )
-                updated.sort((a, b) => {
-                    const aIsFavorite = a.isFavorite ?? false
-                    const bIsFavorite = b.isFavorite ?? false
-                    
-                    if (aIsFavorite && !bIsFavorite) return -1
-                    if (!aIsFavorite && bIsFavorite) return 1
-                    
-                    const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)
-                    const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt)
-                    return dateB.getTime() - dateA.getTime()
-                })
-                return updated
-            })
-        } catch (error) {
-            console.error("Error toggling favorite:", error)
+            showToast("حدث خطأ أثناء الحذف", "error")
         }
     }
 
@@ -163,30 +144,6 @@ export default function SocialMediaPage() {
         }
     }
 
-    // Function to convert URLs in text to clickable links
-    const linkifyContent = (text: string) => {
-        if (!text) return text
-        const urlRegex = /(https?:\/\/[^\s]+)/g
-        const parts = text.split(urlRegex)
-
-        return parts.map((part, index) => {
-            if (part.match(urlRegex)) {
-                return (
-                    <a
-                        key={index}
-                        href={part}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline break-all"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {part}
-                    </a>
-                )
-            }
-            return part
-        })
-    }
 
     const filteredItems = items.filter(item => {
         return !search || item.content.toLowerCase().includes(search.toLowerCase())
@@ -256,7 +213,7 @@ export default function SocialMediaPage() {
                         return (
                             <Card key={item.id} hover className="group relative">
                                 <button
-                                    onClick={() => handleToggleFavorite(item.id)}
+                                    onClick={() => toggleFavorite(item.id)}
                                     className={`absolute top-2 left-2 rounded-lg p-1.5 transition-colors z-10 ${
                                         item.isFavorite
                                             ? "text-red-500 hover:bg-red-50 hover:text-red-600 bg-white/90"
@@ -311,7 +268,7 @@ export default function SocialMediaPage() {
                                                 </button>
                                             </Link>
                                             <button
-                                                onClick={() => handleDelete(item.id)}
+                                                onClick={() => setDeleteModal({ isOpen: true, id: item.id })}
                                                 className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
                                                 title="حذف"
                                             >
@@ -325,6 +282,23 @@ export default function SocialMediaPage() {
                     })}
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, id: null })}
+                onConfirm={() => {
+                    if (deleteModal.id) {
+                        handleDelete(deleteModal.id)
+                        setDeleteModal({ isOpen: false, id: null })
+                    }
+                }}
+                title="حذف المحتوى"
+                message="هل أنت متأكد من حذف هذا المحتوى؟ لا يمكن التراجع عن هذه العملية."
+                confirmText="حذف"
+                cancelText="إلغاء"
+                variant="danger"
+            />
         </div>
     )
 }
