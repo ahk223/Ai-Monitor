@@ -50,21 +50,21 @@ interface Category {
 
 // 1. Welcome Banner
 const WelcomeBanner = ({ userName, workspaceName }: { userName?: string, workspaceName?: string }) => (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 p-6 text-white shadow-xl mb-8">
+    <div className="relative overflow-hidden rounded-xl md:rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 p-4 md:p-6 text-white shadow-xl mb-4 md:mb-8">
         <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="h-5 w-5 text-yellow-300 animate-pulse" />
-                <h1 className="text-xl md:text-2xl font-bold">
+            <div className="flex items-center gap-2 mb-1 md:mb-2">
+                <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-yellow-300 animate-pulse flex-shrink-0" />
+                <h1 className="text-base md:text-xl lg:text-2xl font-bold leading-tight">
                     أهلاً بك، {userName || "مستخدم"}
                 </h1>
             </div>
-            <p className="text-indigo-100 text-sm md:text-base">
+            <p className="text-indigo-100 text-xs md:text-sm lg:text-base">
                 {workspaceName || "مساحة العمل الخاصة بك"}
             </p>
         </div>
-        {/* Abstract Shapes */}
-        <div className="absolute right-0 top-0 -mt-10 -mr-10 h-32 w-32 rounded-full bg-white/10 blur-3xl"></div>
-        <div className="absolute left-0 bottom-0 -mb-10 -ml-10 h-32 w-32 rounded-full bg-indigo-500/30 blur-3xl"></div>
+        {/* Abstract Shapes - Hidden on mobile for performance */}
+        <div className="hidden md:block absolute right-0 top-0 -mt-10 -mr-10 h-32 w-32 rounded-full bg-white/10 blur-3xl"></div>
+        <div className="hidden md:block absolute left-0 bottom-0 -mb-10 -ml-10 h-32 w-32 rounded-full bg-indigo-500/30 blur-3xl"></div>
     </div>
 )
 
@@ -113,7 +113,7 @@ const ContentCard = ({ item, onToggleFavorite }: { item: ContentItem, onToggleFa
     const editLink = getEditLink(item)
 
     return (
-        <div className="block h-full min-w-[260px] max-w-[260px] md:min-w-0 md:max-w-none snap-start relative group">
+        <div className="block h-full min-w-[200px] max-w-[200px] sm:min-w-[220px] sm:max-w-[220px] md:min-w-0 md:max-w-none snap-start relative group">
              {/* Favorite Button (Left) */}
              <button
                 onClick={(e) => {
@@ -121,14 +121,14 @@ const ContentCard = ({ item, onToggleFavorite }: { item: ContentItem, onToggleFa
                     e.stopPropagation()
                     onToggleFavorite(item.id, item.type, item.isFavorite || false)
                 }}
-                className={`absolute top-3 left-3 z-20 p-1.5 rounded-full transition-all duration-200 ${
+                className={`absolute top-2 left-2 md:top-3 md:left-3 z-20 p-1 md:p-1.5 rounded-full transition-all duration-200 ${
                     item.isFavorite 
                         ? "bg-rose-50 text-rose-500 opacity-100" 
-                        : "bg-slate-100/50 text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-500"
+                        : "bg-slate-100/80 text-slate-400 opacity-70 md:opacity-0 md:group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-500"
                 }`}
                 title="إضافة للمفضلة"
             >
-                <Heart className={`h-4 w-4 ${item.isFavorite ? "fill-current" : ""}`} />
+                <Heart className={`h-3 w-3 md:h-4 md:w-4 ${item.isFavorite ? "fill-current" : ""}`} />
             </button>
 
             {/* Edit Button (Right) */}
@@ -136,38 +136,38 @@ const ContentCard = ({ item, onToggleFavorite }: { item: ContentItem, onToggleFa
                 <Link
                     href={editLink}
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute top-3 right-3 z-20 p-1.5 rounded-full bg-slate-100/50 text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-indigo-50 hover:text-indigo-600 transition-all duration-200"
+                    className="absolute top-2 right-2 md:top-3 md:right-3 z-20 p-1 md:p-1.5 rounded-full bg-slate-100/80 text-slate-400 opacity-70 md:opacity-0 md:group-hover:opacity-100 hover:bg-indigo-50 hover:text-indigo-600 transition-all duration-200"
                     title="تعديل"
                 >
-                    <Edit2 className="h-4 w-4" />
+                    <Edit2 className="h-3 w-3 md:h-4 md:w-4" />
                 </Link>
             )}
 
             <Link href={getLink(item)} className="block h-full">
                 <Card className={`h-full hover:shadow-md transition-all duration-300 border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 ${item.isFavorite ? 'border-rose-100 dark:border-rose-900/30 bg-rose-50/10' : ''}`}>
-                    <CardContent className="p-4 flex flex-col h-full">
-                        <div className="flex items-start justify-between mb-3">
-                            <div className={`p-2 rounded-lg ${config.bg}`}>
-                                <Icon className={`h-4 w-4 ${config.color}`} />
+                    <CardContent className="p-3 md:p-4 flex flex-col h-full">
+                        <div className="flex items-start justify-between mb-2 md:mb-3">
+                            <div className={`p-1.5 md:p-2 rounded-lg ${config.bg}`}>
+                                <Icon className={`h-3 w-3 md:h-4 md:w-4 ${config.color}`} />
                             </div>
-                            <Badge variant="secondary" className="text-[10px] font-normal px-2 bg-slate-100 dark:bg-slate-800 text-slate-500">
+                            <Badge variant="secondary" className="text-[9px] md:text-[10px] font-normal px-1.5 md:px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500">
                                 {config.label}
                             </Badge>
                         </div>
                         
-                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2 line-clamp-2 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors pr-6">
-                            {item.title || item.content?.substring(0, 50) || "بدون عنوان"}
+                        <h3 className="font-semibold text-sm md:text-base text-slate-900 dark:text-slate-100 mb-1.5 md:mb-2 line-clamp-2 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors pr-8 md:pr-6">
+                            {item.title || item.content?.substring(0, 40) || "بدون عنوان"}
                         </h3>
                         
                         {item.content && item.title && (
-                            <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3">
+                            <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-2 md:mb-3 leading-relaxed">
                                 {item.content}
                             </p>
                         )}
 
-                        <div className="mt-auto pt-2 flex items-center text-xs text-slate-400 group-hover:text-indigo-500 transition-colors">
+                        <div className="mt-auto pt-1.5 md:pt-2 flex items-center text-[10px] md:text-xs text-slate-400 group-hover:text-indigo-500 transition-colors">
                             <span>عرض التفاصيل</span>
-                            <ArrowLeft className="h-3 w-3 mr-1 transition-transform group-hover:-translate-x-1" />
+                            <ArrowLeft className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1 transition-transform group-hover:-translate-x-1" />
                         </div>
                     </CardContent>
                 </Card>
@@ -191,54 +191,55 @@ const CategorySection = ({
     if (!items || items.length === 0) return null
 
     return (
-        <section className="mb-8">
-            <div className="flex items-center justify-between mb-4 px-1">
-                <div className="flex items-center gap-3">
+        <section className="mb-4 md:mb-8">
+            <div className="flex items-center justify-between mb-3 md:mb-4 px-1">
+                <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
                     {onToggleCategoryFavorite && category.id !== 'uncategorized' && (
                         <button
                             onClick={() => onToggleCategoryFavorite(category.id, category.isFavorite || false)}
-                            className={`p-1.5 rounded-full transition-all duration-200 ${
+                            className={`p-1 md:p-1.5 rounded-full transition-all duration-200 flex-shrink-0 ${
                                 category.isFavorite 
                                     ? "bg-rose-50 text-rose-500" 
                                     : "text-slate-300 hover:text-rose-400 hover:bg-rose-50"
                             }`}
                         >
-                            <Heart className={`h-5 w-5 ${category.isFavorite ? "fill-current" : ""}`} />
+                            <Heart className={`h-4 w-4 md:h-5 md:w-5 ${category.isFavorite ? "fill-current" : ""}`} />
                         </button>
                     )}
                     
                     <div 
-                        className="w-1.5 h-6 rounded-full" 
+                        className="w-1 h-4 md:w-1.5 md:h-6 rounded-full flex-shrink-0" 
                         style={{ backgroundColor: category.color }}
                     />
-                    <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white">
+                    <h2 className="text-base md:text-lg lg:text-xl font-bold text-slate-900 dark:text-white truncate min-w-0">
                         {category.name}
                     </h2>
-                    <Badge variant="secondary" className="text-xs rounded-full px-2 py-0.5 border border-slate-200 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300">
+                    <Badge variant="secondary" className="text-[10px] md:text-xs rounded-full px-1.5 md:px-2 py-0.5 border border-slate-200 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-300 flex-shrink-0">
                         {items.length}
                     </Badge>
                 </div>
-                <Link href={`/dashboard/categories/${category.id}`}>
-                    <Button variant="ghost" size="sm" className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-xs md:text-sm">
-                        عرض الكل
-                        <ArrowLeft className="h-3 w-3 mr-1" />
+                <Link href={`/dashboard/categories/${category.id}`} className="flex-shrink-0">
+                    <Button variant="ghost" size="sm" className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-[10px] md:text-xs lg:text-sm px-2 md:px-3 h-7 md:h-8">
+                        <span className="hidden sm:inline">عرض الكل</span>
+                        <span className="sm:hidden">الكل</span>
+                        <ArrowLeft className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
                     </Button>
                 </Link>
             </div>
 
             {/* Mobile: Horizontal Scroll | Desktop: Grid */}
-            <div className="flex overflow-x-auto pb-4 gap-3 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:overflow-visible snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
+            <div className="flex overflow-x-auto pb-4 gap-2 md:gap-3 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:overflow-visible snap-x snap-mandatory -mx-2 sm:-mx-4 px-2 sm:px-4 md:mx-0 md:px-0 scrollbar-hide">
                 {items.slice(0, 6).map((item, idx) => (
                     <ContentCard key={`${item.type}-${item.id}-${idx}`} item={item} onToggleFavorite={onToggleFavorite} />
                 ))}
                 
                 {items.length > 6 && (
-                    <Link href={`/dashboard/categories/${category.id}`} className="min-w-[100px] flex items-center justify-center snap-start">
-                        <div className="flex flex-col items-center gap-2 text-slate-400 hover:text-indigo-600 transition-colors p-4">
-                            <div className="p-3 rounded-full bg-slate-100 dark:bg-slate-800">
-                                <MoreHorizontal className="h-5 w-5" />
+                    <Link href={`/dashboard/categories/${category.id}`} className="min-w-[80px] sm:min-w-[100px] flex items-center justify-center snap-start">
+                        <div className="flex flex-col items-center gap-1.5 md:gap-2 text-slate-400 hover:text-indigo-600 transition-colors p-3 md:p-4">
+                            <div className="p-2 md:p-3 rounded-full bg-slate-100 dark:bg-slate-800">
+                                <MoreHorizontal className="h-4 w-4 md:h-5 md:w-5" />
                             </div>
-                            <span className="text-xs font-medium">المزيد</span>
+                            <span className="text-[10px] md:text-xs font-medium">المزيد</span>
                         </div>
                     </Link>
                 )}
