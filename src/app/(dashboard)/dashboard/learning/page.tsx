@@ -8,6 +8,7 @@ import { Button, Card, CardContent, Badge, Input, Select } from "@/components/ui
 import { ListTodo, Plus, Search, Filter } from "lucide-react"
 import Link from "next/link"
 import { LearningList } from "@/components/learning/LearningList"
+import { LearningSummaryTable } from "@/components/learning/LearningSummaryTable"
 
 interface Category {
     id: string
@@ -72,6 +73,9 @@ export default function LearningPage() {
                     className="pl-10 pr-10"
                 />
             </div>
+
+            {/* Summary Table */}
+            <LearningSummaryTable />
 
             {/* Categories Grid */}
             {loading ? (
