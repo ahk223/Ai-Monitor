@@ -521,11 +521,28 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                             e.stopPropagation()
                                             if (!editor) return
                                             
-                                            // Use setMark with color extension directly
-                                            editor.chain()
-                                                .focus()
-                                                .setMark('color', { color })
-                                                .run()
+                                            const { from, to } = editor.state.selection
+                                            
+                                            if (from !== to) {
+                                                // Text is selected - apply color using transaction
+                                                const { tr } = editor.state
+                                                const colorMark = editor.schema.marks.color
+                                                
+                                                if (colorMark) {
+                                                    // Remove existing color marks in the selection
+                                                    tr.removeMark(from, to, colorMark)
+                                                    // Add new color mark with explicit color attribute
+                                                    tr.addMark(from, to, colorMark.create({ color: color }))
+                                                    editor.view.dispatch(tr)
+                                                    editor.view.focus()
+                                                } else {
+                                                    // Fallback
+                                                    editor.chain().focus().setColor(color).run()
+                                                }
+                                            } else {
+                                                // No selection - set color for next typed text
+                                                editor.chain().focus().setColor(color).run()
+                                            }
                                             
                                             setShowColorPicker(false)
                                         }}
@@ -799,11 +816,27 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                     e.stopPropagation()
                                     if (!editor) return
                                     
-                                    // Use setMark with color extension directly
-                                    editor.chain()
-                                        .focus()
-                                        .setMark('color', { color })
-                                        .run()
+                                    const { from, to } = editor.state.selection
+                                    
+                                    if (from !== to) {
+                                        // Text is selected - apply color using transaction
+                                        const { tr } = editor.state
+                                        const colorMark = editor.schema.marks.color
+                                        
+                                        if (colorMark) {
+                                            // Remove existing color marks in the selection
+                                            tr.removeMark(from, to, colorMark)
+                                            // Add new color mark
+                                            tr.addMark(from, to, colorMark.create({ color }))
+                                            editor.view.dispatch(tr)
+                                        } else {
+                                            // Fallback
+                                            editor.chain().focus().setColor(color).run()
+                                        }
+                                    } else {
+                                        // No selection - set color for next typed text
+                                        editor.chain().focus().setColor(color).run()
+                                    }
                                     
                                     setShowFloatingColorPicker(false)
                                 }}
