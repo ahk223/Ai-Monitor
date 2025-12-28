@@ -11,6 +11,7 @@ interface CollapsibleNoteContentProps {
 interface Section {
     id: string
     title: string
+    titleHTML: string // CRITICAL: Store the full HTML of the heading with colors
     level: number
     content: string
 }
@@ -259,6 +260,15 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
             const level = parseInt(heading.tagName.charAt(1))
             const title = heading.textContent || ""
             const id = `section-${index}`
+            
+            // CRITICAL: Process the heading HTML to transfer span colors to heading
+            const headingHTML = (heading as HTMLElement).outerHTML
+            const processedHeadingHTML = processHTMLForView(headingHTML)
+            // Extract just the heading tag with its style
+            const headingParser = new DOMParser()
+            const headingDoc = headingParser.parseFromString(processedHeadingHTML, "text/html")
+            const processedHeading = headingDoc.body.querySelector('h1, h2, h3, h4, h5, h6')
+            const titleHTML = processedHeading ? processedHeading.outerHTML : headingHTML
 
             // Get content between this heading and next heading
             const contentParts: string[] = []
@@ -293,6 +303,7 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
             sectionsList.push({
                 id,
                 title,
+                titleHTML, // CRITICAL: Store processed heading HTML with colors
                 level,
                 content: processedSectionContent,
             })
@@ -301,13 +312,7 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
         return sectionsList
     }, [content])
     
-    // CRITICAL: Auto-expand all sections for debugging
-    useEffect(() => {
-        if (sections.length > 0) {
-            const allSectionIds = new Set(sections.map(s => s.id))
-            setExpandedSections(allSectionIds)
-        }
-    }, [sections])
+    // Remove auto-expand - sections should be collapsed by default
 
     const toggleSection = (sectionId: string) => {
         setExpandedSections((prev) => {
@@ -388,7 +393,7 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => hasContent && toggleSection(section.id)}
-                                className={`flex-1 flex items-center gap-2 text-right ${headingSize} font-semibold text-slate-900 dark:text-white p-2 rounded-lg ${hasContent ? 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer' : 'cursor-default'}`}
+                                className={`flex-1 flex items-center gap-2 text-right p-2 rounded-lg ${hasContent ? 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer' : 'cursor-default'}`}
                             >
                                 {hasContent && (
                                     isExpanded ? (
@@ -397,7 +402,11 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
                                         <ChevronRight className="h-5 w-5 flex-shrink-0" />
                                     )
                                 )}
-                                <span className="flex-1">{section.title}</span>
+                                {/* CRITICAL: Display the actual heading HTML with colors instead of plain text */}
+                                <div 
+                                    className="flex-1"
+                                    dangerouslySetInnerHTML={{ __html: section.titleHTML }}
+                                />
                             </button>
                             {hasContent && (
                                 <button
