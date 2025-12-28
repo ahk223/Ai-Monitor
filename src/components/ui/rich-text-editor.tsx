@@ -3,7 +3,9 @@
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import { TextStyle } from "@tiptap/extension-text-style"
-import { Bold, Italic, List, ListOrdered, Undo, Redo, Type, Heading1, Heading2, Heading3, ChevronDown, ChevronRight } from "lucide-react"
+import Color from "@tiptap/extension-color"
+import Highlight from "@tiptap/extension-highlight"
+import { Bold, Italic, List, ListOrdered, Undo, Redo, Type, Heading1, Heading2, Heading3, ChevronDown, ChevronRight, Palette, Highlighter } from "lucide-react"
 import { Button } from "./button"
 import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
@@ -208,9 +210,14 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     const [floatingToolbarPos, setFloatingToolbarPos] = useState<{ top: number; left: number } | null>(null)
     const [showFloatingToolbar, setShowFloatingToolbar] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
+    const [showColorPicker, setShowColorPicker] = useState(false)
+    const [colorPickerType, setColorPickerType] = useState<'text' | 'highlight' | null>(null)
+    const [colorPickerPos, setColorPickerPos] = useState<{ top: number; left: number } | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const toolbarRef = useRef<HTMLDivElement>(null)
     const fontSizeButtonRef = useRef<HTMLButtonElement>(null)
+    const colorButtonRef = useRef<HTMLButtonElement>(null)
+    const highlightButtonRef = useRef<HTMLButtonElement>(null)
 
     const editor = useEditor({
         immediatelyRender: false,
@@ -221,6 +228,10 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 },
             }),
             TextStyle,
+            Color,
+            Highlight.configure({
+                multicolor: true,
+            }),
             FontSize,
             CollapsibleHeading,
         ],
@@ -292,6 +303,9 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 }
             } else {
                 setShowFloatingToolbar(false)
+                // Close color picker when selection is cleared
+                setShowColorPicker(false)
+                setColorPickerType(null)
             }
         }
 
@@ -303,6 +317,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             editor.off('update', updateFloatingToolbar)
         }
     }, [editor])
+    
 
     // Calculate dropdown positions when they open
     useEffect(() => {
@@ -558,19 +573,159 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         >
                             <Italic className="h-4 w-4" />
                         </Button>
+                        
+                        <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+                        
+                        {/* Text Color */}
+                        <div className="relative">
+                            <Button
+                                ref={colorButtonRef}
+                                data-color-button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (!editor) return
+                                    const { from, to } = editor.state.selection
+                                    if (from !== to) {
+                                        setColorPickerType('text')
+                                        setShowColorPicker(true)
+                                        // Calculate position for color picker
+                                        setTimeout(() => {
+                                            if (colorButtonRef.current) {
+                                                const rect = colorButtonRef.current.getBoundingClientRect()
+                                                setColorPickerPos({
+                                                    top: rect.top - 10,
+                                                    left: rect.left,
+                                                })
+                                            }
+                                        }, 0)
+                                    }
+                                }}
+                                title="لون النص"
+                            >
+                                <Palette className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        
+                        {/* Highlight Color */}
+                        <div className="relative">
+                            <Button
+                                ref={highlightButtonRef}
+                                data-color-button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (!editor) return
+                                    const { from, to } = editor.state.selection
+                                    if (from !== to) {
+                                        setColorPickerType('highlight')
+                                        setShowColorPicker(true)
+                                        // Calculate position for color picker
+                                        setTimeout(() => {
+                                            if (highlightButtonRef.current) {
+                                                const rect = highlightButtonRef.current.getBoundingClientRect()
+                                                setColorPickerPos({
+                                                    top: rect.top - 10,
+                                                    left: rect.left,
+                                                })
+                                            }
+                                        }, 0)
+                                    }
+                                }}
+                                className={editor.isActive("highlight") ? "bg-slate-100 dark:bg-slate-800" : ""}
+                                title="لون الخلفية"
+                            >
+                                <Highlighter className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+            
+            {/* Color Picker */}
+            {showColorPicker && colorPickerPos && colorPickerType && isMounted && createPortal(
+                <div 
+                    data-color-picker
+                    className="fixed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[101] p-3"
+                    style={{
+                        top: `${colorPickerPos.top}px`,
+                        left: `${colorPickerPos.left}px`,
+                        transform: 'translateY(-100%)',
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="mb-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+                        {colorPickerType === 'text' ? 'لون النص' : 'لون الخلفية'}
+                    </div>
+                    <div className="grid grid-cols-8 gap-1.5">
+                        {[
+                            '#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
+                            '#FFA500', '#800080', '#FFC0CB', '#A52A2A', '#808080', '#000080', '#008000', '#800000',
+                            '#FFD700', '#4B0082', '#FF6347', '#40E0D0', '#EE82EE', '#F0E68C', '#DDA0DD', '#98FB98',
+                            '#F5DEB3', '#FFE4B5', '#DEB887', '#F4A460', '#CD853F', '#D2691E', '#B8860B', '#A0522D',
+                        ].map((color) => (
+                            <button
+                                key={color}
+                                type="button"
+                                onClick={() => {
+                                    if (!editor) return
+                                    const { from, to } = editor.state.selection
+                                    if (from !== to) {
+                                        if (colorPickerType === 'text') {
+                                            editor.chain().focus().setTextSelection({ from, to }).setColor(color).run()
+                                        } else {
+                                            editor.chain().focus().setTextSelection({ from, to }).setHighlight({ color }).run()
+                                        }
+                                        setShowColorPicker(false)
+                                        setColorPickerType(null)
+                                    }
+                                }}
+                                className="w-6 h-6 rounded border border-slate-300 dark:border-slate-600 hover:scale-110 transition-transform"
+                                style={{ backgroundColor: color }}
+                                title={color}
+                            />
+                        ))}
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (!editor) return
+                                const { from, to } = editor.state.selection
+                                if (from !== to) {
+                                    if (colorPickerType === 'text') {
+                                        editor.chain().focus().setTextSelection({ from, to }).unsetColor().run()
+                                    } else {
+                                        editor.chain().focus().setTextSelection({ from, to }).unsetHighlight().run()
+                                    }
+                                    setShowColorPicker(false)
+                                    setColorPickerType(null)
+                                }
+                            }}
+                            className="w-full text-xs px-2 py-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+                        >
+                            إزالة اللون
+                        </button>
                     </div>
                 </div>,
                 document.body
             )}
 
             {/* Click outside to close menus - backdrop behind dropdowns */}
-            {showFontSizeMenu && (
+            {(showFontSizeMenu || showColorPicker) && (
                 <div 
                     className="fixed inset-0 z-[105] pointer-events-auto" 
                     onClick={(e) => {
                         // Only close if clicking on backdrop itself, not on dropdowns
                         if (e.target === e.currentTarget) {
                             setShowFontSizeMenu(false)
+                            setShowColorPicker(false)
+                            setColorPickerType(null)
                         }
                     }}
                     onMouseDown={(e) => {
