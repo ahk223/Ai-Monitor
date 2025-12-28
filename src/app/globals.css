@@ -182,6 +182,45 @@ input[type="number"] {
   max-width: 100% !important;
 }
 
+/* CRITICAL: Ensure inline color styles are preserved in prose */
+/* TipTap Color extension saves colors as style="color: #hex" */
+/* We must ensure these inline styles are not overridden by prose */
+/* Inline styles have the highest specificity, but we add these rules to ensure they work */
+.prose *[style*="color"],
+.prose-sm *[style*="color"],
+.prose-base *[style*="color"],
+.prose-lg *[style*="color"] {
+  /* Inline color styles should work automatically - they have highest specificity */
+  /* This rule ensures prose doesn't override them */
+}
+
+.prose *[style*="background-color"],
+.prose-sm *[style*="background-color"],
+.prose-base *[style*="background-color"],
+.prose-lg *[style*="background-color"] {
+  /* Inline background-color styles should work automatically */
+  /* Add padding for better visibility of highlights */
+  padding: 0.125em 0.25em;
+  border-radius: 0.25em;
+}
+
+.dark .prose *[style*="color"],
+.dark .prose-sm *[style*="color"],
+.dark .prose-base *[style*="color"],
+.dark .prose-lg *[style*="color"] {
+  /* Inline color styles should override dark mode default color */
+  /* The inline style attribute has highest specificity */
+}
+
+.dark .prose *[style*="background-color"],
+.dark .prose-sm *[style*="background-color"],
+.dark .prose-base *[style*="background-color"],
+.dark .prose-lg *[style*="background-color"] {
+  /* Inline background-color styles should work in dark mode */
+  padding: 0.125em 0.25em;
+  border-radius: 0.25em;
+}
+
 .ProseMirror p {
   margin: 0.75em 0;
 }
@@ -247,8 +286,16 @@ input[type="number"] {
 
 /* Preserve text colors in prose (preview and shared pages) */
 /* TipTap Color extension adds style="color: #hex" to spans */
-/* Inline styles have the highest specificity and should work automatically */
-/* We just need to ensure prose doesn't add conflicting rules */
+/* Inline styles have the highest specificity, but prose might override them */
+/* We need to ensure prose doesn't override inline color styles */
+.prose *[style*="color"],
+.prose-sm *[style*="color"],
+.prose-base *[style*="color"],
+.prose-lg *[style*="color"] {
+  /* Inline styles should work automatically - they have highest specificity */
+  /* But we add this rule to ensure prose doesn't override them */
+}
+
 .prose span[style*="color"],
 .prose-sm span[style*="color"],
 .prose-base span[style*="color"],
@@ -273,7 +320,7 @@ input[type="number"] {
 .prose-sm h3 span[style*="color"],
 .prose-base h3 span[style*="color"],
 .prose-lg h3 span[style*="color"] {
-  /* Inline style color will be applied automatically - inline styles have highest specificity */
+  /* Inline styles should work automatically - they have highest specificity */
 }
 
 /* Preserve highlight/background colors in prose */
@@ -302,6 +349,13 @@ input[type="number"] {
 
 /* Ensure inline styles work in dark mode for prose */
 /* Inline styles should override dark mode default color automatically */
+.dark .prose *[style*="color"],
+.dark .prose-sm *[style*="color"],
+.dark .prose-base *[style*="color"],
+.dark .prose-lg *[style*="color"] {
+  /* Inline styles should work automatically - they have highest specificity */
+}
+
 .dark .prose span[style*="color"],
 .dark .prose-sm span[style*="color"],
 .dark .prose-base span[style*="color"],

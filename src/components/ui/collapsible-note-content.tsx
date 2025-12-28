@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { ChevronDown, ChevronRight, Copy, Check } from "lucide-react"
 
 interface CollapsibleNoteContentProps {
@@ -18,6 +18,42 @@ interface Section {
 export function CollapsibleNoteContent({ content, className }: CollapsibleNoteContentProps) {
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
     const [copiedSectionId, setCopiedSectionId] = useState<string | null>(null)
+    const containerRef = useRef<HTMLDivElement>(null)
+    
+    // Ensure inline color styles are preserved after render
+    useEffect(() => {
+        if (containerRef.current) {
+            // Find all elements with inline color styles and ensure they're preserved
+            const elementsWithColor = containerRef.current.querySelectorAll('[style*="color"]')
+            elementsWithColor.forEach((el) => {
+                const htmlEl = el as HTMLElement
+                const style = htmlEl.getAttribute('style')
+                if (style && style.includes('color:')) {
+                    // Extract color value
+                    const colorMatch = style.match(/color:\s*([^;]+)/)
+                    if (colorMatch) {
+                        // Force the color to be applied
+                        htmlEl.style.color = colorMatch[1].trim()
+                    }
+                }
+            })
+            
+            // Find all elements with inline background-color styles
+            const elementsWithBgColor = containerRef.current.querySelectorAll('[style*="background-color"]')
+            elementsWithBgColor.forEach((el) => {
+                const htmlEl = el as HTMLElement
+                const style = htmlEl.getAttribute('style')
+                if (style && style.includes('background-color:')) {
+                    // Extract background-color value
+                    const bgColorMatch = style.match(/background-color:\s*([^;]+)/)
+                    if (bgColorMatch) {
+                        // Force the background-color to be applied
+                        htmlEl.style.backgroundColor = bgColorMatch[1].trim()
+                    }
+                }
+            })
+        }
+    }, [content, expandedSections])
 
     const sections = useMemo(() => {
         if (!content) return []
@@ -129,6 +165,7 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
     if (sections.length === 0) {
         return (
             <div
+                ref={containerRef}
                 className={`prose prose-sm sm:prose-base lg:prose-lg max-w-none dark:prose-invert ${className || ""}`}
                 dangerouslySetInnerHTML={{ __html: content }}
             />
@@ -137,7 +174,7 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
 
     // Render with collapsible sections
     return (
-        <div className={`space-y-2 ${className || ""}`}>
+        <div ref={containerRef} className={`space-y-2 ${className || ""}`}>
             {sections.map((section) => {
                 const isExpanded = expandedSections.has(section.id)
                 const headingSize = section.level === 1 ? "text-xl" : section.level === 2 ? "text-lg" : "text-base"
