@@ -22,7 +22,9 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
     
     // Ensure inline color styles are preserved after render
     useEffect(() => {
-        if (containerRef.current) {
+        const applyColors = () => {
+            if (!containerRef.current) return
+            
             // Find all elements with inline color styles and ensure they're preserved
             const elementsWithColor = containerRef.current.querySelectorAll('[style*="color"]')
             elementsWithColor.forEach((el) => {
@@ -32,8 +34,9 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
                     // Extract color value
                     const colorMatch = style.match(/color:\s*([^;]+)/)
                     if (colorMatch) {
-                        // Force the color to be applied
-                        htmlEl.style.color = colorMatch[1].trim()
+                        const colorValue = colorMatch[1].trim()
+                        // Force the color to be applied with !important using setProperty
+                        htmlEl.style.setProperty('color', colorValue, 'important')
                     }
                 }
             })
@@ -47,11 +50,50 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
                     // Extract background-color value
                     const bgColorMatch = style.match(/background-color:\s*([^;]+)/)
                     if (bgColorMatch) {
-                        // Force the background-color to be applied
-                        htmlEl.style.backgroundColor = bgColorMatch[1].trim()
+                        const bgColorValue = bgColorMatch[1].trim()
+                        // Force the background-color to be applied with !important
+                        htmlEl.style.setProperty('background-color', bgColorValue, 'important')
+                        // Add padding for better visibility
+                        if (!htmlEl.style.padding) {
+                            htmlEl.style.setProperty('padding', '0.125em 0.25em', 'important')
+                        }
+                        if (!htmlEl.style.borderRadius) {
+                            htmlEl.style.setProperty('border-radius', '0.25em', 'important')
+                        }
                     }
                 }
             })
+        }
+        
+        // Apply colors immediately
+        applyColors()
+        
+        // Use setTimeout to ensure DOM is fully rendered
+        const timeoutId1 = setTimeout(applyColors, 0)
+        const timeoutId2 = setTimeout(applyColors, 50)
+        const timeoutId3 = setTimeout(applyColors, 100)
+        
+        // Use MutationObserver to watch for DOM changes
+        let observer: MutationObserver | null = null
+        if (containerRef.current) {
+            observer = new MutationObserver(() => {
+                applyColors()
+            })
+            observer.observe(containerRef.current, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['style']
+            })
+        }
+        
+        return () => {
+            clearTimeout(timeoutId1)
+            clearTimeout(timeoutId2)
+            clearTimeout(timeoutId3)
+            if (observer) {
+                observer.disconnect()
+            }
         }
     }, [content, expandedSections])
 

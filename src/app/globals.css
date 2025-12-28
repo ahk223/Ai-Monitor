@@ -185,13 +185,14 @@ input[type="number"] {
 /* CRITICAL: Ensure inline color styles are preserved in prose */
 /* TipTap Color extension saves colors as style="color: #hex" */
 /* We must ensure these inline styles are not overridden by prose */
-/* Inline styles have the highest specificity, but we add these rules to ensure they work */
+/* Use !important to override any prose styles that might interfere */
 .prose *[style*="color"],
 .prose-sm *[style*="color"],
 .prose-base *[style*="color"],
 .prose-lg *[style*="color"] {
-  /* Inline color styles should work automatically - they have highest specificity */
-  /* This rule ensures prose doesn't override them */
+  /* Force inline color styles to be respected - inline styles should work but this ensures it */
+  /* Note: We can't use !important here because we don't know the color value */
+  /* The JavaScript code will apply colors with !important */
 }
 
 .prose *[style*="background-color"],
@@ -199,9 +200,7 @@ input[type="number"] {
 .prose-base *[style*="background-color"],
 .prose-lg *[style*="background-color"] {
   /* Inline background-color styles should work automatically */
-  /* Add padding for better visibility of highlights */
-  padding: 0.125em 0.25em;
-  border-radius: 0.25em;
+  /* JavaScript will add padding and border-radius with !important */
 }
 
 .dark .prose *[style*="color"],
@@ -209,7 +208,7 @@ input[type="number"] {
 .dark .prose-base *[style*="color"],
 .dark .prose-lg *[style*="color"] {
   /* Inline color styles should override dark mode default color */
-  /* The inline style attribute has highest specificity */
+  /* JavaScript will apply colors with !important */
 }
 
 .dark .prose *[style*="background-color"],
@@ -217,8 +216,7 @@ input[type="number"] {
 .dark .prose-base *[style*="background-color"],
 .dark .prose-lg *[style*="background-color"] {
   /* Inline background-color styles should work in dark mode */
-  padding: 0.125em 0.25em;
-  border-radius: 0.25em;
+  /* JavaScript will add padding and border-radius with !important */
 }
 
 .ProseMirror p {
