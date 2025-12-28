@@ -111,17 +111,44 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
                 if (colorValue) {
                     // Reapply color on hover to override any hover effects
                     const preserveColor = () => {
+                        // Apply multiple times to ensure it sticks
+                        htmlHeading.style.setProperty('color', colorValue, 'important')
+                        // Also set directly on the element
+                        htmlHeading.style.color = colorValue
+                        // Force a reflow to ensure the style is applied
+                        void htmlHeading.offsetHeight
                         htmlHeading.style.setProperty('color', colorValue, 'important')
                     }
                     
                     // Use capture phase to ensure our handler runs first
-                    htmlHeading.addEventListener('mouseenter', preserveColor, true)
-                    htmlHeading.addEventListener('mouseleave', preserveColor, true)
-                    htmlHeading.addEventListener('mouseover', preserveColor, true)
-                    htmlHeading.addEventListener('mouseout', preserveColor, true)
+                    const handleMouseEnter = (e: Event) => {
+                        e.stopPropagation()
+                        preserveColor()
+                    }
+                    const handleMouseLeave = (e: Event) => {
+                        e.stopPropagation()
+                        preserveColor()
+                    }
+                    const handleMouseOver = (e: Event) => {
+                        e.stopPropagation()
+                        preserveColor()
+                    }
                     
-                    // Also apply immediately
+                    // Remove existing listeners first
+                    htmlHeading.removeEventListener('mouseenter', handleMouseEnter, true)
+                    htmlHeading.removeEventListener('mouseleave', handleMouseLeave, true)
+                    htmlHeading.removeEventListener('mouseover', handleMouseOver, true)
+                    
+                    // Add new listeners with capture phase
+                    htmlHeading.addEventListener('mouseenter', handleMouseEnter, true)
+                    htmlHeading.addEventListener('mouseleave', handleMouseLeave, true)
+                    htmlHeading.addEventListener('mouseover', handleMouseOver, true)
+                    
+                    // Also apply immediately and repeatedly
                     preserveColor()
+                    setTimeout(preserveColor, 0)
+                    setTimeout(preserveColor, 10)
+                    setTimeout(preserveColor, 50)
                 }
             })
             
@@ -153,9 +180,12 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
         applyColors()
         
         // Use setTimeout to ensure DOM is fully rendered
+        // Apply multiple times to ensure colors stick
         const timeoutId1 = setTimeout(applyColors, 0)
-        const timeoutId2 = setTimeout(applyColors, 50)
-        const timeoutId3 = setTimeout(applyColors, 100)
+        const timeoutId2 = setTimeout(applyColors, 10)
+        const timeoutId3 = setTimeout(applyColors, 50)
+        const timeoutId4 = setTimeout(applyColors, 100)
+        const timeoutId5 = setTimeout(applyColors, 200)
         
         // Use MutationObserver to watch for DOM changes
         let observer: MutationObserver | null = null
@@ -175,6 +205,8 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
             clearTimeout(timeoutId1)
             clearTimeout(timeoutId2)
             clearTimeout(timeoutId3)
+            clearTimeout(timeoutId4)
+            clearTimeout(timeoutId5)
             if (observer) {
                 observer.disconnect()
             }

@@ -230,6 +230,7 @@ input[type="number"] {
 
 /* Remove hover effects on headings with custom colors */
 /* Override any prose hover styles that might change the color */
+/* Use higher specificity to override prose styles */
 .prose h1[style*="color"]:hover,
 .prose-sm h1[style*="color"]:hover,
 .prose-base h1[style*="color"]:hover,
@@ -256,6 +257,8 @@ input[type="number"] {
 .prose-lg h3.has-custom-color:hover {
   /* Preserve the inline color on hover - don't let hover override it */
   /* The color will be preserved by JavaScript with !important */
+  /* Override any prose hover color rules */
+  color: inherit !important;
 }
 
 .dark .prose h1[style*="color"],
