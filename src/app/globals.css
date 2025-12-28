@@ -348,64 +348,9 @@ input[type="number"] {
   /* JavaScript will apply colors with !important */
 }
 
-/* CRITICAL: Headings with colored spans inside should not have default prose colors */
-/* TipTap Color extension saves colors in spans, so we need to ensure headings inherit from spans */
-.prose h1:has(span[style*="color"]),
-.prose-sm h1:has(span[style*="color"]),
-.prose-base h1:has(span[style*="color"]),
-.prose-lg h1:has(span[style*="color"]),
-.prose h2:has(span[style*="color"]),
-.prose-sm h2:has(span[style*="color"]),
-.prose-base h2:has(span[style*="color"]),
-.prose-lg h2:has(span[style*="color"]),
-.prose h3:has(span[style*="color"]),
-.prose-sm h3:has(span[style*="color"]),
-.prose-base h3:has(span[style*="color"]),
-.prose-lg h3:has(span[style*="color"]),
-.prose h4:has(span[style*="color"]),
-.prose-sm h4:has(span[style*="color"]),
-.prose-base h4:has(span[style*="color"]),
-.prose-lg h4:has(span[style*="color"]),
-.prose h5:has(span[style*="color"]),
-.prose-sm h5:has(span[style*="color"]),
-.prose-base h5:has(span[style*="color"]),
-.prose-lg h5:has(span[style*="color"]),
-.prose h6:has(span[style*="color"]),
-.prose-sm h6:has(span[style*="color"]),
-.prose-base h6:has(span[style*="color"]),
-.prose-lg h6:has(span[style*="color"]) {
-  /* Remove default prose colors from headings that contain colored spans */
-  /* JavaScript will apply the span color to the heading itself */
-  color: inherit !important;
-}
-
-.dark .prose h1:has(span[style*="color"]),
-.dark .prose-sm h1:has(span[style*="color"]),
-.dark .prose-base h1:has(span[style*="color"]),
-.dark .prose-lg h1:has(span[style*="color"]),
-.dark .prose h2:has(span[style*="color"]),
-.dark .prose-sm h2:has(span[style*="color"]),
-.dark .prose-base h2:has(span[style*="color"]),
-.dark .prose-lg h2:has(span[style*="color"]),
-.dark .prose h3:has(span[style*="color"]),
-.dark .prose-sm h3:has(span[style*="color"]),
-.dark .prose-base h3:has(span[style*="color"]),
-.dark .prose-lg h3:has(span[style*="color"]),
-.dark .prose h4:has(span[style*="color"]),
-.dark .prose-sm h4:has(span[style*="color"]),
-.dark .prose-base h4:has(span[style*="color"]),
-.dark .prose-lg h4:has(span[style*="color"]),
-.dark .prose h5:has(span[style*="color"]),
-.dark .prose-sm h5:has(span[style*="color"]),
-.dark .prose-base h5:has(span[style*="color"]),
-.dark .prose-lg h5:has(span[style*="color"]),
-.dark .prose h6:has(span[style*="color"]),
-.dark .prose-sm h6:has(span[style*="color"]),
-.dark .prose-base h6:has(span[style*="color"]),
-.dark .prose-lg h6:has(span[style*="color"]) {
-  /* Remove default prose colors from headings that contain colored spans in dark mode */
-  color: inherit !important;
-}
+/* CRITICAL: After HTML processing, headings with colored spans will have style="color: ..." */
+/* This ensures inline styles on headings take precedence over prose defaults */
+/* No :has() selector needed - HTML processing transfers span colors to headings */
 
 /* Remove hover effects on headings with custom colors */
 /* Override any prose hover styles that might change the color */
