@@ -5,9 +5,11 @@ import StarterKit from "@tiptap/starter-kit"
 import { TextStyle } from "@tiptap/extension-text-style"
 import { Color } from "@tiptap/extension-color"
 import Highlight from "@tiptap/extension-highlight"
-import { Bold, Italic, List, ListOrdered, Undo, Redo, Type, Palette, Highlighter, Heading1, Heading2, Heading3 } from "lucide-react"
+import { Bold, Italic, List, ListOrdered, Undo, Redo, Type, Palette, Highlighter, Heading1, Heading2, Heading3, ChevronDown, ChevronRight } from "lucide-react"
 import { Button } from "./button"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { Extension } from "@tiptap/core"
+import type { Editor } from "@tiptap/react"
 
 interface RichTextEditorProps {
     content: string
@@ -47,10 +49,135 @@ const FontSize = TextStyle.extend({
     },
 })
 
+// Collapsible Heading Extension
+const CollapsibleHeading = Extension.create({
+    name: 'collapsibleHeading',
+    
+    addGlobalAttributes() {
+        return [
+            {
+                types: ['heading'],
+                attributes: {
+                    collapsed: {
+                        default: false,
+                        parseHTML: element => element.getAttribute('data-collapsed') === 'true',
+                        renderHTML: attributes => {
+                            if (!attributes.collapsed) {
+                                return {}
+                            }
+                            return {
+                                'data-collapsed': 'true',
+                            }
+                        },
+                    },
+                },
+            },
+        ]
+    },
+})
+
+// Component to handle collapsible headings
+function CollapsibleHeadingsHandler({ 
+    editor, 
+    collapsedHeadings, 
+    onToggle 
+}: { 
+    editor: Editor | null
+    collapsedHeadings: Set<string>
+    onToggle: (id: string) => void
+}) {
+    useEffect(() => {
+        if (!editor) return
+
+        const updateHeadings = () => {
+            // Use setTimeout to ensure DOM is updated
+            setTimeout(() => {
+                const editorElement = document.querySelector('.ProseMirror')
+                if (!editorElement) return
+
+                const headings = editorElement.querySelectorAll('h1, h2, h3')
+                
+                headings.forEach((heading, index) => {
+                    const headingElement = heading as HTMLElement
+                    const headingText = headingElement.textContent?.trim() || ''
+                    const headingId = `heading-${index}-${headingText.slice(0, 20).replace(/\s/g, '-')}`
+                    headingElement.setAttribute('data-heading-id', headingId)
+                    
+                    // Remove existing chevron
+                    const existingChevron = headingElement.querySelector('.heading-chevron')
+                    if (existingChevron) {
+                        existingChevron.remove()
+                    }
+                    
+                    // Add chevron
+                    const chevron = document.createElement('span')
+                    chevron.className = 'heading-chevron'
+                    chevron.innerHTML = collapsedHeadings.has(headingId)
+                        ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>'
+                        : '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>'
+                    headingElement.style.position = 'relative'
+                    headingElement.style.paddingRight = '1.5rem'
+                    headingElement.style.cursor = 'pointer'
+                    headingElement.appendChild(chevron)
+
+                    // Handle click
+                    const handleHeadingClick = (e: Event) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        onToggle(headingId)
+                    }
+                    
+                    headingElement.onclick = handleHeadingClick
+
+                    // Hide/show content after heading
+                    if (collapsedHeadings.has(headingId)) {
+                        headingElement.classList.add('collapsed-heading')
+                        let nextSibling = headingElement.nextElementSibling
+                        while (nextSibling) {
+                            const nextHeading = nextSibling.querySelector('h1, h2, h3')
+                            if (nextHeading) break
+                            (nextSibling as HTMLElement).style.display = 'none'
+                            nextSibling = nextSibling.nextElementSibling
+                        }
+                    } else {
+                        headingElement.classList.remove('collapsed-heading')
+                        let nextSibling = headingElement.nextElementSibling
+                        while (nextSibling) {
+                            const nextHeading = nextSibling.querySelector('h1, h2, h3')
+                            if (nextHeading) break
+                            (nextSibling as HTMLElement).style.display = ''
+                            nextSibling = nextSibling.nextElementSibling
+                        }
+                    }
+                })
+            }, 100)
+        }
+
+        // Initial update
+        updateHeadings()
+
+        // Update on editor changes
+        const updateHandler = () => {
+            updateHeadings()
+        }
+        
+        editor.on('update', updateHandler)
+        editor.on('selectionUpdate', updateHandler)
+
+        return () => {
+            editor.off('update', updateHandler)
+            editor.off('selectionUpdate', updateHandler)
+        }
+    }, [editor, collapsedHeadings, onToggle])
+
+    return null
+}
+
 export function RichTextEditor({ content, onChange, placeholder, className }: RichTextEditorProps) {
     const [showColorPicker, setShowColorPicker] = useState(false)
     const [showHighlightPicker, setShowHighlightPicker] = useState(false)
     const [showFontSizeMenu, setShowFontSizeMenu] = useState(false)
+    const [collapsedHeadings, setCollapsedHeadings] = useState<Set<string>>(new Set())
 
     const editor = useEditor({
         extensions: [
@@ -65,6 +192,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 multicolor: true,
             }),
             FontSize,
+            CollapsibleHeading,
         ],
         content: content || "",
         onUpdate: ({ editor }) => {
@@ -78,14 +206,27 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
         },
     })
 
+    // Toggle heading collapse
+    const toggleHeadingCollapse = (headingId: string) => {
+        setCollapsedHeadings(prev => {
+            const newSet = new Set(prev)
+            if (newSet.has(headingId)) {
+                newSet.delete(headingId)
+            } else {
+                newSet.add(headingId)
+            }
+            return newSet
+        })
+    }
+
     if (!editor) {
         return null
     }
 
     return (
-        <div className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""} relative`}>
+        <div className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""} relative flex flex-col`}>
             {/* Toolbar - Sticky */}
-            <div className="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center gap-1 p-2 flex-wrap rounded-t-xl">
+            <div className="sticky top-0 z-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center gap-1 p-2 flex-wrap rounded-t-xl shadow-sm">
                 {/* Headings */}
                 <Button
                     type="button"
@@ -319,13 +460,15 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             </div>
             
             {/* Editor */}
-            <div className="min-h-[200px] relative">
+            <div className="min-h-[200px] relative" id="rich-text-editor-container">
                 <EditorContent editor={editor} />
                 {!content && placeholder && (
                     <div className="absolute top-4 right-4 text-slate-400 pointer-events-none">
                         {placeholder}
                     </div>
                 )}
+                {/* Collapsible Headings Handler */}
+                <CollapsibleHeadingsHandler editor={editor} collapsedHeadings={collapsedHeadings} onToggle={toggleHeadingCollapse} />
             </div>
             
             {/* Click outside to close menus */}
