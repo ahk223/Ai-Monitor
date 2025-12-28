@@ -218,6 +218,8 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     const fontSizeButtonRef = useRef<HTMLButtonElement>(null)
     const colorButtonRef = useRef<HTMLButtonElement>(null)
     const highlightButtonRef = useRef<HTMLButtonElement>(null)
+    const colorPickerRef = useRef<HTMLDivElement>(null)
+    const isOpeningColorPicker = useRef(false)
 
     const editor = useEditor({
         immediatelyRender: false,
@@ -584,23 +586,29 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={(e) => {
+                                onMouseDown={(e) => {
                                     e.stopPropagation()
+                                    e.preventDefault()
                                     if (!editor) return
                                     const { from, to } = editor.state.selection
                                     if (from !== to) {
-                                        setColorPickerType('text')
-                                        setShowColorPicker(true)
-                                        // Calculate position for color picker
+                                        isOpeningColorPicker.current = true
+                                        // Calculate position first
+                                        if (colorButtonRef.current) {
+                                            const rect = colorButtonRef.current.getBoundingClientRect()
+                                            setColorPickerPos({
+                                                top: rect.top - 10,
+                                                left: rect.left,
+                                            })
+                                        }
+                                        // Use setTimeout to ensure state updates happen after event propagation
                                         setTimeout(() => {
-                                            if (colorButtonRef.current) {
-                                                const rect = colorButtonRef.current.getBoundingClientRect()
-                                                setColorPickerPos({
-                                                    top: rect.top - 10,
-                                                    left: rect.left,
-                                                })
-                                            }
-                                        }, 0)
+                                            setColorPickerType('text')
+                                            setShowColorPicker(true)
+                                            setTimeout(() => {
+                                                isOpeningColorPicker.current = false
+                                            }, 100)
+                                        }, 10)
                                     }
                                 }}
                                 title="لون النص"
@@ -617,23 +625,29 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={(e) => {
+                                onMouseDown={(e) => {
                                     e.stopPropagation()
+                                    e.preventDefault()
                                     if (!editor) return
                                     const { from, to } = editor.state.selection
                                     if (from !== to) {
-                                        setColorPickerType('highlight')
-                                        setShowColorPicker(true)
-                                        // Calculate position for color picker
+                                        isOpeningColorPicker.current = true
+                                        // Calculate position first
+                                        if (highlightButtonRef.current) {
+                                            const rect = highlightButtonRef.current.getBoundingClientRect()
+                                            setColorPickerPos({
+                                                top: rect.top - 10,
+                                                left: rect.left,
+                                            })
+                                        }
+                                        // Use setTimeout to ensure state updates happen after event propagation
                                         setTimeout(() => {
-                                            if (highlightButtonRef.current) {
-                                                const rect = highlightButtonRef.current.getBoundingClientRect()
-                                                setColorPickerPos({
-                                                    top: rect.top - 10,
-                                                    left: rect.left,
-                                                })
-                                            }
-                                        }, 0)
+                                            setColorPickerType('highlight')
+                                            setShowColorPicker(true)
+                                            setTimeout(() => {
+                                                isOpeningColorPicker.current = false
+                                            }, 100)
+                                        }, 10)
                                     }
                                 }}
                                 className={editor.isActive("highlight") ? "bg-slate-100 dark:bg-slate-800" : ""}
@@ -650,6 +664,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             {/* Color Picker */}
             {showColorPicker && colorPickerPos && colorPickerType && isMounted && createPortal(
                 <div 
+                    ref={colorPickerRef}
                     data-color-picker
                     className="fixed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[101] p-3"
                     style={{
@@ -657,6 +672,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         left: `${colorPickerPos.left}px`,
                         transform: 'translateY(-100%)',
                     }}
+                    onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="mb-2 text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -719,19 +735,21 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             {/* Click outside to close menus - backdrop behind dropdowns */}
             {(showFontSizeMenu || showColorPicker) && (
                 <div 
-                    className="fixed inset-0 z-[105] pointer-events-auto" 
-                    onClick={(e) => {
-                        // Only close if clicking on backdrop itself, not on dropdowns
-                        if (e.target === e.currentTarget) {
+                    className="fixed inset-0 z-[100] pointer-events-auto" 
+                    onMouseDown={(e) => {
+                        // Don't close if we're currently opening the color picker
+                        if (isOpeningColorPicker.current) {
+                            return
+                        }
+                        // Only close if clicking on backdrop itself, not on dropdowns or buttons
+                        const target = e.target as HTMLElement
+                        if (target === e.currentTarget && 
+                            !target.closest('[data-color-picker]') && 
+                            !target.closest('[data-color-button]') &&
+                            !colorPickerRef.current?.contains(target)) {
                             setShowFontSizeMenu(false)
                             setShowColorPicker(false)
                             setColorPickerType(null)
-                        }
-                    }}
-                    onMouseDown={(e) => {
-                        // Prevent closing when clicking on dropdowns
-                        if (e.target !== e.currentTarget) {
-                            e.stopPropagation()
                         }
                     }}
                     style={{ backgroundColor: 'transparent' }}
