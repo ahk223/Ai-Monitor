@@ -197,6 +197,7 @@ input[type="number"] {
 
 /* CRITICAL: Ensure colors work in headings H1, H2, H3 */
 /* Headings might have colors applied directly or in spans inside them */
+/* Remove default prose colors and hover effects for headings with custom colors */
 .prose h1[style*="color"],
 .prose-sm h1[style*="color"],
 .prose-base h1[style*="color"],
@@ -210,7 +211,38 @@ input[type="number"] {
 .prose-base h3[style*="color"],
 .prose-lg h3[style*="color"] {
   /* Force inline color styles to be respected in headings */
+  /* Remove any hover effects that might override the color */
   /* JavaScript will apply colors with !important */
+}
+
+/* Remove hover effects on headings with custom colors */
+/* Override any prose hover styles that might change the color */
+.prose h1[style*="color"]:hover,
+.prose-sm h1[style*="color"]:hover,
+.prose-base h1[style*="color"]:hover,
+.prose-lg h1[style*="color"]:hover,
+.prose h2[style*="color"]:hover,
+.prose-sm h2[style*="color"]:hover,
+.prose-base h2[style*="color"]:hover,
+.prose-lg h2[style*="color"]:hover,
+.prose h3[style*="color"]:hover,
+.prose-sm h3[style*="color"]:hover,
+.prose-base h3[style*="color"]:hover,
+.prose-lg h3[style*="color"]:hover,
+.prose h1.has-custom-color:hover,
+.prose-sm h1.has-custom-color:hover,
+.prose-base h1.has-custom-color:hover,
+.prose-lg h1.has-custom-color:hover,
+.prose h2.has-custom-color:hover,
+.prose-sm h2.has-custom-color:hover,
+.prose-base h2.has-custom-color:hover,
+.prose-lg h2.has-custom-color:hover,
+.prose h3.has-custom-color:hover,
+.prose-sm h3.has-custom-color:hover,
+.prose-base h3.has-custom-color:hover,
+.prose-lg h3.has-custom-color:hover {
+  /* Preserve the inline color on hover - don't let hover override it */
+  /* The color will be preserved by JavaScript with !important */
 }
 
 .dark .prose h1[style*="color"],
@@ -227,6 +259,22 @@ input[type="number"] {
 .dark .prose-lg h3[style*="color"] {
   /* Force inline color styles to be respected in headings in dark mode */
   /* JavaScript will apply colors with !important */
+}
+
+.dark .prose h1[style*="color"]:hover,
+.dark .prose-sm h1[style*="color"]:hover,
+.dark .prose-base h1[style*="color"]:hover,
+.dark .prose-lg h1[style*="color"]:hover,
+.dark .prose h2[style*="color"]:hover,
+.dark .prose-sm h2[style*="color"]:hover,
+.dark .prose-base h2[style*="color"]:hover,
+.dark .prose-lg h2[style*="color"]:hover,
+.dark .prose h3[style*="color"]:hover,
+.dark .prose-sm h3[style*="color"]:hover,
+.dark .prose-base h3[style*="color"]:hover,
+.dark .prose-lg h3[style*="color"]:hover {
+  /* Preserve the inline color on hover in dark mode */
+  /* JavaScript will reapply colors with !important on hover */
 }
 
 .prose *[style*="background-color"],

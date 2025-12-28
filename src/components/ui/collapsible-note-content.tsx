@@ -54,6 +54,8 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
                     if (colorMatch) {
                         const colorValue = colorMatch[1].trim()
                         htmlHeading.style.setProperty('color', colorValue, 'important')
+                        // Remove any hover effects by adding a class
+                        htmlHeading.classList.add('has-custom-color')
                     }
                 }
                 // Check for spans inside headings with colors
@@ -66,9 +68,36 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
                         if (colorMatch) {
                             const colorValue = colorMatch[1].trim()
                             htmlSpan.style.setProperty('color', colorValue, 'important')
+                            // Mark parent heading as having custom color
+                            htmlHeading.classList.add('has-custom-color')
                         }
                     }
                 })
+            })
+            
+            // Add event listeners to preserve colors on hover for headings
+            const headingsWithColor = containerRef.current.querySelectorAll('h1[style*="color"], h2[style*="color"], h3[style*="color"]')
+            headingsWithColor.forEach((heading) => {
+                const htmlHeading = heading as HTMLElement
+                const style = htmlHeading.getAttribute('style')
+                if (style && style.includes('color:')) {
+                    const colorMatch = style.match(/color:\s*([^;]+)/)
+                    if (colorMatch) {
+                        const colorValue = colorMatch[1].trim()
+                        // Reapply color on hover to override any hover effects
+                        const preserveColor = () => {
+                            htmlHeading.style.setProperty('color', colorValue, 'important')
+                        }
+                        // Remove existing listeners if any
+                        htmlHeading.removeEventListener('mouseenter', preserveColor)
+                        htmlHeading.removeEventListener('mouseleave', preserveColor)
+                        htmlHeading.removeEventListener('mouseover', preserveColor)
+                        // Add new listeners
+                        htmlHeading.addEventListener('mouseenter', preserveColor)
+                        htmlHeading.addEventListener('mouseleave', preserveColor)
+                        htmlHeading.addEventListener('mouseover', preserveColor)
+                    }
+                }
             })
             
             // Find all elements with inline background-color styles
