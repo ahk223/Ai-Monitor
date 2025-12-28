@@ -245,18 +245,6 @@ input[type="number"] {
   /* The inline style attribute has higher specificity than CSS rules */
 }
 
-/* TipTap Highlight styles */
-.ProseMirror mark {
-  background-color: #FEF08A;
-  padding: 0.125rem 0.25rem;
-  border-radius: 0.25rem;
-}
-
-.dark .ProseMirror mark {
-  background-color: #FCD34D;
-  color: #1e293b;
-}
-
 /* TipTap Heading styles */
 .ProseMirror h1 {
   font-size: 1.875rem;

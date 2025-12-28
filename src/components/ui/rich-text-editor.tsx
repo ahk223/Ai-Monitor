@@ -3,8 +3,7 @@
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import { TextStyle } from "@tiptap/extension-text-style"
-import Highlight from "@tiptap/extension-highlight"
-import { Bold, Italic, List, ListOrdered, Undo, Redo, Type, Highlighter, Heading1, Heading2, Heading3, ChevronDown, ChevronRight } from "lucide-react"
+import { Bold, Italic, List, ListOrdered, Undo, Redo, Type, Heading1, Heading2, Heading3, ChevronDown, ChevronRight } from "lucide-react"
 import { Button } from "./button"
 import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
@@ -203,17 +202,14 @@ function CollapsibleHeadingsHandler({
 }
 
 export function RichTextEditor({ content, onChange, placeholder, className }: RichTextEditorProps) {
-    const [showHighlightPicker, setShowHighlightPicker] = useState(false)
     const [showFontSizeMenu, setShowFontSizeMenu] = useState(false)
     const [collapsedHeadings, setCollapsedHeadings] = useState<Set<string>>(new Set())
-    const [highlightPickerPos, setHighlightPickerPos] = useState<{ bottom: number; right: number } | null>(null)
     const [fontSizeMenuPos, setFontSizeMenuPos] = useState<{ bottom: number; right: number } | null>(null)
     const [floatingToolbarPos, setFloatingToolbarPos] = useState<{ top: number; left: number } | null>(null)
     const [showFloatingToolbar, setShowFloatingToolbar] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
     const toolbarRef = useRef<HTMLDivElement>(null)
-    const highlightButtonRef = useRef<HTMLButtonElement>(null)
     const fontSizeButtonRef = useRef<HTMLButtonElement>(null)
 
     const editor = useEditor({
@@ -225,9 +221,6 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 },
             }),
             TextStyle,
-            Highlight.configure({
-                multicolor: true,
-            }),
             FontSize,
             CollapsibleHeading,
         ],
@@ -312,18 +305,6 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     }, [editor])
 
     // Calculate dropdown positions when they open
-    useEffect(() => {
-        if (showHighlightPicker && highlightButtonRef.current) {
-            const rect = highlightButtonRef.current.getBoundingClientRect()
-            setHighlightPickerPos({
-                bottom: window.innerHeight - rect.top + 4,
-                right: window.innerWidth - rect.right,
-            })
-        } else {
-            setHighlightPickerPos(null)
-        }
-    }, [showHighlightPicker])
-
     useEffect(() => {
         if (showFontSizeMenu && fontSizeButtonRef.current) {
             const rect = fontSizeButtonRef.current.getBoundingClientRect()
@@ -412,7 +393,6 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         size="sm"
                         onClick={() => {
                             setShowFontSizeMenu(!showFontSizeMenu)
-                            setShowHighlightPicker(false)
                         }}
                         className={showFontSizeMenu ? "bg-slate-100 dark:bg-slate-800" : ""}
                         title="حجم الخط"
@@ -441,61 +421,6 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                     {size}
                                 </button>
                             ))}
-                        </div>,
-                        document.body
-                    )}
-                </div>
-                
-                {/* Highlight Color */}
-                <div className="relative">
-                    <Button
-                        ref={highlightButtonRef}
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                            setShowHighlightPicker(!showHighlightPicker)
-                            setShowFontSizeMenu(false)
-                        }}
-                        className={editor.isActive("highlight") || showHighlightPicker ? "bg-slate-100 dark:bg-slate-800" : ""}
-                        title="تظليل النص"
-                    >
-                        <Highlighter className="h-4 w-4" />
-                    </Button>
-                    {showHighlightPicker && highlightPickerPos && isMounted && createPortal(
-                        <div 
-                            className="fixed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none"
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                                bottom: `${highlightPickerPos.bottom}px`,
-                                right: `${highlightPickerPos.right}px`,
-                            }}
-                        >
-                            <div className="grid grid-cols-5 gap-2">
-                                {["#FEF08A", "#FDE047", "#FCD34D", "#FBBF24", "#FED7AA", "#FCA5A5", "#F9A8D4", "#C4B5FD", "#A5B4FC", "#93C5FD"].map((color) => (
-                                    <button
-                                        key={color}
-                                        type="button"
-                                        onClick={() => {
-                                            editor.chain().focus().toggleHighlight({ color }).run()
-                                            setShowHighlightPicker(false)
-                                        }}
-                                        className="w-8 h-8 rounded border-2 border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform"
-                                        style={{ backgroundColor: color }}
-                                        title={color}
-                                    />
-                                ))}
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    editor.chain().focus().unsetHighlight().run()
-                                    setShowHighlightPicker(false)
-                                }}
-                                className="w-full mt-2 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
-                            >
-                                إزالة التظليل
-                            </button>
                         </div>,
                         document.body
                     )}
@@ -633,37 +558,18 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         >
                             <Italic className="h-4 w-4" />
                         </Button>
-                        
-                        {/* Highlight */}
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                                if (!editor) return
-                                const { from, to } = editor.state.selection
-                                if (from !== to) {
-                                    editor.chain().focus().setTextSelection({ from, to }).toggleHighlight().run()
-                                }
-                            }}
-                            className={editor.isActive("highlight") ? "bg-slate-100 dark:bg-slate-800" : ""}
-                            title="تظليل"
-                        >
-                            <Highlighter className="h-4 w-4" />
-                        </Button>
                     </div>
                 </div>,
                 document.body
             )}
 
             {/* Click outside to close menus - backdrop behind dropdowns */}
-            {(showHighlightPicker || showFontSizeMenu) && (
+            {showFontSizeMenu && (
                 <div 
                     className="fixed inset-0 z-[105] pointer-events-auto" 
                     onClick={(e) => {
                         // Only close if clicking on backdrop itself, not on dropdowns
                         if (e.target === e.currentTarget) {
-                            setShowHighlightPicker(false)
                             setShowFontSizeMenu(false)
                         }
                     }}
