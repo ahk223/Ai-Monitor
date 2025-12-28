@@ -179,12 +179,16 @@ export function LearningList({ categoryId, categoryName }: LearningListProps) {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                    <ListTodo className="h-5 w-5 text-indigo-600" />
-                    مواضيع للتعلم في {categoryName}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                    <ListTodo className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0" />
+                    <span className="break-words">مواضيع للتعلم في {categoryName}</span>
                 </h3>
-                <Button onClick={() => { resetForm(); setShowAddModal(true) }}>
+                <Button 
+                    onClick={() => { resetForm(); setShowAddModal(true) }}
+                    className="w-full sm:w-auto"
+                    size="sm"
+                >
                     <Plus className="h-4 w-4" />
                     إضافة موضوع
                 </Button>
@@ -205,30 +209,46 @@ export function LearningList({ categoryId, categoryName }: LearningListProps) {
                             <CardContent className="p-4 flex items-start gap-3">
                                 <div className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${topic.status === 'learned' ? 'bg-green-500' : topic.status === 'learning' ? 'bg-indigo-500' : 'bg-slate-300'}`} />
                                 <div className="flex-1 min-w-0 space-y-2">
-                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                                    <div className="flex flex-col gap-2">
                                         <div className="min-w-0 flex-1">
-                                            <h4 className={`font-medium text-base ${topic.status === 'learned' ? 'text-slate-500 line-through' : 'text-slate-900 dark:text-white'} leading-snug`}>
+                                            <h4 className={`font-medium text-sm sm:text-base ${topic.status === 'learned' ? 'text-slate-500 line-through' : 'text-slate-900 dark:text-white'} leading-snug`}>
                                                 {topic.title}
                                             </h4>
                                             {topic.description && (
-                                                <div className="text-sm text-slate-500 mt-1 break-words whitespace-pre-wrap leading-relaxed max-w-full">
+                                                <div className="text-xs sm:text-sm text-slate-500 mt-1 break-words whitespace-pre-wrap leading-relaxed max-w-full">
                                                     {linkifyContent(topic.description)}
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-2 flex-shrink-0 self-start">
+                                        <div className="flex flex-wrap items-center gap-2">
                                             {getStatusBadge(topic.status)}
-                                            <Badge variant="secondary" className={`${getPriorityColor(topic.priority)} border border-current bg-transparent`}>
+                                            <Badge variant="secondary" className={`${getPriorityColor(topic.priority)} border border-current bg-transparent text-xs`}>
                                                 {topic.priority === 'high' ? 'مهم' : topic.priority === 'medium' ? 'عادي' : 'منخفض'}
                                             </Badge>
                                         </div>
                                     </div>
-                                    <div className="pt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => openEdit(topic)}>
+                                    <div className="pt-2 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="h-8 px-3 text-xs flex-1 sm:flex-none" 
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                openEdit(topic)
+                                            }}
+                                        >
                                             <Edit2 className="h-3 w-3 mr-1" />
                                             تعديل
                                         </Button>
-                                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(topic.id)}>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="h-8 px-3 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 sm:flex-none" 
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleDelete(topic.id)
+                                            }}
+                                        >
                                             <Trash2 className="h-3 w-3 mr-1" />
                                             حذف
                                         </Button>
@@ -254,7 +274,7 @@ export function LearningList({ categoryId, categoryName }: LearningListProps) {
                         onChange={e => setFormData({ ...formData, title: e.target.value })}
                         required
                     />
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Select
                             label="الحالة"
                             value={formData.status}

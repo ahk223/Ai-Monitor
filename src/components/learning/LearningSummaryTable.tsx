@@ -172,30 +172,31 @@ export function LearningSummaryTable() {
         <>
             <Card className="mb-8 overflow-hidden border-indigo-100 dark:border-indigo-900/30 shadow-sm">
                 <CardHeader className="bg-indigo-50/50 dark:bg-indigo-900/10 pb-4">
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-bold text-indigo-900 dark:text-indigo-100 flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <CardTitle className="text-base sm:text-lg font-bold text-indigo-900 dark:text-indigo-100 flex items-center gap-2">
                             📋 ملخص شامل
-                            <span className="text-sm font-normal text-indigo-600 dark:text-indigo-400 bg-white dark:bg-indigo-950 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800">
+                            <span className="text-xs sm:text-sm font-normal text-indigo-600 dark:text-indigo-400 bg-white dark:bg-indigo-950 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800">
                                 {topics.length} موضوع
                             </span>
                         </CardTitle>
-                        <div className="flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+                        <div className="flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700 w-full sm:w-auto">
                             <button 
                                 onClick={() => setFilter("all")}
-                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${filter === "all" ? "bg-indigo-100 text-indigo-700" : "text-slate-500 hover:text-slate-700"}`}
+                                className={`flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${filter === "all" ? "bg-indigo-100 text-indigo-700" : "text-slate-500 hover:text-slate-700"}`}
                             >
                                 الكل
                             </button>
                             <button 
                                 onClick={() => setFilter("learning")}
-                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${filter === "learning" ? "bg-indigo-100 text-indigo-700" : "text-slate-500 hover:text-slate-700"}`}
+                                className={`flex-1 sm:flex-none px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${filter === "learning" ? "bg-indigo-100 text-indigo-700" : "text-slate-500 hover:text-slate-700"}`}
                             >
                                 جاري التعلم
                             </button>
                         </div>
                     </div>
                 </CardHeader>
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm text-right">
                         <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 font-medium border-b border-slate-100 dark:border-slate-800">
                             <tr>
@@ -255,6 +256,59 @@ export function LearningSummaryTable() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3 p-4">
+                    {filteredTopics.map((topic) => (
+                        <Card 
+                            key={topic.id} 
+                            className="cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={() => handleEditClick(topic)}
+                        >
+                            <CardContent className="p-4 space-y-3">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="flex items-start gap-2 flex-1 min-w-0">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleToggleFavorite(e, topic)
+                                            }}
+                                            className={`p-1.5 rounded-full transition-all flex-shrink-0 mt-0.5 ${
+                                                topic.isFavorite 
+                                                    ? "text-rose-500 bg-rose-50" 
+                                                    : "text-slate-300"
+                                            }`}
+                                        >
+                                            <Heart className={`h-4 w-4 ${topic.isFavorite ? "fill-current" : ""}`} />
+                                        </button>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-medium text-slate-900 dark:text-white text-base leading-snug">
+                                                {topic.title}
+                                            </h3>
+                                        </div>
+                                    </div>
+                                    <Edit2 className="h-4 w-4 text-slate-400 flex-shrink-0 mt-1" />
+                                </div>
+                                
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {categories[topic.categoryId] && (
+                                        <Badge variant="secondary" className="font-normal border text-xs" style={{ 
+                                            backgroundColor: `${categories[topic.categoryId].color}10`,
+                                            color: categories[topic.categoryId].color,
+                                            borderColor: `${categories[topic.categoryId].color}30`
+                                        }}>
+                                            {categories[topic.categoryId].name}
+                                        </Badge>
+                                    )}
+                                    {getStatusBadge(topic.status)}
+                                    <span className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(topic.priority)}`}>
+                                        {topic.priority === 'high' ? 'مهم جداً' : topic.priority === 'medium' ? 'عادي' : 'منخفض'}
+                                    </span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
                 {filteredTopics.length === 0 && (
                     <div className="text-center py-8 text-slate-400">
                         لا توجد مواضيع بهذه الحالة
@@ -274,7 +328,7 @@ export function LearningSummaryTable() {
                         value={formData.title || ""}
                         onChange={e => setFormData({ ...formData, title: e.target.value })}
                     />
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Select
                             label="الحالة"
                             value={formData.status || "to_learn"}
