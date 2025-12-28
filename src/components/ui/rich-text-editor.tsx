@@ -308,8 +308,10 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     setShowFloatingToolbar(true)
                 }
             } else {
-                setShowFloatingToolbar(false)
-                setShowFloatingColorPicker(false)
+                // Only close floating toolbar if color picker is not open
+                if (!showFloatingColorPicker) {
+                    setShowFloatingToolbar(false)
+                }
             }
         }
 
@@ -799,8 +801,9 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             {/* Floating Color Picker - appears when clicking color button in floating toolbar */}
             {showFloatingColorPicker && floatingColorPickerPos && isMounted && createPortal(
                 <div 
-                    className="fixed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[101] p-2 min-w-[180px]"
+                    className="fixed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[110] p-2 min-w-[180px]"
                     onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
                     style={{
                         bottom: `${floatingColorPickerPos.bottom}px`,
                         right: `${floatingColorPickerPos.right}px`,
@@ -845,12 +848,21 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             {/* Click outside to close menus - backdrop behind dropdowns */}
             {(showColorPicker || showHighlightPicker || showFontSizeMenu || showFloatingColorPicker) && (
                 <div 
-                    className="fixed inset-0 z-[90] pointer-events-auto" 
-                    onClick={() => {
-                        setShowColorPicker(false)
-                        setShowHighlightPicker(false)
-                        setShowFontSizeMenu(false)
-                        setShowFloatingColorPicker(false)
+                    className="fixed inset-0 z-[105] pointer-events-auto" 
+                    onClick={(e) => {
+                        // Only close if clicking on backdrop itself, not on dropdowns
+                        if (e.target === e.currentTarget) {
+                            setShowColorPicker(false)
+                            setShowHighlightPicker(false)
+                            setShowFontSizeMenu(false)
+                            setShowFloatingColorPicker(false)
+                        }
+                    }}
+                    onMouseDown={(e) => {
+                        // Prevent closing when clicking on dropdowns
+                        if (e.target !== e.currentTarget) {
+                            e.stopPropagation()
+                        }
                     }}
                     style={{ backgroundColor: 'transparent' }}
                 />
