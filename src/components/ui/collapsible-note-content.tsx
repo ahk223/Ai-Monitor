@@ -142,32 +142,39 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
                 const isExpanded = expandedSections.has(section.id)
                 const headingSize = section.level === 1 ? "text-xl" : section.level === 2 ? "text-lg" : "text-base"
                 const paddingRight = section.level === 1 ? "pr-0" : section.level === 2 ? "pr-4" : "pr-8"
+                
+                // Check if section has content (not empty or just whitespace)
+                const hasContent = section.content.trim().length > 0
 
                 return (
                     <div key={section.id} className={`mb-3 ${paddingRight}`}>
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={() => toggleSection(section.id)}
-                                className={`flex-1 flex items-center gap-2 text-right ${headingSize} font-semibold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800`}
+                                onClick={() => hasContent && toggleSection(section.id)}
+                                className={`flex-1 flex items-center gap-2 text-right ${headingSize} font-semibold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-2 rounded-lg ${hasContent ? 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer' : 'cursor-default'}`}
                             >
-                                {isExpanded ? (
-                                    <ChevronDown className="h-5 w-5 flex-shrink-0" />
-                                ) : (
-                                    <ChevronRight className="h-5 w-5 flex-shrink-0" />
+                                {hasContent && (
+                                    isExpanded ? (
+                                        <ChevronDown className="h-5 w-5 flex-shrink-0" />
+                                    ) : (
+                                        <ChevronRight className="h-5 w-5 flex-shrink-0" />
+                                    )
                                 )}
                                 <span className="flex-1">{section.title}</span>
                             </button>
-                            <button
-                                onClick={(e) => copySectionContent(section, e)}
-                                className="flex-shrink-0 p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                                title="نسخ المحتوى"
-                            >
-                                {copiedSectionId === section.id ? (
-                                    <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                ) : (
-                                    <Copy className="h-4 w-4" />
-                                )}
-                            </button>
+                            {hasContent && (
+                                <button
+                                    onClick={(e) => copySectionContent(section, e)}
+                                    className="flex-shrink-0 p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                    title="نسخ المحتوى"
+                                >
+                                    {copiedSectionId === section.id ? (
+                                        <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                    ) : (
+                                        <Copy className="h-4 w-4" />
+                                    )}
+                                </button>
+                            )}
                         </div>
                         {isExpanded && section.content && (
                             <div className="mt-2 pr-8">
