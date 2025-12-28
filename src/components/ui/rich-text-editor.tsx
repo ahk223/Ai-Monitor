@@ -231,7 +231,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
         },
         editorProps: {
             attributes: {
-                class: "prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[200px] p-3 sm:p-4",
+                class: "prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[200px] p-3 sm:p-4 max-w-full overflow-wrap break-words",
                 placeholder: placeholder || "اكتب هنا...",
             },
         },
@@ -266,11 +266,11 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     }
 
     return (
-        <div ref={containerRef} className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""} relative`}>
+        <div ref={containerRef} className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""} relative w-full max-w-full overflow-hidden flex flex-col`}>
             {/* Toolbar - Sticky at top */}
             <div 
                 ref={toolbarRef}
-                className="sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center gap-1 p-2 flex-wrap rounded-t-xl shadow-md"
+                className="sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center gap-1 p-1.5 sm:p-2 flex-nowrap rounded-t-xl shadow-md overflow-x-auto"
             >
                 {/* Headings */}
                 <Button
@@ -505,8 +505,10 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             </div>
             
             {/* Editor */}
-            <div className="min-h-[200px] relative" id="rich-text-editor-container">
-                <EditorContent editor={editor} />
+            <div className="min-h-[200px] relative w-full overflow-x-auto" id="rich-text-editor-container">
+                <div className="w-full min-w-0">
+                    <EditorContent editor={editor} />
+                </div>
                 {!content && placeholder && (
                     <div className="absolute top-3 right-3 sm:top-4 sm:right-4 text-slate-400 pointer-events-none text-sm sm:text-base">
                         {placeholder}

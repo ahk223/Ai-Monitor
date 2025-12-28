@@ -89,7 +89,7 @@ export default function EditNotePage() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto space-y-6 px-4 sm:px-6 lg:px-0">
+        <div className="w-full max-w-2xl mx-auto space-y-4 sm:space-y-6">
             {/* Header */}
             <div className="flex items-center gap-2 sm:gap-4">
                 <Link href="/dashboard/notes">
@@ -97,15 +97,15 @@ export default function EditNotePage() {
                         <ArrowRight className="h-5 w-5" />
                     </Button>
                 </Link>
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 dark:text-white truncate">
                     تعديل الملاحظة
                 </h1>
             </div>
 
             {/* Form */}
-            <Card>
-                <CardContent className="pt-6">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+            <Card className="overflow-hidden w-full">
+                <CardContent className="p-3 sm:p-4 md:p-6">
+                    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                         <Input
                             label="عنوان الملاحظة"
                             placeholder="اكتب عنوان الملاحظة هنا..."
@@ -114,15 +114,18 @@ export default function EditNotePage() {
                             required
                         />
 
-                        <div>
+                        <div className="w-full">
                             <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                                 محتوى الملاحظة
                             </label>
-                            <RichTextEditor
-                                content={content}
-                                onChange={setContent}
-                                placeholder="اكتب ملاحظتك هنا..."
-                            />
+                            <div className="w-full overflow-hidden">
+                                <RichTextEditor
+                                    content={content}
+                                    onChange={setContent}
+                                    placeholder="اكتب ملاحظتك هنا..."
+                                    className="w-full"
+                                />
+                            </div>
                         </div>
 
                         <Select
@@ -135,7 +138,7 @@ export default function EditNotePage() {
                             ]}
                         />
 
-                        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                             <Link href="/dashboard/notes" className="w-full sm:w-auto">
                                 <Button variant="outline" type="button" className="w-full sm:w-auto">
                                     إلغاء
