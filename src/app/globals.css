@@ -245,6 +245,111 @@ input[type="number"] {
   /* The inline style attribute has higher specificity than CSS rules */
 }
 
+/* Preserve text colors in prose (preview and shared pages) */
+/* TipTap Color extension adds style="color: #hex" to spans */
+/* Inline styles have the highest specificity and should work automatically */
+/* We just need to ensure prose doesn't add conflicting rules */
+.prose span[style*="color"],
+.prose-sm span[style*="color"],
+.prose-base span[style*="color"],
+.prose-lg span[style*="color"],
+.prose p span[style*="color"],
+.prose-sm p span[style*="color"],
+.prose-base p span[style*="color"],
+.prose-lg p span[style*="color"],
+.prose li span[style*="color"],
+.prose-sm li span[style*="color"],
+.prose-base li span[style*="color"],
+.prose-lg li span[style*="color"],
+.prose h1 span[style*="color"],
+.prose-sm h1 span[style*="color"],
+.prose-base h1 span[style*="color"],
+.prose-lg h1 span[style*="color"],
+.prose h2 span[style*="color"],
+.prose-sm h2 span[style*="color"],
+.prose-base h2 span[style*="color"],
+.prose-lg h2 span[style*="color"],
+.prose h3 span[style*="color"],
+.prose-sm h3 span[style*="color"],
+.prose-base h3 span[style*="color"],
+.prose-lg h3 span[style*="color"] {
+  /* Inline style color will be applied automatically - inline styles have highest specificity */
+}
+
+/* Preserve highlight/background colors in prose */
+/* TipTap Highlight extension adds style="background-color: #hex" to marks */
+.prose mark[style*="background-color"],
+.prose-sm mark[style*="background-color"],
+.prose-base mark[style*="background-color"],
+.prose-lg mark[style*="background-color"],
+.prose span[style*="background-color"],
+.prose-sm span[style*="background-color"],
+.prose-base span[style*="background-color"],
+.prose-lg span[style*="background-color"],
+.prose p mark[style*="background-color"],
+.prose-sm p mark[style*="background-color"],
+.prose-base p mark[style*="background-color"],
+.prose-lg p mark[style*="background-color"],
+.prose li mark[style*="background-color"],
+.prose-sm li mark[style*="background-color"],
+.prose-base li mark[style*="background-color"],
+.prose-lg li mark[style*="background-color"] {
+  /* Inline style background-color will be applied automatically */
+  /* Add padding for better visibility */
+  padding: 0.125em 0.25em;
+  border-radius: 0.25em;
+}
+
+/* Ensure inline styles work in dark mode for prose */
+/* Inline styles should override dark mode default color automatically */
+.dark .prose span[style*="color"],
+.dark .prose-sm span[style*="color"],
+.dark .prose-base span[style*="color"],
+.dark .prose-lg span[style*="color"],
+.dark .prose p span[style*="color"],
+.dark .prose-sm p span[style*="color"],
+.dark .prose-base p span[style*="color"],
+.dark .prose-lg p span[style*="color"],
+.dark .prose li span[style*="color"],
+.dark .prose-sm li span[style*="color"],
+.dark .prose-base li span[style*="color"],
+.dark .prose-lg li span[style*="color"],
+.dark .prose h1 span[style*="color"],
+.dark .prose-sm h1 span[style*="color"],
+.dark .prose-base h1 span[style*="color"],
+.dark .prose-lg h1 span[style*="color"],
+.dark .prose h2 span[style*="color"],
+.dark .prose-sm h2 span[style*="color"],
+.dark .prose-base h2 span[style*="color"],
+.dark .prose-lg h2 span[style*="color"],
+.dark .prose h3 span[style*="color"],
+.dark .prose-sm h3 span[style*="color"],
+.dark .prose-base h3 span[style*="color"],
+.dark .prose-lg h3 span[style*="color"] {
+  /* Inline color styles have highest specificity - they will override dark mode */
+}
+
+.dark .prose mark[style*="background-color"],
+.dark .prose-sm mark[style*="background-color"],
+.dark .prose-base mark[style*="background-color"],
+.dark .prose-lg mark[style*="background-color"],
+.dark .prose span[style*="background-color"],
+.dark .prose-sm span[style*="background-color"],
+.dark .prose-base span[style*="background-color"],
+.dark .prose-lg span[style*="background-color"],
+.dark .prose p mark[style*="background-color"],
+.dark .prose-sm p mark[style*="background-color"],
+.dark .prose-base p mark[style*="background-color"],
+.dark .prose-lg p mark[style*="background-color"],
+.dark .prose li mark[style*="background-color"],
+.dark .prose-sm li mark[style*="background-color"],
+.dark .prose-base li mark[style*="background-color"],
+.dark .prose-lg li mark[style*="background-color"] {
+  /* Inline background-color styles will work in dark mode */
+  padding: 0.125em 0.25em;
+  border-radius: 0.25em;
+}
+
 /* TipTap Heading styles */
 .ProseMirror h1 {
   font-size: 1.875rem;
