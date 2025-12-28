@@ -820,18 +820,12 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                     if (!editor) return
                                     const { from, to } = editor.state.selection
                                     if (from !== to) {
-                                        // Apply color to selected text
-                                        const { tr } = editor.state
-                                        const textStyleMark = editor.schema.marks.textStyle
-                                        const colorMark = editor.schema.marks.color
-                                        
-                                        if (textStyleMark && colorMark) {
-                                            tr.removeMark(from, to, textStyleMark)
-                                            tr.removeMark(from, to, colorMark)
-                                            tr.addMark(from, to, colorMark.create({ color }))
-                                            editor.view.dispatch(tr)
-                                            editor.view.focus()
-                                        }
+                                        // Apply color to selected text using chain API
+                                        editor.chain()
+                                            .focus()
+                                            .setTextSelection({ from, to })
+                                            .setColor(color)
+                                            .run()
                                     }
                                     setShowFloatingColorPicker(false)
                                 }}
