@@ -113,7 +113,11 @@ function processHTMLForView(html: string): string {
 }
 
 export function CollapsibleNoteContent({ content, className }: CollapsibleNoteContentProps) {
-    const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+    // CRITICAL: Expand all sections by default for debugging
+    const [expandedSections, setExpandedSections] = useState<Set<string>>(() => {
+        // We'll populate this after sections are calculated
+        return new Set()
+    })
     const [copiedSectionId, setCopiedSectionId] = useState<string | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     
@@ -158,72 +162,83 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
             
             console.log('=== (B) DOM INSPECTION AFTER RENDER ===')
             
-            // Find all headings in the rendered DOM
-            const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6')
-            console.log(`Found ${headings.length} headings in DOM`)
+            // CRITICAL: Find headings in ALL prose containers, not just the main container
+            // Headings are inside section.content which is rendered in <div className="prose">
+            const allProseContainers = container.querySelectorAll('.prose')
+            console.log(`Found ${allProseContainers.length} prose containers`)
             
-            headings.forEach((heading, idx) => {
-                const htmlHeading = heading as HTMLElement
-                const computedStyle = window.getComputedStyle(htmlHeading)
-                const computedColor = computedStyle.color
-                const inlineStyle = htmlHeading.getAttribute('style') || ''
+            let totalHeadings = 0
+            
+            allProseContainers.forEach((proseContainer, containerIdx) => {
+                const headings = proseContainer.querySelectorAll('h1, h2, h3, h4, h5, h6')
+                console.log(`\nProse container ${containerIdx + 1}: Found ${headings.length} headings`)
                 
-                console.log(`\n--- Heading ${idx + 1} (${heading.tagName}) ---`)
-                console.log(`outerHTML: ${htmlHeading.outerHTML.substring(0, 300)}`)
-                console.log(`inline style attribute: "${inlineStyle}"`)
-                console.log(`getComputedStyle(heading).color: "${computedColor}"`)
-                
-                // Check for spans inside
-                const spans = htmlHeading.querySelectorAll('span')
-                if (spans.length > 0) {
-                    spans.forEach((span, spanIdx) => {
-                        const htmlSpan = span as HTMLElement
-                        const spanComputedStyle = window.getComputedStyle(htmlSpan)
-                        const spanComputedColor = spanComputedStyle.color
-                        const spanInlineStyle = htmlSpan.getAttribute('style') || ''
-                        console.log(`  Span ${spanIdx + 1}: style="${spanInlineStyle.substring(0, 100)}"`)
-                        console.log(`  Span ${spanIdx + 1}: computed color="${spanComputedColor}"`)
-                    })
-                }
-                
-                // Check which CSS rules are applying
-                const allRules = []
-                for (let sheet of document.styleSheets) {
-                    try {
-                        for (let rule of sheet.cssRules) {
-                            if (rule instanceof CSSStyleRule) {
-                                try {
-                                    if (htmlHeading.matches(rule.selectorText)) {
-                                        if (rule.style.color) {
-                                            allRules.push({
-                                                selector: rule.selectorText,
-                                                color: rule.style.color,
-                                                specificity: rule.selectorText.split(' ').length,
-                                                source: sheet.href || 'inline'
-                                            })
+                headings.forEach((heading, idx) => {
+                    totalHeadings++
+                    const htmlHeading = heading as HTMLElement
+                    const computedStyle = window.getComputedStyle(htmlHeading)
+                    const computedColor = computedStyle.color
+                    const inlineStyle = htmlHeading.getAttribute('style') || ''
+                    
+                    console.log(`\n--- Heading ${totalHeadings} (${heading.tagName}) in container ${containerIdx + 1} ---`)
+                    console.log(`outerHTML: ${htmlHeading.outerHTML.substring(0, 300)}`)
+                    console.log(`inline style attribute: "${inlineStyle}"`)
+                    console.log(`getComputedStyle(heading).color: "${computedColor}"`)
+                    
+                    // Check for spans inside
+                    const spans = htmlHeading.querySelectorAll('span')
+                    if (spans.length > 0) {
+                        spans.forEach((span, spanIdx) => {
+                            const htmlSpan = span as HTMLElement
+                            const spanComputedStyle = window.getComputedStyle(htmlSpan)
+                            const spanComputedColor = spanComputedStyle.color
+                            const spanInlineStyle = htmlSpan.getAttribute('style') || ''
+                            console.log(`  Span ${spanIdx + 1}: style="${spanInlineStyle.substring(0, 100)}"`)
+                            console.log(`  Span ${spanIdx + 1}: computed color="${spanComputedColor}"`)
+                        })
+                    }
+                    
+                    // Check which CSS rules are applying
+                    const allRules = []
+                    for (let sheet of document.styleSheets) {
+                        try {
+                            for (let rule of sheet.cssRules) {
+                                if (rule instanceof CSSStyleRule) {
+                                    try {
+                                        if (htmlHeading.matches(rule.selectorText)) {
+                                            if (rule.style.color) {
+                                                allRules.push({
+                                                    selector: rule.selectorText,
+                                                    color: rule.style.color,
+                                                    specificity: rule.selectorText.split(' ').length,
+                                                    source: sheet.href || 'inline'
+                                                })
+                                            }
                                         }
+                                    } catch (e) {
+                                        // Ignore cross-origin errors
                                     }
-                                } catch (e) {
-                                    // Ignore cross-origin errors
                                 }
                             }
+                        } catch (e) {
+                            // Ignore cross-origin errors
                         }
-                    } catch (e) {
-                        // Ignore cross-origin errors
                     }
-                }
-                
-                if (allRules.length > 0) {
-                    console.log(`\n=== (C) CSS RULES APPLYING COLOR TO THIS HEADING ===`)
-                    allRules.sort((a, b) => b.specificity - a.specificity)
-                    allRules.forEach((rule, ruleIdx) => {
-                        console.log(`${ruleIdx + 1}. ${rule.selector} -> color: ${rule.color} (specificity: ${rule.specificity}, source: ${rule.source})`)
-                    })
-                } else {
-                    console.log(`\n=== (C) NO CSS RULES FOUND APPLYING COLOR ===`)
-                }
+                    
+                    if (allRules.length > 0) {
+                        console.log(`\n=== (C) CSS RULES APPLYING COLOR TO THIS HEADING ===`)
+                        allRules.sort((a, b) => b.specificity - a.specificity)
+                        allRules.forEach((rule, ruleIdx) => {
+                            console.log(`${ruleIdx + 1}. ${rule.selector} -> color: ${rule.color} (specificity: ${rule.specificity}, source: ${rule.source})`)
+                        })
+                    } else {
+                        console.log(`\n=== (C) NO CSS RULES FOUND APPLYING COLOR ===`)
+                    }
+                })
             })
-        }, 100)
+            
+            console.log(`\n=== TOTAL: Found ${totalHeadings} headings across all prose containers ===`)
+        }, 500) // Increased timeout to ensure sections are expanded
         
         return () => clearTimeout(timeoutId)
     }, [processedContent, expandedSections])
@@ -285,6 +300,14 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
 
         return sectionsList
     }, [content])
+    
+    // CRITICAL: Auto-expand all sections for debugging
+    useEffect(() => {
+        if (sections.length > 0) {
+            const allSectionIds = new Set(sections.map(s => s.id))
+            setExpandedSections(allSectionIds)
+        }
+    }, [sections])
 
     const toggleSection = (sectionId: string) => {
         setExpandedSections((prev) => {
