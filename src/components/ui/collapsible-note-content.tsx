@@ -47,17 +47,21 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
             const headings = containerRef.current.querySelectorAll('h1, h2, h3')
             headings.forEach((heading) => {
                 const htmlHeading = heading as HTMLElement
+                let hasColor = false
+                let colorValue = ''
+                
                 // Check if heading itself has color
                 const headingStyle = htmlHeading.getAttribute('style')
                 if (headingStyle && headingStyle.includes('color:')) {
                     const colorMatch = headingStyle.match(/color:\s*([^;]+)/)
                     if (colorMatch) {
-                        const colorValue = colorMatch[1].trim()
+                        colorValue = colorMatch[1].trim()
                         htmlHeading.style.setProperty('color', colorValue, 'important')
-                        // Remove any hover effects by adding a class
+                        hasColor = true
                         htmlHeading.classList.add('has-custom-color')
                     }
                 }
+                
                 // Check for spans inside headings with colors
                 const spansInHeading = htmlHeading.querySelectorAll('span[style*="color"]')
                 spansInHeading.forEach((span) => {
@@ -66,37 +70,58 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
                     if (spanStyle && spanStyle.includes('color:')) {
                         const colorMatch = spanStyle.match(/color:\s*([^;]+)/)
                         if (colorMatch) {
-                            const colorValue = colorMatch[1].trim()
-                            htmlSpan.style.setProperty('color', colorValue, 'important')
-                            // Mark parent heading as having custom color
+                            const spanColorValue = colorMatch[1].trim()
+                            htmlSpan.style.setProperty('color', spanColorValue, 'important')
+                            // If heading doesn't have color, apply span color to heading
+                            if (!hasColor) {
+                                colorValue = spanColorValue
+                                htmlHeading.style.setProperty('color', colorValue, 'important')
+                                hasColor = true
+                            }
                             htmlHeading.classList.add('has-custom-color')
                         }
                     }
                 })
+                
+                // Store color value for hover preservation
+                if (hasColor && colorValue) {
+                    (htmlHeading as any).__customColor = colorValue
+                }
             })
             
             // Add event listeners to preserve colors on hover for headings
-            const headingsWithColor = containerRef.current.querySelectorAll('h1[style*="color"], h2[style*="color"], h3[style*="color"]')
+            const headingsWithColor = containerRef.current.querySelectorAll('h1.has-custom-color, h2.has-custom-color, h3.has-custom-color, h1[style*="color"], h2[style*="color"], h3[style*="color"]')
             headingsWithColor.forEach((heading) => {
                 const htmlHeading = heading as HTMLElement
-                const style = htmlHeading.getAttribute('style')
-                if (style && style.includes('color:')) {
-                    const colorMatch = style.match(/color:\s*([^;]+)/)
-                    if (colorMatch) {
-                        const colorValue = colorMatch[1].trim()
-                        // Reapply color on hover to override any hover effects
-                        const preserveColor = () => {
-                            htmlHeading.style.setProperty('color', colorValue, 'important')
+                let colorValue = ''
+                
+                // Get color from stored value or from style attribute
+                if ((htmlHeading as any).__customColor) {
+                    colorValue = (htmlHeading as any).__customColor
+                } else {
+                    const style = htmlHeading.getAttribute('style')
+                    if (style && style.includes('color:')) {
+                        const colorMatch = style.match(/color:\s*([^;]+)/)
+                        if (colorMatch) {
+                            colorValue = colorMatch[1].trim()
                         }
-                        // Remove existing listeners if any
-                        htmlHeading.removeEventListener('mouseenter', preserveColor)
-                        htmlHeading.removeEventListener('mouseleave', preserveColor)
-                        htmlHeading.removeEventListener('mouseover', preserveColor)
-                        // Add new listeners
-                        htmlHeading.addEventListener('mouseenter', preserveColor)
-                        htmlHeading.addEventListener('mouseleave', preserveColor)
-                        htmlHeading.addEventListener('mouseover', preserveColor)
                     }
+                }
+                
+                if (colorValue) {
+                    // Reapply color on hover to override any hover effects
+                    const preserveColor = () => {
+                        htmlHeading.style.setProperty('color', colorValue, 'important')
+                    }
+                    
+                    // Use capture phase to ensure our handler runs first
+                    htmlHeading.addEventListener('mouseenter', preserveColor, true)
+                    htmlHeading.addEventListener('mouseleave', preserveColor, true)
+                    htmlHeading.addEventListener('mouseover', preserveColor, true)
+                    htmlHeading.addEventListener('mouseout', preserveColor, true)
+                    
+                    // Also apply immediately
+                    preserveColor()
                 }
             })
             

@@ -198,6 +198,7 @@ input[type="number"] {
 /* CRITICAL: Ensure colors work in headings H1, H2, H3 */
 /* Headings might have colors applied directly or in spans inside them */
 /* Remove default prose colors and hover effects for headings with custom colors */
+/* Override ALL prose styles for headings with custom colors */
 .prose h1[style*="color"],
 .prose-sm h1[style*="color"],
 .prose-base h1[style*="color"],
@@ -209,7 +210,19 @@ input[type="number"] {
 .prose h3[style*="color"],
 .prose-sm h3[style*="color"],
 .prose-base h3[style*="color"],
-.prose-lg h3[style*="color"] {
+.prose-lg h3[style*="color"],
+.prose h1.has-custom-color,
+.prose-sm h1.has-custom-color,
+.prose-base h1.has-custom-color,
+.prose-lg h1.has-custom-color,
+.prose h2.has-custom-color,
+.prose-sm h2.has-custom-color,
+.prose-base h2.has-custom-color,
+.prose-lg h2.has-custom-color,
+.prose h3.has-custom-color,
+.prose-sm h3.has-custom-color,
+.prose-base h3.has-custom-color,
+.prose-lg h3.has-custom-color {
   /* Force inline color styles to be respected in headings */
   /* Remove any hover effects that might override the color */
   /* JavaScript will apply colors with !important */
