@@ -197,25 +197,23 @@ input[type="number"] {
 }
 
 /* Dark mode for TipTap - default text color */
+/* But don't override inline color styles */
 .dark .ProseMirror {
   color: #e2e8f0;
 }
 
 /* Ensure inline color styles work - TipTap Color extension adds style="color: #hex" to spans */
-/* Inline styles have higher specificity and should work automatically */
-/* But we need to make sure they're not overridden by other CSS rules */
-.ProseMirror span[style*="color"],
-.ProseMirror [style*="color"] {
+/* Inline styles have the highest specificity and should work automatically */
+/* We need to ensure that no CSS rule overrides them */
+.ProseMirror span[style*="color"] {
   /* Inline styles should work - they have the highest specificity */
-  /* Don't add any color property here that would override inline styles */
 }
 
 /* Make sure color styles are not overridden by dark mode */
 /* Inline styles should override the default dark mode color */
-.dark .ProseMirror span[style*="color"],
-.dark .ProseMirror [style*="color"] {
+.dark .ProseMirror span[style*="color"] {
   /* Inline color styles should override dark mode default color */
-  /* Don't override - let inline styles work */
+  /* The inline style attribute has higher specificity than this CSS rule */
 }
 
 /* TipTap Highlight styles */

@@ -392,18 +392,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                             e.preventDefault()
                                             e.stopPropagation()
                                             // Apply color to selected text or current position
-                                            const { from, to } = editor.state.selection
-                                            if (from !== to) {
-                                                // Text is selected, apply color to selection
-                                                editor.chain().focus().setColor(color).run()
-                                            } else {
-                                                // No selection, apply color to next typed text
-                                                editor.chain().focus().setColor(color).run()
-                                            }
-                                            // Force editor update
-                                            setTimeout(() => {
-                                                editor.view.dispatch(editor.state.tr)
-                                            }, 0)
+                                            editor.chain().focus().setColor(color).run()
                                             setShowColorPicker(false)
                                         }}
                                         className="w-8 h-8 rounded border-2 border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform"

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { ChevronDown, ChevronRight } from "lucide-react"
+import { ChevronDown, ChevronRight, Copy, Check } from "lucide-react"
 
 interface CollapsibleNoteContentProps {
     content: string
@@ -17,6 +17,7 @@ interface Section {
 
 export function CollapsibleNoteContent({ content, className }: CollapsibleNoteContentProps) {
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+    const [copiedSectionId, setCopiedSectionId] = useState<string | null>(null)
 
     const sections = useMemo(() => {
         if (!content) return []
@@ -84,6 +85,25 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
         })
     }
 
+    const copySectionContent = async (section: Section, e: React.MouseEvent) => {
+        e.stopPropagation() // Prevent toggling the section when clicking copy
+        
+        // Extract text content from HTML
+        const parser = new DOMParser()
+        const doc = parser.parseFromString(section.content, "text/html")
+        const textContent = doc.body.textContent || ""
+        
+        try {
+            await navigator.clipboard.writeText(textContent)
+            setCopiedSectionId(section.id)
+            setTimeout(() => {
+                setCopiedSectionId(null)
+            }, 2000)
+        } catch (err) {
+            console.error("Failed to copy:", err)
+        }
+    }
+
     // If no sections found, display content normally
     if (sections.length === 0) {
         return (
@@ -104,17 +124,30 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
 
                 return (
                     <div key={section.id} className={`mb-3 ${paddingRight}`}>
-                        <button
-                            onClick={() => toggleSection(section.id)}
-                            className={`w-full flex items-center gap-2 text-right ${headingSize} font-semibold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800`}
-                        >
-                            {isExpanded ? (
-                                <ChevronDown className="h-5 w-5 flex-shrink-0" />
-                            ) : (
-                                <ChevronRight className="h-5 w-5 flex-shrink-0" />
-                            )}
-                            <span className="flex-1">{section.title}</span>
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => toggleSection(section.id)}
+                                className={`flex-1 flex items-center gap-2 text-right ${headingSize} font-semibold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800`}
+                            >
+                                {isExpanded ? (
+                                    <ChevronDown className="h-5 w-5 flex-shrink-0" />
+                                ) : (
+                                    <ChevronRight className="h-5 w-5 flex-shrink-0" />
+                                )}
+                                <span className="flex-1">{section.title}</span>
+                            </button>
+                            <button
+                                onClick={(e) => copySectionContent(section, e)}
+                                className="flex-shrink-0 p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                title="نسخ المحتوى"
+                            >
+                                {copiedSectionId === section.id ? (
+                                    <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                ) : (
+                                    <Copy className="h-4 w-4" />
+                                )}
+                            </button>
+                        </div>
                         {isExpanded && section.content && (
                             <div className="mt-2 pr-8">
                                 <div
