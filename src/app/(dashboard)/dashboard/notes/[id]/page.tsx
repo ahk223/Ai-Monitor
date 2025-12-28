@@ -57,13 +57,16 @@ export default function NoteDetailPage() {
                 return
             }
 
-            const noteData = noteDoc.data() as Note
+            const noteData = noteDoc.data()
+            const createdAt = noteData.createdAt?.toDate ? noteData.createdAt.toDate() : (noteData.createdAt instanceof Date ? noteData.createdAt : new Date())
+            const updatedAt = noteData.updatedAt?.toDate ? noteData.updatedAt.toDate() : (noteData.updatedAt instanceof Date ? noteData.updatedAt : undefined)
+            
             setNote({
                 ...noteData,
                 id: noteDoc.id,
-                createdAt: noteData.createdAt?.toDate() || new Date(),
-                updatedAt: noteData.updatedAt?.toDate(),
-            })
+                createdAt,
+                updatedAt,
+            } as Note)
 
             // Fetch category if exists
             if (noteData.categoryId) {
