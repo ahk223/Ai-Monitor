@@ -346,7 +346,7 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => hasContent && toggleSection(section.id)}
-                                className={`flex-1 flex items-center gap-2 text-right ${headingSize} font-semibold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-2 rounded-lg ${hasContent ? 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer' : 'cursor-default'}`}
+                                className={`flex-1 flex items-center gap-2 text-right ${headingSize} font-semibold text-slate-900 dark:text-white p-2 rounded-lg ${hasContent ? 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer' : 'cursor-default'}`}
                             >
                                 {hasContent && (
                                     isExpanded ? (

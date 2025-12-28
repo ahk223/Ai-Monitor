@@ -182,6 +182,124 @@ input[type="number"] {
   max-width: 100% !important;
 }
 
+/* CRITICAL: Remove default heading colors in view mode (notes display) */
+/* Headings should inherit the default text color unless explicitly colored in the editor */
+/* This ensures headings without custom colors use the default text color, not prose defaults */
+.prose h1:not([style*="color"]):not(.has-custom-color),
+.prose-sm h1:not([style*="color"]):not(.has-custom-color),
+.prose-base h1:not([style*="color"]):not(.has-custom-color),
+.prose-lg h1:not([style*="color"]):not(.has-custom-color),
+.prose h2:not([style*="color"]):not(.has-custom-color),
+.prose-sm h2:not([style*="color"]):not(.has-custom-color),
+.prose-base h2:not([style*="color"]):not(.has-custom-color),
+.prose-lg h2:not([style*="color"]):not(.has-custom-color),
+.prose h3:not([style*="color"]):not(.has-custom-color),
+.prose-sm h3:not([style*="color"]):not(.has-custom-color),
+.prose-base h3:not([style*="color"]):not(.has-custom-color),
+.prose-lg h3:not([style*="color"]):not(.has-custom-color),
+.prose h4:not([style*="color"]):not(.has-custom-color),
+.prose-sm h4:not([style*="color"]):not(.has-custom-color),
+.prose-base h4:not([style*="color"]):not(.has-custom-color),
+.prose-lg h4:not([style*="color"]):not(.has-custom-color),
+.prose h5:not([style*="color"]):not(.has-custom-color),
+.prose-sm h5:not([style*="color"]):not(.has-custom-color),
+.prose-base h5:not([style*="color"]):not(.has-custom-color),
+.prose-lg h5:not([style*="color"]):not(.has-custom-color),
+.prose h6:not([style*="color"]):not(.has-custom-color),
+.prose-sm h6:not([style*="color"]):not(.has-custom-color),
+.prose-base h6:not([style*="color"]):not(.has-custom-color),
+.prose-lg h6:not([style*="color"]):not(.has-custom-color) {
+  /* Remove default prose heading colors - use default text color instead */
+  color: inherit !important;
+}
+
+/* Remove hover effects on headings without custom colors */
+.prose h1:not([style*="color"]):not(.has-custom-color):hover,
+.prose-sm h1:not([style*="color"]):not(.has-custom-color):hover,
+.prose-base h1:not([style*="color"]):not(.has-custom-color):hover,
+.prose-lg h1:not([style*="color"]):not(.has-custom-color):hover,
+.prose h2:not([style*="color"]):not(.has-custom-color):hover,
+.prose-sm h2:not([style*="color"]):not(.has-custom-color):hover,
+.prose-base h2:not([style*="color"]):not(.has-custom-color):hover,
+.prose-lg h2:not([style*="color"]):not(.has-custom-color):hover,
+.prose h3:not([style*="color"]):not(.has-custom-color):hover,
+.prose-sm h3:not([style*="color"]):not(.has-custom-color):hover,
+.prose-base h3:not([style*="color"]):not(.has-custom-color):hover,
+.prose-lg h3:not([style*="color"]):not(.has-custom-color):hover,
+.prose h4:not([style*="color"]):not(.has-custom-color):hover,
+.prose-sm h4:not([style*="color"]):not(.has-custom-color):hover,
+.prose-base h4:not([style*="color"]):not(.has-custom-color):hover,
+.prose-lg h4:not([style*="color"]):not(.has-custom-color):hover,
+.prose h5:not([style*="color"]):not(.has-custom-color):hover,
+.prose-sm h5:not([style*="color"]):not(.has-custom-color):hover,
+.prose-base h5:not([style*="color"]):not(.has-custom-color):hover,
+.prose-lg h5:not([style*="color"]):not(.has-custom-color):hover,
+.prose h6:not([style*="color"]):not(.has-custom-color):hover,
+.prose-sm h6:not([style*="color"]):not(.has-custom-color):hover,
+.prose-base h6:not([style*="color"]):not(.has-custom-color):hover,
+.prose-lg h6:not([style*="color"]):not(.has-custom-color):hover {
+  /* No color change on hover - preserve default text color */
+  color: inherit !important;
+}
+
+/* Dark mode: Remove default heading colors */
+.dark .prose h1:not([style*="color"]):not(.has-custom-color),
+.dark .prose-sm h1:not([style*="color"]):not(.has-custom-color),
+.dark .prose-base h1:not([style*="color"]):not(.has-custom-color),
+.dark .prose-lg h1:not([style*="color"]):not(.has-custom-color),
+.dark .prose h2:not([style*="color"]):not(.has-custom-color),
+.dark .prose-sm h2:not([style*="color"]):not(.has-custom-color),
+.dark .prose-base h2:not([style*="color"]):not(.has-custom-color),
+.dark .prose-lg h2:not([style*="color"]):not(.has-custom-color),
+.dark .prose h3:not([style*="color"]):not(.has-custom-color),
+.dark .prose-sm h3:not([style*="color"]):not(.has-custom-color),
+.dark .prose-base h3:not([style*="color"]):not(.has-custom-color),
+.dark .prose-lg h3:not([style*="color"]):not(.has-custom-color),
+.dark .prose h4:not([style*="color"]):not(.has-custom-color),
+.dark .prose-sm h4:not([style*="color"]):not(.has-custom-color),
+.dark .prose-base h4:not([style*="color"]):not(.has-custom-color),
+.dark .prose-lg h4:not([style*="color"]):not(.has-custom-color),
+.dark .prose h5:not([style*="color"]):not(.has-custom-color),
+.dark .prose-sm h5:not([style*="color"]):not(.has-custom-color),
+.dark .prose-base h5:not([style*="color"]):not(.has-custom-color),
+.dark .prose-lg h5:not([style*="color"]):not(.has-custom-color),
+.dark .prose h6:not([style*="color"]):not(.has-custom-color),
+.dark .prose-sm h6:not([style*="color"]):not(.has-custom-color),
+.dark .prose-base h6:not([style*="color"]):not(.has-custom-color),
+.dark .prose-lg h6:not([style*="color"]):not(.has-custom-color) {
+  /* Remove default prose heading colors in dark mode - use default text color */
+  color: inherit !important;
+}
+
+/* Dark mode: Remove hover effects on headings without custom colors */
+.dark .prose h1:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-sm h1:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-base h1:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-lg h1:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose h2:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-sm h2:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-base h2:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-lg h2:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose h3:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-sm h3:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-base h3:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-lg h3:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose h4:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-sm h4:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-base h4:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-lg h4:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose h5:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-sm h5:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-base h5:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-lg h5:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose h6:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-sm h6:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-base h6:not([style*="color"]):not(.has-custom-color):hover,
+.dark .prose-lg h6:not([style*="color"]):not(.has-custom-color):hover {
+  /* No color change on hover in dark mode - preserve default text color */
+  color: inherit !important;
+}
+
 /* CRITICAL: Ensure inline color styles are preserved in prose */
 /* TipTap Color extension saves colors as style="color: #hex" */
 /* We must ensure these inline styles are not overridden by prose */

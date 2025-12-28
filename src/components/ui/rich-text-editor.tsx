@@ -220,6 +220,27 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     const highlightButtonRef = useRef<HTMLButtonElement>(null)
     const colorPickerRef = useRef<HTMLDivElement>(null)
     const isOpeningColorPicker = useRef(false)
+    const isInternalUpdate = useRef(false)
+
+    // Function to clean HTML by removing trailing empty paragraphs
+    const cleanHTML = (html: string): string => {
+        if (!html || html.trim() === '') return ''
+        
+        // Remove trailing empty paragraphs and breaks
+        // Match empty paragraphs, breaks, and whitespace at the end
+        let cleaned = html.trim()
+        
+        // Remove trailing empty paragraphs (<p></p>, <p><br></p>, <p>&nbsp;</p>, etc.)
+        cleaned = cleaned.replace(/(<p[^>]*>(\s|&nbsp;|<br\s*\/?>)*<\/p>\s*)+$/gi, '')
+        
+        // Also handle cases with just <br> tags at the end
+        cleaned = cleaned.replace(/(<br\s*\/?>\s*)+$/gi, '')
+        
+        // Remove any remaining trailing whitespace
+        cleaned = cleaned.trim()
+        
+        return cleaned
+    }
 
     const editor = useEditor({
         immediatelyRender: false,
@@ -239,7 +260,14 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
         ],
         content: content || "",
         onUpdate: ({ editor }) => {
-            onChange(editor.getHTML())
+            isInternalUpdate.current = true
+            const rawHTML = editor.getHTML()
+            const cleanedHTML = cleanHTML(rawHTML)
+            onChange(cleanedHTML)
+            // Reset flag after a short delay to allow state updates
+            setTimeout(() => {
+                isInternalUpdate.current = false
+            }, 0)
         },
         editorProps: {
             attributes: {
@@ -261,6 +289,19 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             return newSet
         })
     }
+
+    // Clean content when it changes from outside (not from internal editor updates)
+    useEffect(() => {
+        if (!editor || isInternalUpdate.current) return
+        
+        const cleanedContent = cleanHTML(content || "")
+        const currentContent = cleanHTML(editor.getHTML() || "")
+        
+        // Only update if content actually changed (to avoid infinite loops)
+        if (cleanedContent !== currentContent) {
+            editor.commands.setContent(cleanedContent, { emitUpdate: false })
+        }
+    }, [content, editor])
 
     // Ensure component is mounted on client
     useEffect(() => {
