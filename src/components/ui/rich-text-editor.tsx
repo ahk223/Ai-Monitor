@@ -3,9 +3,8 @@
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import { TextStyle } from "@tiptap/extension-text-style"
-import { Color } from "@tiptap/extension-color"
 import Highlight from "@tiptap/extension-highlight"
-import { Bold, Italic, List, ListOrdered, Undo, Redo, Type, Palette, Highlighter, Heading1, Heading2, Heading3, ChevronDown, ChevronRight } from "lucide-react"
+import { Bold, Italic, List, ListOrdered, Undo, Redo, Type, Highlighter, Heading1, Heading2, Heading3, ChevronDown, ChevronRight } from "lucide-react"
 import { Button } from "./button"
 import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
@@ -204,22 +203,16 @@ function CollapsibleHeadingsHandler({
 }
 
 export function RichTextEditor({ content, onChange, placeholder, className }: RichTextEditorProps) {
-    const [showColorPicker, setShowColorPicker] = useState(false)
     const [showHighlightPicker, setShowHighlightPicker] = useState(false)
     const [showFontSizeMenu, setShowFontSizeMenu] = useState(false)
     const [collapsedHeadings, setCollapsedHeadings] = useState<Set<string>>(new Set())
-    const [colorPickerPos, setColorPickerPos] = useState<{ bottom: number; right: number } | null>(null)
     const [highlightPickerPos, setHighlightPickerPos] = useState<{ bottom: number; right: number } | null>(null)
     const [fontSizeMenuPos, setFontSizeMenuPos] = useState<{ bottom: number; right: number } | null>(null)
     const [floatingToolbarPos, setFloatingToolbarPos] = useState<{ top: number; left: number } | null>(null)
     const [showFloatingToolbar, setShowFloatingToolbar] = useState(false)
-    const [showFloatingColorPicker, setShowFloatingColorPicker] = useState(false)
-    const [floatingColorPickerPos, setFloatingColorPickerPos] = useState<{ bottom: number; right: number } | null>(null)
-    const floatingColorButtonRef = useRef<HTMLButtonElement>(null)
     const [isMounted, setIsMounted] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
     const toolbarRef = useRef<HTMLDivElement>(null)
-    const colorButtonRef = useRef<HTMLButtonElement>(null)
     const highlightButtonRef = useRef<HTMLButtonElement>(null)
     const fontSizeButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -232,9 +225,6 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 },
             }),
             TextStyle,
-            Color.configure({
-                types: ['textStyle'],
-            }),
             Highlight.configure({
                 multicolor: true,
             }),
@@ -308,10 +298,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     setShowFloatingToolbar(true)
                 }
             } else {
-                // Only close floating toolbar if color picker is not open
-                if (!showFloatingColorPicker) {
-                    setShowFloatingToolbar(false)
-                }
+                setShowFloatingToolbar(false)
             }
         }
 
@@ -325,18 +312,6 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     }, [editor])
 
     // Calculate dropdown positions when they open
-    useEffect(() => {
-        if (showColorPicker && colorButtonRef.current) {
-            const rect = colorButtonRef.current.getBoundingClientRect()
-            setColorPickerPos({
-                bottom: window.innerHeight - rect.top + 4,
-                right: window.innerWidth - rect.right,
-            })
-        } else {
-            setColorPickerPos(null)
-        }
-    }, [showColorPicker])
-
     useEffect(() => {
         if (showHighlightPicker && highlightButtonRef.current) {
             const rect = highlightButtonRef.current.getBoundingClientRect()
@@ -360,19 +335,6 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             setFontSizeMenuPos(null)
         }
     }, [showFontSizeMenu])
-
-    // Calculate floating color picker position
-    useEffect(() => {
-        if (showFloatingColorPicker && floatingColorButtonRef.current) {
-            const rect = floatingColorButtonRef.current.getBoundingClientRect()
-            setFloatingColorPickerPos({
-                bottom: window.innerHeight - rect.top + 4,
-                right: window.innerWidth - rect.right,
-            })
-        } else {
-            setFloatingColorPickerPos(null)
-        }
-    }, [showFloatingColorPicker])
 
     if (!editor) {
         return null
@@ -450,7 +412,6 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         size="sm"
                         onClick={() => {
                             setShowFontSizeMenu(!showFontSizeMenu)
-                            setShowColorPicker(false)
                             setShowHighlightPicker(false)
                         }}
                         className={showFontSizeMenu ? "bg-slate-100 dark:bg-slate-800" : ""}
@@ -485,93 +446,6 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     )}
                 </div>
                 
-                {/* Text Color */}
-                <div className="relative">
-                    <Button
-                        ref={colorButtonRef}
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                            setShowColorPicker(!showColorPicker)
-                            setShowHighlightPicker(false)
-                            setShowFontSizeMenu(false)
-                        }}
-                        className={showColorPicker ? "bg-slate-100 dark:bg-slate-800" : ""}
-                        title="لون النص"
-                    >
-                        <Palette className="h-4 w-4" />
-                    </Button>
-                    {showColorPicker && colorPickerPos && isMounted && createPortal(
-                        <div 
-                            className="fixed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none"
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                                bottom: `${colorPickerPos.bottom}px`,
-                                right: `${colorPickerPos.right}px`,
-                            }}
-                        >
-                            <div className="grid grid-cols-5 gap-2">
-                                {["#000000", "#374151", "#6B7280", "#9CA3AF", "#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899"].map((color) => (
-                                    <button
-                                        key={color}
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.preventDefault()
-                                            e.stopPropagation()
-                                            if (!editor) return
-                                            
-                                            const { from, to } = editor.state.selection
-                                            
-                                            if (from !== to) {
-                                                // Text is selected - apply color using transaction
-                                                const { tr } = editor.state
-                                                const textStyleMark = editor.schema.marks.textStyle
-                                                const colorMark = editor.schema.marks.color
-                                                
-                                                if (textStyleMark && colorMark) {
-                                                    // Remove existing marks
-                                                    tr.removeMark(from, to, textStyleMark)
-                                                    tr.removeMark(from, to, colorMark)
-                                                    
-                                                    // Create a new mark that combines textStyle and color
-                                                    // Color extension extends TextStyle, so we need both
-                                                    const mark = colorMark.create({ color: color })
-                                                    tr.addMark(from, to, mark)
-                                                    editor.view.dispatch(tr)
-                                                    editor.view.focus()
-                                                } else {
-                                                    // Fallback
-                                                    editor.chain().focus().setColor(color).run()
-                                                }
-                                            } else {
-                                                // No selection - set color for next typed text
-                                                editor.chain().focus().setColor(color).run()
-                                            }
-                                            
-                                            setShowColorPicker(false)
-                                        }}
-                                        className="w-8 h-8 rounded border-2 border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform"
-                                        style={{ backgroundColor: color }}
-                                        title={color}
-                                    />
-                                ))}
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    editor.chain().focus().unsetColor().run()
-                                    setShowColorPicker(false)
-                                }}
-                                className="w-full mt-2 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
-                            >
-                                إزالة اللون
-                            </button>
-                        </div>,
-                        document.body
-                    )}
-                </div>
-                
                 {/* Highlight Color */}
                 <div className="relative">
                     <Button
@@ -581,7 +455,6 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         size="sm"
                         onClick={() => {
                             setShowHighlightPicker(!showHighlightPicker)
-                            setShowColorPicker(false)
                             setShowFontSizeMenu(false)
                         }}
                         className={editor.isActive("highlight") || showHighlightPicker ? "bg-slate-100 dark:bg-slate-800" : ""}
@@ -706,23 +579,6 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex items-center gap-1 flex-wrap">
-                        {/* Text Color */}
-                        <div className="relative">
-                            <Button
-                                ref={floatingColorButtonRef}
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                    setShowFloatingColorPicker(!showFloatingColorPicker)
-                                }}
-                                className={showFloatingColorPicker ? "bg-slate-100 dark:bg-slate-800" : ""}
-                                title="لون النص"
-                            >
-                                <Palette className="h-4 w-4" />
-                            </Button>
-                        </div>
-                        
                         {/* Font Size */}
                         <div className="relative">
                             <Button
@@ -800,72 +656,15 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 document.body
             )}
 
-            {/* Floating Color Picker - appears when clicking color button in floating toolbar */}
-            {showFloatingColorPicker && floatingColorPickerPos && isMounted && createPortal(
-                <div 
-                    className="fixed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[110] p-2 min-w-[180px]"
-                    onClick={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    style={{
-                        bottom: `${floatingColorPickerPos.bottom}px`,
-                        right: `${floatingColorPickerPos.right}px`,
-                    }}
-                >
-                    <div className="grid grid-cols-5 gap-2">
-                        {["#000000", "#374151", "#6B7280", "#9CA3AF", "#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899"].map((color) => (
-                            <button
-                                key={color}
-                                type="button"
-                                onClick={(e) => {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    if (!editor) return
-                                    
-                                    const { from, to } = editor.state.selection
-                                    
-                                    if (from !== to) {
-                                        // Text is selected - apply color using transaction
-                                        const { tr } = editor.state
-                                        const colorMark = editor.schema.marks.color
-                                        
-                                        if (colorMark) {
-                                            // Remove existing color marks in the selection
-                                            tr.removeMark(from, to, colorMark)
-                                            // Add new color mark
-                                            tr.addMark(from, to, colorMark.create({ color }))
-                                            editor.view.dispatch(tr)
-                                        } else {
-                                            // Fallback
-                                            editor.chain().focus().setColor(color).run()
-                                        }
-                                    } else {
-                                        // No selection - set color for next typed text
-                                        editor.chain().focus().setColor(color).run()
-                                    }
-                                    
-                                    setShowFloatingColorPicker(false)
-                                }}
-                                className="w-8 h-8 rounded border-2 border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform"
-                                style={{ backgroundColor: color }}
-                                title={color}
-                            />
-                        ))}
-                    </div>
-                </div>,
-                document.body
-            )}
-
             {/* Click outside to close menus - backdrop behind dropdowns */}
-            {(showColorPicker || showHighlightPicker || showFontSizeMenu || showFloatingColorPicker) && (
+            {(showHighlightPicker || showFontSizeMenu) && (
                 <div 
                     className="fixed inset-0 z-[105] pointer-events-auto" 
                     onClick={(e) => {
                         // Only close if clicking on backdrop itself, not on dropdowns
                         if (e.target === e.currentTarget) {
-                            setShowColorPicker(false)
                             setShowHighlightPicker(false)
                             setShowFontSizeMenu(false)
-                            setShowFloatingColorPicker(false)
                         }
                     }}
                     onMouseDown={(e) => {
