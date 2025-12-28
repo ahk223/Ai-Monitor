@@ -211,6 +211,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     const toolbarRef = useRef<HTMLDivElement>(null)
 
     const editor = useEditor({
+        immediatelyRender: false,
         extensions: [
             StarterKit.configure({
                 heading: {
@@ -268,7 +269,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     }
 
     return (
-        <div ref={containerRef} className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""} relative w-full max-w-full min-w-0 overflow-hidden flex flex-col`} style={{ maxWidth: '100%' }}>
+        <div ref={containerRef} className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""} relative w-full max-w-full min-w-0 flex flex-col`} style={{ maxWidth: '100%' }}>
             {/* Toolbar - Sticky at top */}
             <div 
                 ref={toolbarRef}
@@ -347,7 +348,10 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         <Type className="h-4 w-4" />
                     </Button>
                     {showFontSizeMenu && (
-                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[60] p-2 min-w-[120px] max-w-[calc(100vw-2rem)]">
+                        <div 
+                            className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[120px] max-w-[calc(100vw-2rem)]"
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             {["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"].map((size) => (
                                 <button
                                     key={size}
@@ -372,7 +376,6 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                            if (!editor) return
                             setShowColorPicker(!showColorPicker)
                             setShowHighlightPicker(false)
                             setShowFontSizeMenu(false)
@@ -382,8 +385,11 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     >
                         <Palette className="h-4 w-4" />
                     </Button>
-                    {showColorPicker && editor && (
-                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[70] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none">
+                    {showColorPicker && (
+                        <div 
+                            className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none"
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             <div className="grid grid-cols-5 gap-2">
                                 {["#000000", "#374151", "#6B7280", "#9CA3AF", "#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899"].map((color) => (
                                     <button
@@ -442,7 +448,10 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         <Highlighter className="h-4 w-4" />
                     </Button>
                     {showHighlightPicker && (
-                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[60] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none">
+                        <div 
+                            className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none"
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             <div className="grid grid-cols-5 gap-2">
                                 {["#FEF08A", "#FDE047", "#FCD34D", "#FBBF24", "#FED7AA", "#FCA5A5", "#F9A8D4", "#C4B5FD", "#A5B4FC", "#93C5FD"].map((color) => (
                                     <button
@@ -538,15 +547,16 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 />
             </div>
             
-            {/* Click outside to close menus */}
+            {/* Click outside to close menus - backdrop behind dropdowns */}
             {(showColorPicker || showHighlightPicker || showFontSizeMenu) && (
                 <div 
-                    className="fixed inset-0 z-[65]" 
+                    className="fixed inset-0 z-[95] pointer-events-auto" 
                     onClick={() => {
                         setShowColorPicker(false)
                         setShowHighlightPicker(false)
                         setShowFontSizeMenu(false)
                     }}
+                    style={{ backgroundColor: 'transparent' }}
                 />
             )}
         </div>
