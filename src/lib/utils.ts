@@ -6,35 +6,70 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatDate(date: Date | string): string {
-    return new Date(date).toLocaleDateString('ar-SA', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    })
+    try {
+        const dateObj = typeof date === 'string' ? new Date(date) : date
+        
+        // Validate date
+        if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+            return 'تاريخ غير صالح'
+        }
+        
+        return dateObj.toLocaleDateString('ar-SA', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        })
+    } catch (error) {
+        console.error('Error formatting date:', error)
+        return 'تاريخ غير صالح'
+    }
 }
 
 export function formatDateEnglish(date: Date | string): string {
-    const dateObj = new Date(date)
-    return new Intl.DateTimeFormat('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    }).format(dateObj)
+    try {
+        const dateObj = typeof date === 'string' ? new Date(date) : date
+        
+        // Validate date
+        if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+            return 'Invalid date'
+        }
+        
+        return new Intl.DateTimeFormat('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }).format(dateObj)
+    } catch (error) {
+        console.error('Error formatting date:', error)
+        return 'Invalid date'
+    }
 }
 
 export function formatRelativeTime(date: Date | string): string {
-    const now = new Date()
-    const target = new Date(date)
-    const diffMs = now.getTime() - target.getTime()
-    const diffMins = Math.floor(diffMs / (1000 * 60))
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    try {
+        const dateObj = typeof date === 'string' ? new Date(date) : date
+        
+        // Validate date
+        if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+            return 'تاريخ غير صالح'
+        }
+        
+        const now = new Date()
+        const target = dateObj
+        const diffMs = now.getTime() - target.getTime()
+        const diffMins = Math.floor(diffMs / (1000 * 60))
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-    if (diffMins < 1) return 'الآن'
-    if (diffMins < 60) return `منذ ${diffMins} دقيقة`
-    if (diffHours < 24) return `منذ ${diffHours} ساعة`
-    if (diffDays < 7) return `منذ ${diffDays} يوم`
-    return formatDate(date)
+        if (diffMins < 1) return 'الآن'
+        if (diffMins < 60) return `منذ ${diffMins} دقيقة`
+        if (diffHours < 24) return `منذ ${diffHours} ساعة`
+        if (diffDays < 7) return `منذ ${diffDays} يوم`
+        return formatDate(date)
+    } catch (error) {
+        console.error('Error formatting relative time:', error)
+        return 'تاريخ غير صالح'
+    }
 }
 
 export function generateSlug(text: string): string {

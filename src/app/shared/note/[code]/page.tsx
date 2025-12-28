@@ -59,7 +59,8 @@ export default function SharedNotePage() {
                 return
             }
 
-            const noteData = notesSnap.docs[0].data() as Note
+            const noteDoc = notesSnap.docs[0]
+            const noteData = noteDoc.data()
 
             if (!noteData.isPublic) {
                 setIsPrivate(true)
@@ -67,10 +68,28 @@ export default function SharedNotePage() {
                 return
             }
 
+            // Properly handle Firestore Timestamp
+            let createdAt: Date
+            if (noteData.createdAt?.toDate) {
+                createdAt = noteData.createdAt.toDate()
+            } else if (noteData.createdAt instanceof Date) {
+                createdAt = noteData.createdAt
+            } else if (noteData.createdAt) {
+                createdAt = new Date(noteData.createdAt)
+            } else {
+                createdAt = new Date()
+            }
+
+            // Validate date
+            if (isNaN(createdAt.getTime())) {
+                createdAt = new Date()
+            }
+
             setNote({
                 ...noteData,
-                createdAt: noteData.createdAt instanceof Date ? noteData.createdAt : new Date(noteData.createdAt),
-            })
+                id: noteDoc.id,
+                createdAt,
+            } as Note)
 
             // Fetch category if exists
             if (noteData.categoryId) {
