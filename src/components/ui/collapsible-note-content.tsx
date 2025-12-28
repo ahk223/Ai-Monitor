@@ -88,19 +88,40 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
     const copySectionContent = async (section: Section, e: React.MouseEvent) => {
         e.stopPropagation() // Prevent toggling the section when clicking copy
         
-        // Extract text content from HTML
-        const parser = new DOMParser()
-        const doc = parser.parseFromString(section.content, "text/html")
-        const textContent = doc.body.textContent || ""
-        
         try {
-            await navigator.clipboard.writeText(textContent)
+            // Extract text content as fallback
+            const parser = new DOMParser()
+            const doc = parser.parseFromString(section.content, "text/html")
+            const textContent = doc.body.textContent || ""
+            
+            // Prepare HTML content with proper formatting
+            const htmlContent = section.content || ""
+            
+            // Use Clipboard API with both HTML and plain text formats
+            const clipboardItem = new ClipboardItem({
+                'text/html': new Blob([htmlContent], { type: 'text/html' }),
+                'text/plain': new Blob([textContent], { type: 'text/plain' })
+            })
+            
+            await navigator.clipboard.write([clipboardItem])
             setCopiedSectionId(section.id)
             setTimeout(() => {
                 setCopiedSectionId(null)
             }, 2000)
         } catch (err) {
-            console.error("Failed to copy:", err)
+            // Fallback to plain text if ClipboardItem is not supported
+            try {
+                const parser = new DOMParser()
+                const doc = parser.parseFromString(section.content, "text/html")
+                const textContent = doc.body.textContent || ""
+                await navigator.clipboard.writeText(textContent)
+                setCopiedSectionId(section.id)
+                setTimeout(() => {
+                    setCopiedSectionId(null)
+                }, 2000)
+            } catch (fallbackErr) {
+                console.error("Failed to copy:", fallbackErr)
+            }
         }
     }
 
