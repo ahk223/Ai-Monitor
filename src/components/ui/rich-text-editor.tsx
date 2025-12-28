@@ -349,7 +349,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     </Button>
                     {showFontSizeMenu && (
                         <div 
-                            className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[120px] max-w-[calc(100vw-2rem)]"
+                            className="absolute bottom-full right-0 mb-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[120px] max-w-[calc(100vw-2rem)]"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"].map((size) => (
@@ -387,7 +387,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     </Button>
                     {showColorPicker && (
                         <div 
-                            className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none"
+                            className="absolute bottom-full right-0 mb-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="grid grid-cols-5 gap-2">
@@ -449,7 +449,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     </Button>
                     {showHighlightPicker && (
                         <div 
-                            className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none"
+                            className="absolute bottom-full right-0 mb-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="grid grid-cols-5 gap-2">
