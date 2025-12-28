@@ -8,6 +8,20 @@
 
 * {
   font-family: var(--font-inter);
+  box-sizing: border-box;
+}
+
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
+/* Ensure all containers respect max-width */
+body > * {
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 /* Smooth scrolling */
@@ -145,8 +159,9 @@ input[type="number"] {
 }
 
 /* Ensure color styles are preserved - don't override inline styles */
+/* TipTap Color extension adds style="color: #hex" to spans */
 .ProseMirror *[style*="color"] {
-  /* Preserve inline color styles */
+  /* Preserve inline color styles - inline styles have highest specificity */
 }
 
 .ProseMirror img {
@@ -205,15 +220,20 @@ input[type="number"] {
 /* Ensure inline color styles work - TipTap Color extension adds style="color: #hex" to spans */
 /* Inline styles have the highest specificity and should work automatically */
 /* We need to ensure that no CSS rule overrides them */
-.ProseMirror span[style*="color"] {
+/* The inline style attribute should work without any CSS interference */
+.ProseMirror span[style*="color"],
+.ProseMirror [style*="color"] {
   /* Inline styles should work - they have the highest specificity */
+  /* Don't add any color property here that would override inline styles */
 }
 
 /* Make sure color styles are not overridden by dark mode */
 /* Inline styles should override the default dark mode color */
-.dark .ProseMirror span[style*="color"] {
+.dark .ProseMirror span[style*="color"],
+.dark .ProseMirror [style*="color"] {
   /* Inline color styles should override dark mode default color */
   /* The inline style attribute has higher specificity than this CSS rule */
+  /* Don't add any color property here that would override inline styles */
 }
 
 /* TipTap Highlight styles */

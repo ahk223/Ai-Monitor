@@ -11,7 +11,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
         <div
             ref={ref}
             className={cn(
-                "rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900",
+                "rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 w-full max-w-full min-w-0",
                 gradient && "bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800",
                 hover && "transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-1",
                 className

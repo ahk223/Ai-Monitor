@@ -268,7 +268,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     }
 
     return (
-        <div ref={containerRef} className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""} relative w-full max-w-full min-w-0 overflow-hidden flex flex-col`}>
+        <div ref={containerRef} className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""} relative w-full max-w-full min-w-0 overflow-hidden flex flex-col`} style={{ maxWidth: '100%' }}>
             {/* Toolbar - Sticky at top */}
             <div 
                 ref={toolbarRef}
@@ -392,7 +392,14 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                             e.preventDefault()
                                             e.stopPropagation()
                                             // Apply color to selected text or current position
-                                            editor.chain().focus().setColor(color).run()
+                                            const { from, to } = editor.state.selection
+                                            if (from !== to) {
+                                                // Text is selected, apply color to selection
+                                                editor.chain().focus().setColor(color).run()
+                                            } else {
+                                                // No selection, apply color to next typed text
+                                                editor.chain().focus().setColor(color).run()
+                                            }
                                             setShowColorPicker(false)
                                         }}
                                         className="w-8 h-8 rounded border-2 border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform"
@@ -510,8 +517,8 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             </div>
             
             {/* Editor */}
-            <div className="min-h-[200px] relative w-full min-w-0 overflow-x-auto" id="rich-text-editor-container">
-                <div className="w-full min-w-0 max-w-full">
+            <div className="min-h-[200px] relative w-full min-w-0 max-w-full overflow-x-hidden" id="rich-text-editor-container">
+                <div className="w-full min-w-0 max-w-full overflow-x-hidden">
                     <EditorContent editor={editor} />
                 </div>
                 {!content && placeholder && (

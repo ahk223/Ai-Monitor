@@ -89,9 +89,9 @@ export default function EditNotePage() {
     }
 
     return (
-        <div className="w-full max-w-2xl mx-auto space-y-4 sm:space-y-6 min-w-0">
+        <div className="w-full max-w-2xl mx-auto space-y-4 sm:space-y-6 min-w-0 px-0">
             {/* Header */}
-            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0 w-full">
                 <Link href="/dashboard/notes" className="shrink-0">
                     <Button variant="ghost" size="icon" className="shrink-0">
                         <ArrowRight className="h-5 w-5" />
@@ -103,10 +103,10 @@ export default function EditNotePage() {
             </div>
 
             {/* Form */}
-            <Card className="overflow-hidden w-full min-w-0">
-                <CardContent className="p-3 sm:p-4 md:p-6 min-w-0">
-                    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 min-w-0">
-                        <div className="min-w-0">
+            <Card className="overflow-hidden w-full min-w-0 max-w-full">
+                <CardContent className="p-3 sm:p-4 md:p-6 min-w-0 w-full max-w-full">
+                    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 min-w-0 w-full max-w-full">
+                        <div className="min-w-0 w-full max-w-full">
                             <Input
                                 label="عنوان الملاحظة"
                                 placeholder="اكتب عنوان الملاحظة هنا..."
@@ -116,21 +116,21 @@ export default function EditNotePage() {
                             />
                         </div>
 
-                        <div className="w-full min-w-0">
+                        <div className="w-full min-w-0 max-w-full">
                             <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                                 محتوى الملاحظة
                             </label>
-                            <div className="w-full min-w-0 overflow-hidden">
+                            <div className="w-full min-w-0 max-w-full overflow-hidden">
                                 <RichTextEditor
                                     content={content}
                                     onChange={setContent}
                                     placeholder="اكتب ملاحظتك هنا..."
-                                    className="w-full min-w-0"
+                                    className="w-full min-w-0 max-w-full"
                                 />
                             </div>
                         </div>
 
-                        <div className="min-w-0">
+                        <div className="min-w-0 w-full max-w-full">
                             <Select
                                 label="التصنيف (اختياري)"
                                 value={categoryId}
