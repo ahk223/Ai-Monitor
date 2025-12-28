@@ -92,17 +92,43 @@ function CollapsibleHeadingsHandler({
         if (!editor || !containerRef.current) return
 
         const updateHeadings = () => {
-            // Use setTimeout to ensure DOM is updated
+            // Use setTimeout to ensure DOM is updated after TipTap renders
             setTimeout(() => {
                 const editorElement = containerRef.current?.querySelector('.ProseMirror')
                 if (!editorElement) return
 
-                const headings = editorElement.querySelectorAll('h1, h2, h3')
+                const headings = Array.from(editorElement.querySelectorAll('h1, h2, h3'))
                 
                 headings.forEach((heading, index) => {
                     const headingElement = heading as HTMLElement
                     const headingText = headingElement.textContent?.trim() || ''
                     const headingId = `heading-${index}-${headingText.slice(0, 20).replace(/\s/g, '-')}`
+                    
+                    // Skip if already processed
+                    if (headingElement.getAttribute('data-heading-id') === headingId && headingElement.querySelector('.heading-chevron')) {
+                        // Just update collapsed state
+                        const isCollapsed = collapsedHeadings.has(headingId)
+                        headingElement.classList.toggle('collapsed-heading', isCollapsed)
+                        
+                        // Update chevron
+                        const chevron = headingElement.querySelector('.heading-chevron')
+                        if (chevron) {
+                            chevron.innerHTML = isCollapsed
+                                ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>'
+                                : '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>'
+                        }
+                        
+                        // Update visibility
+                        let nextSibling = headingElement.nextElementSibling
+                        while (nextSibling) {
+                            const nextHeading = nextSibling.querySelector('h1, h2, h3')
+                            if (nextHeading) break
+                            (nextSibling as HTMLElement).style.display = isCollapsed ? 'none' : ''
+                            nextSibling = nextSibling.nextElementSibling
+                        }
+                        return
+                    }
+                    
                     headingElement.setAttribute('data-heading-id', headingId)
                     
                     // Remove existing chevron
@@ -122,19 +148,18 @@ function CollapsibleHeadingsHandler({
                     headingElement.style.cursor = 'pointer'
                     headingElement.appendChild(chevron)
 
-                    // Handle click - remove old handler first
-                    const newHandler = (e: Event) => {
+                    // Handle click
+                    const handleClick = (e: Event) => {
                         e.preventDefault()
                         e.stopPropagation()
                         onToggle(headingId)
                     }
                     
-                    // Remove old click handler
-                    headingElement.onclick = null
-                    headingElement.addEventListener('click', newHandler)
+                    headingElement.addEventListener('click', handleClick)
 
                     // Hide/show content after heading
-                    if (collapsedHeadings.has(headingId)) {
+                    const isCollapsed = collapsedHeadings.has(headingId)
+                    if (isCollapsed) {
                         headingElement.classList.add('collapsed-heading')
                         let nextSibling = headingElement.nextElementSibling
                         while (nextSibling) {
@@ -154,7 +179,7 @@ function CollapsibleHeadingsHandler({
                         }
                     }
                 })
-            }, 100)
+            }, 150)
         }
 
         // Initial update
@@ -225,35 +250,15 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
         })
     }
 
-    // Make toolbar sticky on scroll
+    // Make toolbar sticky on scroll - using CSS sticky should work, but ensure it's applied
     useEffect(() => {
-        if (!toolbarRef.current || !containerRef.current) return
-
-        const handleScroll = () => {
-            const container = containerRef.current
-            const toolbar = toolbarRef.current
-            if (!container || !toolbar) return
-
-            const containerRect = container.getBoundingClientRect()
-            const isScrolling = window.scrollY > containerRect.top
-
-            if (isScrolling && containerRect.top < 0) {
-                toolbar.style.position = 'fixed'
-                toolbar.style.top = '0'
-                toolbar.style.right = `${window.innerWidth - containerRect.right}px`
-                toolbar.style.width = `${containerRect.width}px`
-                toolbar.style.borderRadius = '0'
-            } else {
-                toolbar.style.position = 'sticky'
-                toolbar.style.top = '0'
-                toolbar.style.right = 'auto'
-                toolbar.style.width = 'auto'
-                toolbar.style.borderRadius = ''
-            }
-        }
-
-        window.addEventListener('scroll', handleScroll, { passive: true })
-        return () => window.removeEventListener('scroll', handleScroll)
+        if (!toolbarRef.current) return
+        
+        // Force sticky positioning
+        const toolbar = toolbarRef.current
+        toolbar.style.position = 'sticky'
+        toolbar.style.top = '0'
+        toolbar.style.zIndex = '30'
     }, [])
 
     if (!editor) {
