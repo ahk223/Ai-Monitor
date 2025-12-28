@@ -211,6 +211,9 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     const [colorPickerPos, setColorPickerPos] = useState<{ bottom: number; right: number } | null>(null)
     const [highlightPickerPos, setHighlightPickerPos] = useState<{ bottom: number; right: number } | null>(null)
     const [fontSizeMenuPos, setFontSizeMenuPos] = useState<{ bottom: number; right: number } | null>(null)
+    const [floatingToolbarPos, setFloatingToolbarPos] = useState<{ top: number; left: number } | null>(null)
+    const [showFloatingToolbar, setShowFloatingToolbar] = useState(false)
+    const [showFloatingColorPicker, setShowFloatingColorPicker] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
     const toolbarRef = useRef<HTMLDivElement>(null)
@@ -276,6 +279,46 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
         toolbar.style.top = '0'
         toolbar.style.zIndex = '30'
     }, [])
+
+    // Update floating toolbar position when selection changes
+    useEffect(() => {
+        if (!editor) return
+
+        const updateFloatingToolbar = () => {
+            const { from, to, empty } = editor.state.selection
+
+            if (!empty && from !== to) {
+                // Text is selected, show floating toolbar
+                // Get coordinates at the start of selection
+                const startCoords = editor.view.coordsAtPos(from)
+                // Get coordinates at the end of selection
+                const endCoords = editor.view.coordsAtPos(to)
+                
+                if (startCoords && endCoords) {
+                    // Position toolbar above the selection, centered horizontally
+                    const top = Math.min(startCoords.top, endCoords.top)
+                    const left = (startCoords.left + endCoords.left) / 2
+                    
+                    setFloatingToolbarPos({
+                        top: top - 10,
+                        left: left,
+                    })
+                    setShowFloatingToolbar(true)
+                }
+            } else {
+                setShowFloatingToolbar(false)
+                setShowFloatingColorPicker(false)
+            }
+        }
+
+        editor.on('selectionUpdate', updateFloatingToolbar)
+        editor.on('update', updateFloatingToolbar)
+
+        return () => {
+            editor.off('selectionUpdate', updateFloatingToolbar)
+            editor.off('update', updateFloatingToolbar)
+        }
+    }, [editor])
 
     // Calculate dropdown positions when they open
     useEffect(() => {
@@ -632,6 +675,150 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 />
             </div>
             
+            {/* Floating Toolbar - appears when text is selected */}
+            {showFloatingToolbar && floatingToolbarPos && isMounted && createPortal(
+                <div 
+                    className="fixed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2"
+                    style={{
+                        top: `${floatingToolbarPos.top}px`,
+                        left: `${floatingToolbarPos.left}px`,
+                        transform: 'translate(-50%, -100%)',
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex items-center gap-1 flex-wrap">
+                        {/* Text Color */}
+                        <div className="relative">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                    setShowFloatingColorPicker(!showFloatingColorPicker)
+                                }}
+                                className={showFloatingColorPicker ? "bg-slate-100 dark:bg-slate-800" : ""}
+                                title="لون النص"
+                            >
+                                <Palette className="h-4 w-4" />
+                            </Button>
+                            {showFloatingColorPicker && (
+                                <div 
+                                    className="absolute bottom-full right-0 mb-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[101] p-2 min-w-[180px]"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <div className="grid grid-cols-5 gap-2">
+                                        {["#000000", "#374151", "#6B7280", "#9CA3AF", "#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899"].map((color) => (
+                                            <button
+                                                key={color}
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    if (!editor) return
+                                                    const { from, to } = editor.state.selection
+                                                    if (from !== to) {
+                                                        // Apply color to selected text
+                                                        const { tr } = editor.state
+                                                        const textStyleMark = editor.schema.marks.textStyle
+                                                        const colorMark = editor.schema.marks.color
+                                                        
+                                                        if (textStyleMark && colorMark) {
+                                                            tr.removeMark(from, to, textStyleMark)
+                                                            tr.removeMark(from, to, colorMark)
+                                                            tr.addMark(from, to, colorMark.create({ color }))
+                                                            editor.view.dispatch(tr)
+                                                            editor.view.focus()
+                                                        }
+                                                    }
+                                                    setShowFloatingColorPicker(false)
+                                                }}
+                                                className="w-8 h-8 rounded border-2 border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform"
+                                                style={{ backgroundColor: color }}
+                                                title={color}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Font Size */}
+                        <div className="relative">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                    if (!editor) return
+                                    const { from, to } = editor.state.selection
+                                    if (from !== to) {
+                                        editor.chain().focus().setTextSelection({ from, to }).setFontSize("18px").run()
+                                    }
+                                }}
+                                title="حجم الخط"
+                            >
+                                <Type className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        
+                        {/* Bold */}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                                if (!editor) return
+                                const { from, to } = editor.state.selection
+                                if (from !== to) {
+                                    editor.chain().focus().setTextSelection({ from, to }).toggleBold().run()
+                                }
+                            }}
+                            className={editor.isActive("bold") ? "bg-slate-100 dark:bg-slate-800" : ""}
+                            title="عريض"
+                        >
+                            <Bold className="h-4 w-4" />
+                        </Button>
+                        
+                        {/* Italic */}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                                if (!editor) return
+                                const { from, to } = editor.state.selection
+                                if (from !== to) {
+                                    editor.chain().focus().setTextSelection({ from, to }).toggleItalic().run()
+                                }
+                            }}
+                            className={editor.isActive("italic") ? "bg-slate-100 dark:bg-slate-800" : ""}
+                            title="مائل"
+                        >
+                            <Italic className="h-4 w-4" />
+                        </Button>
+                        
+                        {/* Highlight */}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                                if (!editor) return
+                                const { from, to } = editor.state.selection
+                                if (from !== to) {
+                                    editor.chain().focus().setTextSelection({ from, to }).toggleHighlight().run()
+                                }
+                            }}
+                            className={editor.isActive("highlight") ? "bg-slate-100 dark:bg-slate-800" : ""}
+                            title="تظليل"
+                        >
+                            <Highlighter className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>,
+                document.body
+            )}
+
             {/* Click outside to close menus - backdrop behind dropdowns */}
             {(showColorPicker || showHighlightPicker || showFontSizeMenu) && (
                 <div 
