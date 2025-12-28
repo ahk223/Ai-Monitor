@@ -8,6 +8,7 @@ import Highlight from "@tiptap/extension-highlight"
 import { Bold, Italic, List, ListOrdered, Undo, Redo, Type, Palette, Highlighter, Heading1, Heading2, Heading3, ChevronDown, ChevronRight } from "lucide-react"
 import { Button } from "./button"
 import { useState, useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
 import { Extension } from "@tiptap/core"
 import type { Editor } from "@tiptap/react"
 
@@ -210,6 +211,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     const [colorPickerPos, setColorPickerPos] = useState<{ bottom: number; right: number } | null>(null)
     const [highlightPickerPos, setHighlightPickerPos] = useState<{ bottom: number; right: number } | null>(null)
     const [fontSizeMenuPos, setFontSizeMenuPos] = useState<{ bottom: number; right: number } | null>(null)
+    const [isMounted, setIsMounted] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
     const toolbarRef = useRef<HTMLDivElement>(null)
     const colorButtonRef = useRef<HTMLButtonElement>(null)
@@ -258,6 +260,11 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             return newSet
         })
     }
+
+    // Ensure component is mounted on client
+    useEffect(() => {
+        setIsMounted(true)
+    }, [])
 
     // Make toolbar sticky on scroll - using CSS sticky should work, but ensure it's applied
     useEffect(() => {
@@ -391,7 +398,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     >
                         <Type className="h-4 w-4" />
                     </Button>
-                    {showFontSizeMenu && fontSizeMenuPos && (
+                    {showFontSizeMenu && fontSizeMenuPos && isMounted && createPortal(
                         <div 
                             className="fixed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[120px] max-w-[calc(100vw-2rem)]"
                             onClick={(e) => e.stopPropagation()}
@@ -413,7 +420,8 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                     {size}
                                 </button>
                             ))}
-                        </div>
+                        </div>,
+                        document.body
                     )}
                 </div>
                 
@@ -434,7 +442,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     >
                         <Palette className="h-4 w-4" />
                     </Button>
-                    {showColorPicker && colorPickerPos && (
+                    {showColorPicker && colorPickerPos && isMounted && createPortal(
                         <div 
                             className="fixed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none"
                             onClick={(e) => e.stopPropagation()}
@@ -480,7 +488,8 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                             >
                                 إزالة اللون
                             </button>
-                        </div>
+                        </div>,
+                        document.body
                     )}
                 </div>
                 
@@ -501,7 +510,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     >
                         <Highlighter className="h-4 w-4" />
                     </Button>
-                    {showHighlightPicker && highlightPickerPos && (
+                    {showHighlightPicker && highlightPickerPos && isMounted && createPortal(
                         <div 
                             className="fixed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none"
                             onClick={(e) => e.stopPropagation()}
@@ -535,7 +544,8 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                             >
                                 إزالة التظليل
                             </button>
-                        </div>
+                        </div>,
+                        document.body
                     )}
                 </div>
                 <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
