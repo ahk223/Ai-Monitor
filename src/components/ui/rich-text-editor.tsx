@@ -8,6 +8,7 @@ import Highlight from "@tiptap/extension-highlight"
 import { Bold, Italic, List, ListOrdered, Undo, Redo, Type, Palette, Highlighter, Heading1, Heading2, Heading3, ChevronDown, ChevronRight } from "lucide-react"
 import { Button } from "./button"
 import { useState, useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
 import { Extension } from "@tiptap/core"
 import type { Editor } from "@tiptap/react"
 
@@ -207,8 +208,14 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     const [showHighlightPicker, setShowHighlightPicker] = useState(false)
     const [showFontSizeMenu, setShowFontSizeMenu] = useState(false)
     const [collapsedHeadings, setCollapsedHeadings] = useState<Set<string>>(new Set())
+    const [colorPickerPosition, setColorPickerPosition] = useState<{ bottom: number; right: number } | null>(null)
+    const [highlightPickerPosition, setHighlightPickerPosition] = useState<{ bottom: number; right: number } | null>(null)
+    const [fontSizeMenuPosition, setFontSizeMenuPosition] = useState<{ bottom: number; right: number } | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const toolbarRef = useRef<HTMLDivElement>(null)
+    const colorButtonRef = useRef<HTMLButtonElement>(null)
+    const highlightButtonRef = useRef<HTMLButtonElement>(null)
+    const fontSizeButtonRef = useRef<HTMLButtonElement>(null)
 
     const editor = useEditor({
         immediatelyRender: false,
@@ -334,6 +341,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 {/* Font Size */}
                 <div className="relative">
                     <Button
+                        ref={fontSizeButtonRef}
                         type="button"
                         variant="ghost"
                         size="sm"
@@ -347,10 +355,14 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     >
                         <Type className="h-4 w-4" />
                     </Button>
-                    {showFontSizeMenu && (
+                    {showFontSizeMenu && fontSizeMenuPosition && (
                         <div 
-                            className="absolute bottom-full right-0 mb-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[120px] max-w-[calc(100vw-2rem)]"
+                            className="fixed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[120px] max-w-[calc(100vw-2rem)]"
                             onClick={(e) => e.stopPropagation()}
+                            style={{
+                                bottom: `${fontSizeMenuPosition.bottom}px`,
+                                right: `${fontSizeMenuPosition.right}px`,
+                            }}
                         >
                             {["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"].map((size) => (
                                 <button
@@ -372,6 +384,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 {/* Text Color */}
                 <div className="relative">
                     <Button
+                        ref={colorButtonRef}
                         type="button"
                         variant="ghost"
                         size="sm"
@@ -385,10 +398,14 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     >
                         <Palette className="h-4 w-4" />
                     </Button>
-                    {showColorPicker && (
+                    {showColorPicker && colorPickerPosition && (
                         <div 
-                            className="absolute bottom-full right-0 mb-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none"
+                            className="fixed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none"
                             onClick={(e) => e.stopPropagation()}
+                            style={{
+                                bottom: `${colorPickerPosition.bottom}px`,
+                                right: `${colorPickerPosition.right}px`,
+                            }}
                         >
                             <div className="grid grid-cols-5 gap-2">
                                 {["#000000", "#374151", "#6B7280", "#9CA3AF", "#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899"].map((color) => (
@@ -434,6 +451,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 {/* Highlight Color */}
                 <div className="relative">
                     <Button
+                        ref={highlightButtonRef}
                         type="button"
                         variant="ghost"
                         size="sm"
@@ -447,10 +465,14 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     >
                         <Highlighter className="h-4 w-4" />
                     </Button>
-                    {showHighlightPicker && (
+                    {showHighlightPicker && highlightPickerPosition && (
                         <div 
-                            className="absolute bottom-full right-0 mb-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none"
+                            className="fixed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[100] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none"
                             onClick={(e) => e.stopPropagation()}
+                            style={{
+                                bottom: `${highlightPickerPosition.bottom}px`,
+                                right: `${highlightPickerPosition.right}px`,
+                            }}
                         >
                             <div className="grid grid-cols-5 gap-2">
                                 {["#FEF08A", "#FDE047", "#FCD34D", "#FBBF24", "#FED7AA", "#FCA5A5", "#F9A8D4", "#C4B5FD", "#A5B4FC", "#93C5FD"].map((color) => (
