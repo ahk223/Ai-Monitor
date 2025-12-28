@@ -44,7 +44,9 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
             })
             
             // Also check for headings that might have color in child spans
-            const headings = containerRef.current.querySelectorAll('h1, h2, h3')
+            // CRITICAL: TipTap Color extension saves colors in spans inside headings, not on headings directly
+            // So we need to find spans with colors and apply the color to the heading itself
+            const headings = containerRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6')
             headings.forEach((heading) => {
                 const htmlHeading = heading as HTMLElement
                 let hasColor = false
@@ -62,18 +64,32 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
                     }
                 }
                 
-                // Check for spans inside headings with colors
+                // CRITICAL: Check for spans inside headings with colors
+                // TipTap Color extension saves colors in spans, so we need to apply span color to heading
                 const spansInHeading = htmlHeading.querySelectorAll('span[style*="color"]')
-                spansInHeading.forEach((span) => {
-                    const htmlSpan = span as HTMLElement
-                    const spanStyle = htmlSpan.getAttribute('style')
+                if (spansInHeading.length > 0) {
+                    // Get the first span's color and apply it to the heading
+                    const firstSpan = spansInHeading[0] as HTMLElement
+                    const spanStyle = firstSpan.getAttribute('style')
                     if (spanStyle && spanStyle.includes('color:')) {
                         const colorMatch = spanStyle.match(/color:\s*([^;]+)/)
                         if (colorMatch) {
                             const spanColorValue = colorMatch[1].trim()
-                            htmlSpan.style.setProperty('color', spanColorValue, 'important')
-                            // If heading doesn't have color, apply span color to heading
-                            if (!hasColor) {
+                            // Apply color to all spans in heading
+                            spansInHeading.forEach((span) => {
+                                const htmlSpan = span as HTMLElement
+                                const sStyle = htmlSpan.getAttribute('style')
+                                if (sStyle && sStyle.includes('color:')) {
+                                    const sColorMatch = sStyle.match(/color:\s*([^;]+)/)
+                                    if (sColorMatch) {
+                                        const sColorValue = sColorMatch[1].trim()
+                                        htmlSpan.style.setProperty('color', sColorValue, 'important')
+                                    }
+                                }
+                            })
+                            // CRITICAL: Apply the span color to the heading itself
+                            // This ensures the heading shows the correct color even if prose tries to override it
+                            if (!hasColor || colorValue !== spanColorValue) {
                                 colorValue = spanColorValue
                                 htmlHeading.style.setProperty('color', colorValue, 'important')
                                 hasColor = true
@@ -81,7 +97,7 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
                             htmlHeading.classList.add('has-custom-color')
                         }
                     }
-                })
+                }
                 
                 // Store color value for hover preservation
                 if (hasColor && colorValue) {
@@ -180,12 +196,14 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
         applyColors()
         
         // Use setTimeout to ensure DOM is fully rendered
-        // Apply multiple times to ensure colors stick
+        // Apply multiple times to ensure colors stick, especially for headings with colored spans
         const timeoutId1 = setTimeout(applyColors, 0)
         const timeoutId2 = setTimeout(applyColors, 10)
         const timeoutId3 = setTimeout(applyColors, 50)
         const timeoutId4 = setTimeout(applyColors, 100)
         const timeoutId5 = setTimeout(applyColors, 200)
+        const timeoutId6 = setTimeout(applyColors, 300)
+        const timeoutId7 = setTimeout(applyColors, 500)
         
         // Use MutationObserver to watch for DOM changes
         let observer: MutationObserver | null = null
@@ -207,6 +225,8 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
             clearTimeout(timeoutId3)
             clearTimeout(timeoutId4)
             clearTimeout(timeoutId5)
+            clearTimeout(timeoutId6)
+            clearTimeout(timeoutId7)
             if (observer) {
                 observer.disconnect()
             }

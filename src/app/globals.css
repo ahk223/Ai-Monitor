@@ -317,6 +317,8 @@ input[type="number"] {
 /* Headings might have colors applied directly or in spans inside them */
 /* Remove default prose colors and hover effects for headings with custom colors */
 /* Override ALL prose styles for headings with custom colors */
+/* IMPORTANT: TipTap Color extension saves colors in spans inside headings, not on headings directly */
+/* So we need to ensure headings with colored spans inherit the color properly */
 .prose h1[style*="color"],
 .prose-sm h1[style*="color"],
 .prose-base h1[style*="color"],
@@ -344,6 +346,65 @@ input[type="number"] {
   /* Force inline color styles to be respected in headings */
   /* Remove any hover effects that might override the color */
   /* JavaScript will apply colors with !important */
+}
+
+/* CRITICAL: Headings with colored spans inside should not have default prose colors */
+/* TipTap Color extension saves colors in spans, so we need to ensure headings inherit from spans */
+.prose h1:has(span[style*="color"]),
+.prose-sm h1:has(span[style*="color"]),
+.prose-base h1:has(span[style*="color"]),
+.prose-lg h1:has(span[style*="color"]),
+.prose h2:has(span[style*="color"]),
+.prose-sm h2:has(span[style*="color"]),
+.prose-base h2:has(span[style*="color"]),
+.prose-lg h2:has(span[style*="color"]),
+.prose h3:has(span[style*="color"]),
+.prose-sm h3:has(span[style*="color"]),
+.prose-base h3:has(span[style*="color"]),
+.prose-lg h3:has(span[style*="color"]),
+.prose h4:has(span[style*="color"]),
+.prose-sm h4:has(span[style*="color"]),
+.prose-base h4:has(span[style*="color"]),
+.prose-lg h4:has(span[style*="color"]),
+.prose h5:has(span[style*="color"]),
+.prose-sm h5:has(span[style*="color"]),
+.prose-base h5:has(span[style*="color"]),
+.prose-lg h5:has(span[style*="color"]),
+.prose h6:has(span[style*="color"]),
+.prose-sm h6:has(span[style*="color"]),
+.prose-base h6:has(span[style*="color"]),
+.prose-lg h6:has(span[style*="color"]) {
+  /* Remove default prose colors from headings that contain colored spans */
+  /* JavaScript will apply the span color to the heading itself */
+  color: inherit !important;
+}
+
+.dark .prose h1:has(span[style*="color"]),
+.dark .prose-sm h1:has(span[style*="color"]),
+.dark .prose-base h1:has(span[style*="color"]),
+.dark .prose-lg h1:has(span[style*="color"]),
+.dark .prose h2:has(span[style*="color"]),
+.dark .prose-sm h2:has(span[style*="color"]),
+.dark .prose-base h2:has(span[style*="color"]),
+.dark .prose-lg h2:has(span[style*="color"]),
+.dark .prose h3:has(span[style*="color"]),
+.dark .prose-sm h3:has(span[style*="color"]),
+.dark .prose-base h3:has(span[style*="color"]),
+.dark .prose-lg h3:has(span[style*="color"]),
+.dark .prose h4:has(span[style*="color"]),
+.dark .prose-sm h4:has(span[style*="color"]),
+.dark .prose-base h4:has(span[style*="color"]),
+.dark .prose-lg h4:has(span[style*="color"]),
+.dark .prose h5:has(span[style*="color"]),
+.dark .prose-sm h5:has(span[style*="color"]),
+.dark .prose-base h5:has(span[style*="color"]),
+.dark .prose-lg h5:has(span[style*="color"]),
+.dark .prose h6:has(span[style*="color"]),
+.dark .prose-sm h6:has(span[style*="color"]),
+.dark .prose-base h6:has(span[style*="color"]),
+.dark .prose-lg h6:has(span[style*="color"]) {
+  /* Remove default prose colors from headings that contain colored spans in dark mode */
+  color: inherit !important;
 }
 
 /* Remove hover effects on headings with custom colors */
@@ -533,8 +594,21 @@ input[type="number"] {
 .prose h3 span[style*="color"],
 .prose-sm h3 span[style*="color"],
 .prose-base h3 span[style*="color"],
-.prose-lg h3 span[style*="color"] {
+.prose-lg h3 span[style*="color"],
+.prose h4 span[style*="color"],
+.prose-sm h4 span[style*="color"],
+.prose-base h4 span[style*="color"],
+.prose-lg h4 span[style*="color"],
+.prose h5 span[style*="color"],
+.prose-sm h5 span[style*="color"],
+.prose-base h5 span[style*="color"],
+.prose-lg h5 span[style*="color"],
+.prose h6 span[style*="color"],
+.prose-sm h6 span[style*="color"],
+.prose-base h6 span[style*="color"],
+.prose-lg h6 span[style*="color"] {
   /* Inline styles should work automatically - they have highest specificity */
+  /* JavaScript will apply colors with !important to ensure they override prose defaults */
 }
 
 /* Preserve highlight/background colors in prose */
