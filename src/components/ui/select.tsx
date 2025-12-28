@@ -13,7 +13,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     ({ className, label, error, options, placeholder, ...props }, ref) => {
         return (
-            <div className="w-full">
+            <div className="w-full min-w-0">
                 {label && (
                     <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                         {label}

@@ -231,7 +231,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
         },
         editorProps: {
             attributes: {
-                class: "prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[200px] p-3 sm:p-4 max-w-full overflow-wrap break-words",
+                class: "prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl max-w-none focus:outline-none min-h-[200px] p-3 sm:p-4 w-full overflow-wrap break-words",
                 placeholder: placeholder || "اكتب هنا...",
             },
         },
@@ -266,7 +266,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     }
 
     return (
-        <div ref={containerRef} className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""} relative w-full max-w-full overflow-hidden flex flex-col`}>
+        <div ref={containerRef} className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""} relative w-full max-w-full min-w-0 overflow-hidden flex flex-col`}>
             {/* Toolbar - Sticky at top */}
             <div 
                 ref={toolbarRef}
@@ -386,8 +386,18 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                     <button
                                         key={color}
                                         type="button"
-                                        onClick={() => {
-                                            editor.chain().focus().setColor(color).run()
+                                        onClick={(e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation()
+                                            // Apply color to selected text or current position
+                                            const { from, to } = editor.state.selection
+                                            if (from !== to) {
+                                                // Text is selected, apply color to selection
+                                                editor.chain().focus().setColor(color).run()
+                                            } else {
+                                                // No selection, apply color to next typed text
+                                                editor.chain().focus().setColor(color).run()
+                                            }
                                             setShowColorPicker(false)
                                         }}
                                         className="w-8 h-8 rounded border-2 border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform"
@@ -505,8 +515,8 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             </div>
             
             {/* Editor */}
-            <div className="min-h-[200px] relative w-full overflow-x-auto" id="rich-text-editor-container">
-                <div className="w-full min-w-0">
+            <div className="min-h-[200px] relative w-full min-w-0 overflow-x-auto" id="rich-text-editor-container">
+                <div className="w-full min-w-0 max-w-full">
                     <EditorContent editor={editor} />
                 </div>
                 {!content && placeholder && (

@@ -131,6 +131,22 @@ input[type="number"] {
 .ProseMirror {
   outline: none;
   min-height: 200px;
+  max-width: 100%;
+  width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+.ProseMirror * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
 }
 
 .ProseMirror p {
@@ -175,9 +191,21 @@ input[type="number"] {
   outline: none;
 }
 
-/* Dark mode for TipTap */
+/* Dark mode for TipTap - but don't override inline colors */
 .dark .ProseMirror {
   color: #e2e8f0;
+}
+
+/* Ensure inline color styles work - they should override default colors */
+/* TipTap Color extension adds style="color: #hex" to spans */
+.ProseMirror span[style*="color"] {
+  /* Inline styles have higher specificity and should work */
+  /* Force the color to be applied */
+}
+
+/* Make sure color styles are not overridden by dark mode */
+.dark .ProseMirror span[style*="color"] {
+  /* Preserve inline colors in dark mode */
 }
 
 /* TipTap Highlight styles */

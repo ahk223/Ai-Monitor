@@ -89,54 +89,58 @@ export default function EditNotePage() {
     }
 
     return (
-        <div className="w-full max-w-2xl mx-auto space-y-4 sm:space-y-6">
+        <div className="w-full max-w-2xl mx-auto space-y-4 sm:space-y-6 min-w-0">
             {/* Header */}
-            <div className="flex items-center gap-2 sm:gap-4">
-                <Link href="/dashboard/notes">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                <Link href="/dashboard/notes" className="shrink-0">
                     <Button variant="ghost" size="icon" className="shrink-0">
                         <ArrowRight className="h-5 w-5" />
                     </Button>
                 </Link>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 dark:text-white truncate">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 dark:text-white truncate min-w-0 flex-1">
                     تعديل الملاحظة
                 </h1>
             </div>
 
             {/* Form */}
-            <Card className="overflow-hidden w-full">
-                <CardContent className="p-3 sm:p-4 md:p-6">
-                    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-                        <Input
-                            label="عنوان الملاحظة"
-                            placeholder="اكتب عنوان الملاحظة هنا..."
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            required
-                        />
+            <Card className="overflow-hidden w-full min-w-0">
+                <CardContent className="p-3 sm:p-4 md:p-6 min-w-0">
+                    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 min-w-0">
+                        <div className="min-w-0">
+                            <Input
+                                label="عنوان الملاحظة"
+                                placeholder="اكتب عنوان الملاحظة هنا..."
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                required
+                            />
+                        </div>
 
-                        <div className="w-full">
+                        <div className="w-full min-w-0">
                             <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                                 محتوى الملاحظة
                             </label>
-                            <div className="w-full overflow-hidden">
+                            <div className="w-full min-w-0 overflow-hidden">
                                 <RichTextEditor
                                     content={content}
                                     onChange={setContent}
                                     placeholder="اكتب ملاحظتك هنا..."
-                                    className="w-full"
+                                    className="w-full min-w-0"
                                 />
                             </div>
                         </div>
 
-                        <Select
-                            label="التصنيف (اختياري)"
-                            value={categoryId}
-                            onChange={(e) => setCategoryId(e.target.value)}
-                            options={[
-                                { value: "", label: "بدون تصنيف" },
-                                ...categories.map(cat => ({ value: cat.id, label: cat.name }))
-                            ]}
-                        />
+                        <div className="min-w-0">
+                            <Select
+                                label="التصنيف (اختياري)"
+                                value={categoryId}
+                                onChange={(e) => setCategoryId(e.target.value)}
+                                options={[
+                                    { value: "", label: "بدون تصنيف" },
+                                    ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+                                ]}
+                            />
+                        </div>
 
                         <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                             <Link href="/dashboard/notes" className="w-full sm:w-auto">
