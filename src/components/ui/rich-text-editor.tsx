@@ -526,13 +526,18 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                             if (from !== to) {
                                                 // Text is selected - apply color using transaction
                                                 const { tr } = editor.state
+                                                const textStyleMark = editor.schema.marks.textStyle
                                                 const colorMark = editor.schema.marks.color
                                                 
-                                                if (colorMark) {
-                                                    // Remove existing color marks in the selection
+                                                if (textStyleMark && colorMark) {
+                                                    // Remove existing marks
+                                                    tr.removeMark(from, to, textStyleMark)
                                                     tr.removeMark(from, to, colorMark)
-                                                    // Add new color mark with explicit color attribute
-                                                    tr.addMark(from, to, colorMark.create({ color: color }))
+                                                    
+                                                    // Create a new mark that combines textStyle and color
+                                                    // Color extension extends TextStyle, so we need both
+                                                    const mark = colorMark.create({ color: color })
+                                                    tr.addMark(from, to, mark)
                                                     editor.view.dispatch(tr)
                                                     editor.view.focus()
                                                 } else {

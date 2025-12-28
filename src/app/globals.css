@@ -239,6 +239,7 @@ input[type="number"] {
 
 /* Make sure color styles are not overridden by dark mode */
 /* Inline styles should override the default dark mode color */
+/* Inline styles have the highest specificity and should work automatically */
 .dark .ProseMirror span[style*="color"] {
   /* Inline color styles should override dark mode default color */
   /* The inline style attribute has higher specificity than CSS rules */
