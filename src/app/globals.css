@@ -195,6 +195,40 @@ input[type="number"] {
   /* The JavaScript code will apply colors with !important */
 }
 
+/* CRITICAL: Ensure colors work in headings H1, H2, H3 */
+/* Headings might have colors applied directly or in spans inside them */
+.prose h1[style*="color"],
+.prose-sm h1[style*="color"],
+.prose-base h1[style*="color"],
+.prose-lg h1[style*="color"],
+.prose h2[style*="color"],
+.prose-sm h2[style*="color"],
+.prose-base h2[style*="color"],
+.prose-lg h2[style*="color"],
+.prose h3[style*="color"],
+.prose-sm h3[style*="color"],
+.prose-base h3[style*="color"],
+.prose-lg h3[style*="color"] {
+  /* Force inline color styles to be respected in headings */
+  /* JavaScript will apply colors with !important */
+}
+
+.dark .prose h1[style*="color"],
+.dark .prose-sm h1[style*="color"],
+.dark .prose-base h1[style*="color"],
+.dark .prose-lg h1[style*="color"],
+.dark .prose h2[style*="color"],
+.dark .prose-sm h2[style*="color"],
+.dark .prose-base h2[style*="color"],
+.dark .prose-lg h2[style*="color"],
+.dark .prose h3[style*="color"],
+.dark .prose-sm h3[style*="color"],
+.dark .prose-base h3[style*="color"],
+.dark .prose-lg h3[style*="color"] {
+  /* Force inline color styles to be respected in headings in dark mode */
+  /* JavaScript will apply colors with !important */
+}
+
 .prose *[style*="background-color"],
 .prose-sm *[style*="background-color"],
 .prose-base *[style*="background-color"],

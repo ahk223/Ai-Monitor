@@ -26,6 +26,7 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
             if (!containerRef.current) return
             
             // Find all elements with inline color styles and ensure they're preserved
+            // This includes headings H1, H2, H3, spans, and any other elements
             const elementsWithColor = containerRef.current.querySelectorAll('[style*="color"]')
             elementsWithColor.forEach((el) => {
                 const htmlEl = el as HTMLElement
@@ -36,9 +37,38 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
                     if (colorMatch) {
                         const colorValue = colorMatch[1].trim()
                         // Force the color to be applied with !important using setProperty
+                        // This works for all elements including headings H1, H2, H3
                         htmlEl.style.setProperty('color', colorValue, 'important')
                     }
                 }
+            })
+            
+            // Also check for headings that might have color in child spans
+            const headings = containerRef.current.querySelectorAll('h1, h2, h3')
+            headings.forEach((heading) => {
+                const htmlHeading = heading as HTMLElement
+                // Check if heading itself has color
+                const headingStyle = htmlHeading.getAttribute('style')
+                if (headingStyle && headingStyle.includes('color:')) {
+                    const colorMatch = headingStyle.match(/color:\s*([^;]+)/)
+                    if (colorMatch) {
+                        const colorValue = colorMatch[1].trim()
+                        htmlHeading.style.setProperty('color', colorValue, 'important')
+                    }
+                }
+                // Check for spans inside headings with colors
+                const spansInHeading = htmlHeading.querySelectorAll('span[style*="color"]')
+                spansInHeading.forEach((span) => {
+                    const htmlSpan = span as HTMLElement
+                    const spanStyle = htmlSpan.getAttribute('style')
+                    if (spanStyle && spanStyle.includes('color:')) {
+                        const colorMatch = spanStyle.match(/color:\s*([^;]+)/)
+                        if (colorMatch) {
+                            const colorValue = colorMatch[1].trim()
+                            htmlSpan.style.setProperty('color', colorValue, 'important')
+                        }
+                    }
+                })
             })
             
             // Find all elements with inline background-color styles
