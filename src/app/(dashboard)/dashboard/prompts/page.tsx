@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
 import { collection, query, where, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore"
-import { Card, CardContent, Button, Input, Badge } from "@/components/ui"
+import { Card, CardContent, Button, Input, Badge, Modal } from "@/components/ui"
 import {
     Plus,
     Search,
@@ -17,6 +17,10 @@ import {
     Loader2,
     Image as ImageIcon,
     Heart,
+    Share2,
+    Check,
+    Globe,
+    Lock,
 } from "lucide-react"
 import Link from "next/link"
 import { formatRelativeTime } from "@/lib/utils"
@@ -35,6 +39,8 @@ interface Prompt {
     createdAt: Date
     isArchived: boolean
     isFavorite?: boolean
+    shareCode?: string
+    isPublic?: boolean
 }
 
 interface Category {
@@ -60,6 +66,8 @@ export default function PromptsPage() {
     const [search, setSearch] = useState("")
     const [selectedCategory, setSelectedCategory] = useState("")
     const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string | null }>({ isOpen: false, id: null })
+    const [shareModal, setShareModal] = useState<{ isOpen: boolean; prompt: Prompt | null }>({ isOpen: false, prompt: null })
+    const [copied, setCopied] = useState(false)
     
     const { toggleFavorite } = useToggleFavorite(prompts, setPrompts, {
         collectionName: "prompts",
@@ -171,6 +179,51 @@ export default function PromptsPage() {
         } catch (error) {
             console.error("Error deleting prompt:", error)
             showToast("حدث خطأ أثناء الحذف", "error")
+        }
+    }
+
+    const handleTogglePublic = async (prompt: Prompt) => {
+        if (!prompt.shareCode) {
+            // Generate share code if doesn't exist
+            const shareCode = Math.random().toString(36).substring(2, 10)
+            try {
+                await updateDoc(doc(db, "prompts", prompt.id), {
+                    shareCode,
+                    isPublic: !prompt.isPublic,
+                })
+                setPrompts(prompts.map(p => p.id === prompt.id ? { ...p, shareCode, isPublic: !prompt.isPublic } : p))
+                showToast("تم تحديث إعدادات المشاركة", "success")
+            } catch (error) {
+                console.error("Error updating share settings:", error)
+                showToast("حدث خطأ أثناء التحديث", "error")
+            }
+        } else {
+            try {
+                await updateDoc(doc(db, "prompts", prompt.id), {
+                    isPublic: !prompt.isPublic,
+                })
+                setPrompts(prompts.map(p => p.id === prompt.id ? { ...p, isPublic: !prompt.isPublic } : p))
+                showToast("تم تحديث إعدادات المشاركة", "success")
+            } catch (error) {
+                console.error("Error updating share settings:", error)
+                showToast("حدث خطأ أثناء التحديث", "error")
+            }
+        }
+    }
+
+    const getShareUrl = (prompt: Prompt) => {
+        if (typeof window !== "undefined" && prompt.shareCode) {
+            return `${window.location.origin}/shared/prompt/${prompt.shareCode}`
+        }
+        return ""
+    }
+
+    const handleCopyLink = (prompt: Prompt) => {
+        const url = getShareUrl(prompt)
+        if (url) {
+            navigator.clipboard.writeText(url)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
         }
     }
 
@@ -336,6 +389,16 @@ export default function PromptsPage() {
                                                 <Heart className={`h-4 w-4 ${prompt.isFavorite ? "fill-red-500" : ""}`} />
                                             </button>
                                             <button
+                                                onClick={(e) => {
+                                                    e.preventDefault()
+                                                    setShareModal({ isOpen: true, prompt })
+                                                }}
+                                                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                                                title="مشاركة"
+                                            >
+                                                <Share2 className="h-4 w-4" />
+                                            </button>
+                                            <button
                                                 onClick={() => handleCopy(prompt.content)}
                                                 className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                                                 title="نسخ"
@@ -379,6 +442,90 @@ export default function PromptsPage() {
                 cancelText="إلغاء"
                 variant="danger"
             />
+
+            {/* Share Modal */}
+            <Modal
+                isOpen={shareModal.isOpen}
+                onClose={() => {
+                    setShareModal({ isOpen: false, prompt: null })
+                    setCopied(false)
+                }}
+                title="مشاركة البروبمت"
+            >
+                {shareModal.prompt && (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                حالة المشاركة
+                            </label>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => handleTogglePublic(shareModal.prompt!)}
+                                    className={`flex items-center gap-2 rounded-lg px-4 py-2 transition-colors ${
+                                        shareModal.prompt.isPublic
+                                            ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
+                                            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                                    }`}
+                                >
+                                    {shareModal.prompt.isPublic ? (
+                                        <>
+                                            <Globe className="h-4 w-4" />
+                                            عام
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Lock className="h-4 w-4" />
+                                            خاص
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {shareModal.prompt.isPublic && shareModal.prompt.shareCode && (
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    رابط المشاركة
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        value={getShareUrl(shareModal.prompt)}
+                                        className="flex-1 rounded-lg border-2 border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+                                    />
+                                    <Button
+                                        onClick={() => handleCopyLink(shareModal.prompt!)}
+                                        variant="outline"
+                                        size="sm"
+                                    >
+                                        {copied ? (
+                                            <>
+                                                <Check className="h-4 w-4" />
+                                                تم النسخ
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Copy className="h-4 w-4" />
+                                                نسخ
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                                <p className="mt-2 text-xs text-slate-500">
+                                    شارك هذا الرابط مع الآخرين لعرض البروبمت
+                                </p>
+                            </div>
+                        )}
+
+                        {!shareModal.prompt.isPublic && (
+                            <p className="text-sm text-slate-500">
+                                قم بتفعيل المشاركة العامة لعرض رابط المشاركة
+                            </p>
+                        )}
+                    </div>
+                )}
+            </Modal>
         </div>
     )
 }

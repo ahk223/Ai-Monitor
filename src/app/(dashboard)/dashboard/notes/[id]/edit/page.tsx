@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
 import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore"
-import { Card, CardContent, Button, Textarea, Select, Input } from "@/components/ui"
+import { Card, CardContent, Button, Select, Input, RichTextEditor } from "@/components/ui"
 import { ArrowRight, Save, Loader2 } from "lucide-react"
 import Link from "next/link"
 
@@ -114,14 +114,16 @@ export default function EditNotePage() {
                             required
                         />
 
-                        <Textarea
-                            label="محتوى الملاحظة"
-                            placeholder="اكتب ملاحظتك هنا..."
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            className="min-h-[200px]"
-                            required
-                        />
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                محتوى الملاحظة
+                            </label>
+                            <RichTextEditor
+                                content={content}
+                                onChange={setContent}
+                                placeholder="اكتب ملاحظتك هنا..."
+                            />
+                        </div>
 
                         <Select
                             label="التصنيف (اختياري)"

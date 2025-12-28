@@ -5,8 +5,8 @@ import { useAuth } from "@/contexts/AuthContext"
 import { db } from "@/lib/firebase"
 import { collection, query, where, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore"
 import Link from "next/link"
-import { Card, CardContent, Badge, Button } from "@/components/ui"
-import { Plus, StickyNote, Trash2, Loader2, Pencil, Heart } from "lucide-react"
+import { Card, CardContent, Badge, Button, Modal } from "@/components/ui"
+import { Plus, StickyNote, Trash2, Loader2, Pencil, Heart, Share2, Copy, Check, Globe, Lock } from "lucide-react"
 import { linkifyContent } from "@/lib/linkify"
 import { useToast, ConfirmModal } from "@/components/ui"
 import { useToggleFavorite } from "@/hooks/useToggleFavorite"
@@ -18,6 +18,8 @@ interface Note {
     categoryId: string | null
     createdAt: Date
     isFavorite?: boolean
+    shareCode?: string
+    isPublic?: boolean
 }
 
 interface Category {
@@ -34,6 +36,8 @@ export default function NotesPage() {
     const [loading, setLoading] = useState(true)
     const [selectedCategory, setSelectedCategory] = useState<string>("")
     const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string | null }>({ isOpen: false, id: null })
+    const [shareModal, setShareModal] = useState<{ isOpen: boolean; note: Note | null }>({ isOpen: false, note: null })
+    const [copied, setCopied] = useState(false)
     
     const { toggleFavorite } = useToggleFavorite(notes, setNotes, {
         collectionName: "notes",
@@ -105,6 +109,51 @@ export default function NotesPage() {
         if (!categoryId) return "#6366f1"
         const cat = categories.find(c => c.id === categoryId)
         return cat?.color || "#6366f1"
+    }
+
+    const handleTogglePublic = async (note: Note) => {
+        if (!note.shareCode) {
+            // Generate share code if doesn't exist
+            const shareCode = Math.random().toString(36).substring(2, 10)
+            try {
+                await updateDoc(doc(db, "notes", note.id), {
+                    shareCode,
+                    isPublic: !note.isPublic,
+                })
+                setNotes(notes.map(n => n.id === note.id ? { ...n, shareCode, isPublic: !note.isPublic } : n))
+                showToast("تم تحديث إعدادات المشاركة", "success")
+            } catch (error) {
+                console.error("Error updating share settings:", error)
+                showToast("حدث خطأ أثناء التحديث", "error")
+            }
+        } else {
+            try {
+                await updateDoc(doc(db, "notes", note.id), {
+                    isPublic: !note.isPublic,
+                })
+                setNotes(notes.map(n => n.id === note.id ? { ...n, isPublic: !note.isPublic } : n))
+                showToast("تم تحديث إعدادات المشاركة", "success")
+            } catch (error) {
+                console.error("Error updating share settings:", error)
+                showToast("حدث خطأ أثناء التحديث", "error")
+            }
+        }
+    }
+
+    const getShareUrl = (note: Note) => {
+        if (typeof window !== "undefined" && note.shareCode) {
+            return `${window.location.origin}/shared/note/${note.shareCode}`
+        }
+        return ""
+    }
+
+    const handleCopyLink = (note: Note) => {
+        const url = getShareUrl(note)
+        if (url) {
+            navigator.clipboard.writeText(url)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        }
     }
 
     const filteredNotes = selectedCategory
@@ -202,9 +251,10 @@ export default function NotesPage() {
                                 <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
                                     {note.title || "ملاحظة بدون عنوان"}
                                 </h3>
-                                <p className="whitespace-pre-wrap text-slate-600 dark:text-slate-400 text-sm line-clamp-3">
-                                    {linkifyContent(note.content)}
-                                </p>
+                                <div 
+                                    className="text-slate-600 dark:text-slate-400 text-sm line-clamp-3 prose prose-sm max-w-none dark:prose-invert"
+                                    dangerouslySetInnerHTML={{ __html: note.content }}
+                                />
                                 <p className="mt-3 text-xs text-slate-400">
                                     {note.createdAt.toLocaleDateString("ar-SA")}
                                 </p>
@@ -222,11 +272,19 @@ export default function NotesPage() {
                                     <Heart className={`h-4 w-4 ${note.isFavorite ? "fill-red-500" : ""}`} />
                                 </button>
                                 
-                                {/* Edit and Delete buttons */}
+                                {/* Edit, Share and Delete buttons */}
                                 <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={() => setShareModal({ isOpen: true, note })}
+                                        className="rounded-lg p-2 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/30"
+                                        title="مشاركة"
+                                    >
+                                        <Share2 className="h-4 w-4" />
+                                    </button>
                                     <Link href={`/dashboard/notes/${note.id}/edit`}>
                                         <button
                                             className="rounded-lg p-2 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/30"
+                                            title="تعديل"
                                         >
                                             <Pencil className="h-4 w-4" />
                                         </button>
@@ -234,6 +292,7 @@ export default function NotesPage() {
                                     <button
                                         onClick={() => setDeleteModal({ isOpen: true, id: note.id })}
                                         className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                                        title="حذف"
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </button>
@@ -260,6 +319,90 @@ export default function NotesPage() {
                 cancelText="إلغاء"
                 variant="danger"
             />
+
+            {/* Share Modal */}
+            <Modal
+                isOpen={shareModal.isOpen}
+                onClose={() => {
+                    setShareModal({ isOpen: false, note: null })
+                    setCopied(false)
+                }}
+                title="مشاركة الملاحظة"
+            >
+                {shareModal.note && (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                حالة المشاركة
+                            </label>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => handleTogglePublic(shareModal.note!)}
+                                    className={`flex items-center gap-2 rounded-lg px-4 py-2 transition-colors ${
+                                        shareModal.note.isPublic
+                                            ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
+                                            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                                    }`}
+                                >
+                                    {shareModal.note.isPublic ? (
+                                        <>
+                                            <Globe className="h-4 w-4" />
+                                            عام
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Lock className="h-4 w-4" />
+                                            خاص
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {shareModal.note.isPublic && shareModal.note.shareCode && (
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    رابط المشاركة
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        value={getShareUrl(shareModal.note)}
+                                        className="flex-1 rounded-lg border-2 border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+                                    />
+                                    <Button
+                                        onClick={() => handleCopyLink(shareModal.note!)}
+                                        variant="outline"
+                                        size="sm"
+                                    >
+                                        {copied ? (
+                                            <>
+                                                <Check className="h-4 w-4" />
+                                                تم النسخ
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Copy className="h-4 w-4" />
+                                                نسخ
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                                <p className="mt-2 text-xs text-slate-500">
+                                    شارك هذا الرابط مع الآخرين لعرض الملاحظة
+                                </p>
+                            </div>
+                        )}
+
+                        {!shareModal.note.isPublic && (
+                            <p className="text-sm text-slate-500">
+                                قم بتفعيل المشاركة العامة لعرض رابط المشاركة
+                            </p>
+                        )}
+                    </div>
+                )}
+            </Modal>
         </div>
     )
 }

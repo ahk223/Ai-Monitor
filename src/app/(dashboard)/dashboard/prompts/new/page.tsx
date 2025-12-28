@@ -81,6 +81,9 @@ export default function NewPromptPage() {
             // Generate new prompt ID
             const promptId = doc(collection(db, "prompts")).id
 
+            // Generate share code
+            const shareCode = Math.random().toString(36).substring(2, 10)
+
             // Create prompt document
             await setDoc(doc(db, "prompts", promptId), {
                 id: promptId,
@@ -93,6 +96,8 @@ export default function NewPromptPage() {
                 usageCount: 0,
                 isArchived: false,
                 isFavorite: false,
+                shareCode,
+                isPublic: false,
                 createdAt: new Date(),
                 updatedAt: new Date(),
             })
