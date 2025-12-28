@@ -192,7 +192,7 @@ export default function NoteDetailPage() {
                             {note.title || "ملاحظة بدون عنوان"}
                         </h1>
                         <p className="mt-1 text-sm text-slate-500">
-                            {note.createdAt.toLocaleDateString("ar-SA", {
+                            {note.createdAt.toLocaleDateString("en-US", {
                                 year: "numeric",
                                 month: "long",
                                 day: "numeric",

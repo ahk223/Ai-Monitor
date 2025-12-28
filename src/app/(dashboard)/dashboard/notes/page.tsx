@@ -260,7 +260,7 @@ export default function NotesPage() {
                                     />
                                 </Link>
                                 <p className="mt-3 text-xs text-slate-400">
-                                    {note.createdAt.toLocaleDateString("ar-SA")}
+                                    {note.createdAt.toLocaleDateString("en-US")}
                                 </p>
 
                                 {/* Favorite Button */}

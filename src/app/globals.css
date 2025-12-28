@@ -144,6 +144,11 @@ input[type="number"] {
   box-sizing: border-box;
 }
 
+/* Ensure color styles are preserved - don't override inline styles */
+.ProseMirror *[style*="color"] {
+  /* Preserve inline color styles */
+}
+
 .ProseMirror img {
   max-width: 100%;
   height: auto;
@@ -191,21 +196,26 @@ input[type="number"] {
   outline: none;
 }
 
-/* Dark mode for TipTap - but don't override inline colors */
+/* Dark mode for TipTap - default text color */
 .dark .ProseMirror {
   color: #e2e8f0;
 }
 
-/* Ensure inline color styles work - they should override default colors */
-/* TipTap Color extension adds style="color: #hex" to spans */
-.ProseMirror span[style*="color"] {
-  /* Inline styles have higher specificity and should work */
-  /* Force the color to be applied */
+/* Ensure inline color styles work - TipTap Color extension adds style="color: #hex" to spans */
+/* Inline styles have higher specificity and should work automatically */
+/* But we need to make sure they're not overridden by other CSS rules */
+.ProseMirror span[style*="color"],
+.ProseMirror [style*="color"] {
+  /* Inline styles should work - they have the highest specificity */
+  /* Don't add any color property here that would override inline styles */
 }
 
 /* Make sure color styles are not overridden by dark mode */
-.dark .ProseMirror span[style*="color"] {
-  /* Preserve inline colors in dark mode */
+/* Inline styles should override the default dark mode color */
+.dark .ProseMirror span[style*="color"],
+.dark .ProseMirror [style*="color"] {
+  /* Inline color styles should override dark mode default color */
+  /* Don't override - let inline styles work */
 }
 
 /* TipTap Highlight styles */

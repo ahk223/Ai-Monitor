@@ -218,7 +218,9 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 },
             }),
             TextStyle,
-            Color,
+            Color.configure({
+                types: ['textStyle'],
+            }),
             Highlight.configure({
                 multicolor: true,
             }),
@@ -398,6 +400,10 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                                 // No selection, apply color to next typed text
                                                 editor.chain().focus().setColor(color).run()
                                             }
+                                            // Force editor update
+                                            setTimeout(() => {
+                                                editor.view.dispatch(editor.state.tr)
+                                            }, 0)
                                             setShowColorPicker(false)
                                         }}
                                         className="w-8 h-8 rounded border-2 border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform"

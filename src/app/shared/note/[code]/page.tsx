@@ -160,7 +160,7 @@ export default function SharedNotePage() {
                     <CardContent className="py-6">
                         <CollapsibleNoteContent content={note.content} />
                         <p className="mt-6 text-xs text-slate-400">
-                            {note.createdAt.toLocaleDateString("ar-SA", {
+                            {note.createdAt.toLocaleDateString("en-US", {
                                 year: "numeric",
                                 month: "long",
                                 day: "numeric",
