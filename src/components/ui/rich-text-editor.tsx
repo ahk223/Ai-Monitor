@@ -83,9 +83,9 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     }
 
     return (
-        <div className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""}`}>
-            {/* Toolbar */}
-            <div className="flex items-center gap-1 p-2 border-b border-slate-200 dark:border-slate-700 flex-wrap relative">
+        <div className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""} relative`}>
+            {/* Toolbar - Sticky */}
+            <div className="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center gap-1 p-2 flex-wrap rounded-t-xl">
                 {/* Headings */}
                 <Button
                     type="button"
@@ -148,14 +148,18 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => setShowFontSizeMenu(!showFontSizeMenu)}
+                        onClick={() => {
+                            setShowFontSizeMenu(!showFontSizeMenu)
+                            setShowColorPicker(false)
+                            setShowHighlightPicker(false)
+                        }}
                         className={showFontSizeMenu ? "bg-slate-100 dark:bg-slate-800" : ""}
                         title="حجم الخط"
                     >
                         <Type className="h-4 w-4" />
                     </Button>
                     {showFontSizeMenu && (
-                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2 min-w-[120px]">
+                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[60] p-2 min-w-[120px]">
                             {["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"].map((size) => (
                                 <button
                                     key={size}
@@ -179,15 +183,19 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => setShowColorPicker(!showColorPicker)}
+                        onClick={() => {
+                            setShowColorPicker(!showColorPicker)
+                            setShowHighlightPicker(false)
+                            setShowFontSizeMenu(false)
+                        }}
                         className={showColorPicker ? "bg-slate-100 dark:bg-slate-800" : ""}
                         title="لون النص"
                     >
                         <Palette className="h-4 w-4" />
                     </Button>
                     {showColorPicker && (
-                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2">
-                            <div className="grid grid-cols-4 gap-2">
+                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[60] p-2 min-w-[180px]">
+                            <div className="grid grid-cols-5 gap-2">
                                 {["#000000", "#374151", "#6B7280", "#9CA3AF", "#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899"].map((color) => (
                                     <button
                                         key={color}
@@ -198,6 +206,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                         }}
                                         className="w-8 h-8 rounded border-2 border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform"
                                         style={{ backgroundColor: color }}
+                                        title={color}
                                     />
                                 ))}
                             </div>
@@ -221,15 +230,19 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => setShowHighlightPicker(!showHighlightPicker)}
+                        onClick={() => {
+                            setShowHighlightPicker(!showHighlightPicker)
+                            setShowColorPicker(false)
+                            setShowFontSizeMenu(false)
+                        }}
                         className={editor.isActive("highlight") || showHighlightPicker ? "bg-slate-100 dark:bg-slate-800" : ""}
                         title="تظليل النص"
                     >
                         <Highlighter className="h-4 w-4" />
                     </Button>
                     {showHighlightPicker && (
-                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2">
-                            <div className="grid grid-cols-4 gap-2">
+                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[60] p-2 min-w-[180px]">
+                            <div className="grid grid-cols-5 gap-2">
                                 {["#FEF08A", "#FDE047", "#FCD34D", "#FBBF24", "#FED7AA", "#FCA5A5", "#F9A8D4", "#C4B5FD", "#A5B4FC", "#93C5FD"].map((color) => (
                                     <button
                                         key={color}
@@ -240,6 +253,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                         }}
                                         className="w-8 h-8 rounded border-2 border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform"
                                         style={{ backgroundColor: color }}
+                                        title={color}
                                     />
                                 ))}
                             </div>
@@ -317,7 +331,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             {/* Click outside to close menus */}
             {(showColorPicker || showHighlightPicker || showFontSizeMenu) && (
                 <div 
-                    className="fixed inset-0 z-40" 
+                    className="fixed inset-0 z-[55]" 
                     onClick={() => {
                         setShowColorPicker(false)
                         setShowHighlightPicker(false)
