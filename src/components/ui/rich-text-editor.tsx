@@ -233,7 +233,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
         },
         editorProps: {
             attributes: {
-                class: "prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl max-w-none focus:outline-none min-h-[200px] p-3 sm:p-4 w-full overflow-wrap break-words",
+                class: "max-w-none focus:outline-none min-h-[200px] p-3 sm:p-4 w-full overflow-wrap break-words",
                 placeholder: placeholder || "اكتب هنا...",
             },
         },
@@ -372,6 +372,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         variant="ghost"
                         size="sm"
                         onClick={() => {
+                            if (!editor) return
                             setShowColorPicker(!showColorPicker)
                             setShowHighlightPicker(false)
                             setShowFontSizeMenu(false)
@@ -381,8 +382,8 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     >
                         <Palette className="h-4 w-4" />
                     </Button>
-                    {showColorPicker && (
-                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[60] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none">
+                    {showColorPicker && editor && (
+                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[70] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none">
                             <div className="grid grid-cols-5 gap-2">
                                 {["#000000", "#374151", "#6B7280", "#9CA3AF", "#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899"].map((color) => (
                                     <button
@@ -392,6 +393,8 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                             e.preventDefault()
                                             e.stopPropagation()
                                             // Apply color to selected text or current position
+                                            if (!editor) return
+                                            
                                             const { from, to } = editor.state.selection
                                             if (from !== to) {
                                                 // Text is selected, apply color to selection
@@ -538,7 +541,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             {/* Click outside to close menus */}
             {(showColorPicker || showHighlightPicker || showFontSizeMenu) && (
                 <div 
-                    className="fixed inset-0 z-[55]" 
+                    className="fixed inset-0 z-[65]" 
                     onClick={() => {
                         setShowColorPicker(false)
                         setShowHighlightPicker(false)

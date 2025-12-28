@@ -13,6 +13,15 @@ export function formatDate(date: Date | string): string {
     })
 }
 
+export function formatDateEnglish(date: Date | string): string {
+    const dateObj = new Date(date)
+    return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    }).format(dateObj)
+}
+
 export function formatRelativeTime(date: Date | string): string {
     const now = new Date()
     const target = new Date(date)

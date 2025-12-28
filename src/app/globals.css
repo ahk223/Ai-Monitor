@@ -145,16 +145,17 @@ input[type="number"] {
 .ProseMirror {
   outline: none;
   min-height: 200px;
-  max-width: 100%;
-  width: 100%;
+  max-width: 100% !important;
+  width: 100% !important;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
   box-sizing: border-box;
+  overflow-x: hidden !important;
 }
 
 .ProseMirror * {
-  max-width: 100%;
+  max-width: 100% !important;
   box-sizing: border-box;
 }
 
@@ -164,9 +165,21 @@ input[type="number"] {
   /* Preserve inline color styles - inline styles have highest specificity */
 }
 
-.ProseMirror img {
-  max-width: 100%;
+.ProseMirror img,
+.ProseMirror video,
+.ProseMirror iframe {
+  max-width: 100% !important;
   height: auto;
+}
+
+/* Override prose max-width */
+.prose,
+.prose-sm,
+.prose-base,
+.prose-lg,
+.prose-xl,
+.prose-2xl {
+  max-width: 100% !important;
 }
 
 .ProseMirror p {
@@ -219,21 +232,16 @@ input[type="number"] {
 
 /* Ensure inline color styles work - TipTap Color extension adds style="color: #hex" to spans */
 /* Inline styles have the highest specificity and should work automatically */
-/* We need to ensure that no CSS rule overrides them */
-/* The inline style attribute should work without any CSS interference */
-.ProseMirror span[style*="color"],
-.ProseMirror [style*="color"] {
+/* We need to make sure they're not overridden by other CSS rules */
+.ProseMirror span[style*="color"] {
   /* Inline styles should work - they have the highest specificity */
-  /* Don't add any color property here that would override inline styles */
 }
 
 /* Make sure color styles are not overridden by dark mode */
 /* Inline styles should override the default dark mode color */
-.dark .ProseMirror span[style*="color"],
-.dark .ProseMirror [style*="color"] {
+.dark .ProseMirror span[style*="color"] {
   /* Inline color styles should override dark mode default color */
-  /* The inline style attribute has higher specificity than this CSS rule */
-  /* Don't add any color property here that would override inline styles */
+  /* The inline style attribute has higher specificity than CSS rules */
 }
 
 /* TipTap Highlight styles */

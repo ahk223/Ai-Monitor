@@ -10,6 +10,7 @@ import {
     Loader2,
     Lock,
 } from "lucide-react"
+import { formatDateEnglish } from "@/lib/utils"
 
 interface Note {
     id: string
@@ -160,11 +161,7 @@ export default function SharedNotePage() {
                     <CardContent className="py-6">
                         <CollapsibleNoteContent content={note.content} />
                         <p className="mt-6 text-xs text-slate-400">
-                            {note.createdAt.toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                            })}
+                            {formatDateEnglish(note.createdAt)}
                         </p>
                     </CardContent>
                 </Card>

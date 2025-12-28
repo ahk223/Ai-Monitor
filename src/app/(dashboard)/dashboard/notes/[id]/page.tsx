@@ -9,6 +9,7 @@ import { Card, CardContent, Badge, Button, CollapsibleNoteContent } from "@/comp
 import { ArrowRight, Edit2, Share2, Trash2, Loader2, Heart, Globe, Lock, Copy, Check } from "lucide-react"
 import Link from "next/link"
 import { useToast, ConfirmModal, Modal } from "@/components/ui"
+import { formatDateEnglish } from "@/lib/utils"
 
 interface Note {
     id: string
@@ -192,11 +193,7 @@ export default function NoteDetailPage() {
                             {note.title || "ملاحظة بدون عنوان"}
                         </h1>
                         <p className="mt-1 text-sm text-slate-500">
-                            {note.createdAt.toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                            })}
+                            {formatDateEnglish(note.createdAt)}
                         </p>
                     </div>
                 </div>

@@ -10,6 +10,7 @@ import { Plus, StickyNote, Trash2, Loader2, Pencil, Heart, Share2, Copy, Check, 
 import { linkifyContent } from "@/lib/linkify"
 import { useToast, ConfirmModal } from "@/components/ui"
 import { useToggleFavorite } from "@/hooks/useToggleFavorite"
+import { formatDateEnglish } from "@/lib/utils"
 
 interface Note {
     id: string
@@ -260,7 +261,7 @@ export default function NotesPage() {
                                     />
                                 </Link>
                                 <p className="mt-3 text-xs text-slate-400">
-                                    {note.createdAt.toLocaleDateString("en-US")}
+                                    {formatDateEnglish(note.createdAt)}
                                 </p>
 
                                 {/* Favorite Button */}
