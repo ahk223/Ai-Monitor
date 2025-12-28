@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { ChevronDown, ChevronRight, Copy, Check } from "lucide-react"
 
 interface CollapsibleNoteContentProps {
@@ -115,12 +115,118 @@ function processHTMLForView(html: string): string {
 export function CollapsibleNoteContent({ content, className }: CollapsibleNoteContentProps) {
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
     const [copiedSectionId, setCopiedSectionId] = useState<string | null>(null)
+    const containerRef = useRef<HTMLDivElement>(null)
     
     // Process content HTML before rendering to transfer span colors to headings
     const processedContent = useMemo(() => {
         if (!content) return ''
-        return processHTMLForView(content)
+        
+        // DIAGNOSTIC: Print original content (first 600 chars)
+        console.log('=== (A) ORIGINAL CONTENT (first 600 chars) ===')
+        console.log(content.substring(0, 600))
+        
+        const processed = processHTMLForView(content)
+        
+        // DIAGNOSTIC: Print processed content (first 600 chars)
+        console.log('=== (A) PROCESSED CONTENT (first 600 chars) ===')
+        console.log(processed.substring(0, 600))
+        
+        // DIAGNOSTIC: Check if headings have style attribute
+        const parser = new DOMParser()
+        const doc = parser.parseFromString(processed, "text/html")
+        const headings = doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6')
+        console.log(`=== (A) Found ${headings.length} headings in processed content ===`)
+        headings.forEach((heading, idx) => {
+            const htmlHeading = heading as HTMLElement
+            const style = htmlHeading.getAttribute('style') || ''
+            const hasColor = style.includes('color:')
+            console.log(`Heading ${idx + 1} (${heading.tagName}): style="${style.substring(0, 100)}"`, hasColor ? '✅ HAS COLOR' : '❌ NO COLOR')
+            console.log(`  outerHTML: ${htmlHeading.outerHTML.substring(0, 200)}`)
+        })
+        
+        return processed
     }, [content])
+    
+    // DIAGNOSTIC: Check DOM after render
+    useEffect(() => {
+        if (!containerRef.current) return
+        
+        // Wait a bit for DOM to be ready
+        const timeoutId = setTimeout(() => {
+            const container = containerRef.current
+            if (!container) return
+            
+            console.log('=== (B) DOM INSPECTION AFTER RENDER ===')
+            
+            // Find all headings in the rendered DOM
+            const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6')
+            console.log(`Found ${headings.length} headings in DOM`)
+            
+            headings.forEach((heading, idx) => {
+                const htmlHeading = heading as HTMLElement
+                const computedStyle = window.getComputedStyle(htmlHeading)
+                const computedColor = computedStyle.color
+                const inlineStyle = htmlHeading.getAttribute('style') || ''
+                
+                console.log(`\n--- Heading ${idx + 1} (${heading.tagName}) ---`)
+                console.log(`outerHTML: ${htmlHeading.outerHTML.substring(0, 300)}`)
+                console.log(`inline style attribute: "${inlineStyle}"`)
+                console.log(`getComputedStyle(heading).color: "${computedColor}"`)
+                
+                // Check for spans inside
+                const spans = htmlHeading.querySelectorAll('span')
+                if (spans.length > 0) {
+                    spans.forEach((span, spanIdx) => {
+                        const htmlSpan = span as HTMLElement
+                        const spanComputedStyle = window.getComputedStyle(htmlSpan)
+                        const spanComputedColor = spanComputedStyle.color
+                        const spanInlineStyle = htmlSpan.getAttribute('style') || ''
+                        console.log(`  Span ${spanIdx + 1}: style="${spanInlineStyle.substring(0, 100)}"`)
+                        console.log(`  Span ${spanIdx + 1}: computed color="${spanComputedColor}"`)
+                    })
+                }
+                
+                // Check which CSS rules are applying
+                const allRules = []
+                for (let sheet of document.styleSheets) {
+                    try {
+                        for (let rule of sheet.cssRules) {
+                            if (rule instanceof CSSStyleRule) {
+                                try {
+                                    if (htmlHeading.matches(rule.selectorText)) {
+                                        if (rule.style.color) {
+                                            allRules.push({
+                                                selector: rule.selectorText,
+                                                color: rule.style.color,
+                                                specificity: rule.selectorText.split(' ').length,
+                                                source: sheet.href || 'inline'
+                                            })
+                                        }
+                                    }
+                                } catch (e) {
+                                    // Ignore cross-origin errors
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // Ignore cross-origin errors
+                    }
+                }
+                
+                if (allRules.length > 0) {
+                    console.log(`\n=== (C) CSS RULES APPLYING COLOR TO THIS HEADING ===`)
+                    allRules.sort((a, b) => b.specificity - a.specificity)
+                    allRules.forEach((rule, ruleIdx) => {
+                        console.log(`${ruleIdx + 1}. ${rule.selector} -> color: ${rule.color} (specificity: ${rule.specificity}, source: ${rule.source})`)
+                    })
+                } else {
+                    console.log(`\n=== (C) NO CSS RULES FOUND APPLYING COLOR ===`)
+                }
+            })
+        }, 100)
+        
+        return () => clearTimeout(timeoutId)
+    }, [processedContent, expandedSections])
 
     const sections = useMemo(() => {
         if (!content) return []
@@ -236,6 +342,7 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
     if (sections.length === 0) {
         return (
             <div
+                ref={containerRef}
                 className={`prose prose-sm sm:prose-base lg:prose-lg max-w-none dark:prose-invert ${className || ""}`}
                 dangerouslySetInnerHTML={{ __html: processedContent }}
             />
@@ -244,7 +351,7 @@ export function CollapsibleNoteContent({ content, className }: CollapsibleNoteCo
 
     // Render with collapsible sections
     return (
-        <div className={`space-y-2 ${className || ""}`}>
+        <div ref={containerRef} className={`space-y-2 ${className || ""}`}>
             {sections.map((section) => {
                 const isExpanded = expandedSections.has(section.id)
                 const headingSize = section.level === 1 ? "text-xl" : section.level === 2 ? "text-lg" : "text-base"
