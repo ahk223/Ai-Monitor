@@ -519,34 +519,14 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                         onClick={(e) => {
                                             e.preventDefault()
                                             e.stopPropagation()
-                                            // Apply color to selected text or current position
                                             if (!editor) return
                                             
-                                            const { from, to } = editor.state.selection
-                                            if (from !== to) {
-                                                // Text is selected, apply color to selection
-                                                // Use transaction to apply color mark directly to the selected range
-                                                const { tr } = editor.state
-                                                const textStyleMark = editor.schema.marks.textStyle
-                                                const colorMark = editor.schema.marks.color
-                                                
-                                                if (textStyleMark && colorMark) {
-                                                    // Remove existing marks
-                                                    tr.removeMark(from, to, textStyleMark)
-                                                    tr.removeMark(from, to, colorMark)
-                                                    
-                                                    // Add color mark (which extends textStyle)
-                                                    tr.addMark(from, to, colorMark.create({ color }))
-                                                    editor.view.dispatch(tr)
-                                                    editor.view.focus()
-                                                } else {
-                                                    // Fallback to chain API
-                                                    editor.chain().focus().setTextSelection({ from, to }).setColor(color).run()
-                                                }
-                                            } else {
-                                                // No selection, apply color to next typed text
-                                                editor.chain().focus().setColor(color).run()
-                                            }
+                                            // Use setMark with color extension directly
+                                            editor.chain()
+                                                .focus()
+                                                .setMark('color', { color })
+                                                .run()
+                                            
                                             setShowColorPicker(false)
                                         }}
                                         className="w-8 h-8 rounded border-2 border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform"
@@ -818,31 +798,13 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                     e.preventDefault()
                                     e.stopPropagation()
                                     if (!editor) return
-                                    const { from, to } = editor.state.selection
-                                    if (from !== to) {
-                                        // Text is selected, apply color to selection
-                                        // Use transaction to apply color mark directly to the selected range
-                                        const { tr } = editor.state
-                                        const textStyleMark = editor.schema.marks.textStyle
-                                        const colorMark = editor.schema.marks.color
-                                        
-                                        if (textStyleMark && colorMark) {
-                                            // Remove existing marks
-                                            tr.removeMark(from, to, textStyleMark)
-                                            tr.removeMark(from, to, colorMark)
-                                            
-                                            // Add color mark (which extends textStyle)
-                                            tr.addMark(from, to, colorMark.create({ color }))
-                                            editor.view.dispatch(tr)
-                                            editor.view.focus()
-                                        } else {
-                                            // Fallback to chain API
-                                            editor.chain().focus().setTextSelection({ from, to }).setColor(color).run()
-                                        }
-                                    } else {
-                                        // No selection, apply color to next typed text
-                                        editor.chain().focus().setColor(color).run()
-                                    }
+                                    
+                                    // Use setMark with color extension directly
+                                    editor.chain()
+                                        .focus()
+                                        .setMark('color', { color })
+                                        .run()
+                                    
                                     setShowFloatingColorPicker(false)
                                 }}
                                 className="w-8 h-8 rounded border-2 border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform"
