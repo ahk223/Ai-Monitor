@@ -89,22 +89,22 @@ export default function EditNotePage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="max-w-2xl mx-auto space-y-6 px-4 sm:px-6 lg:px-0">
             {/* Header */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
                 <Link href="/dashboard/notes">
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" className="shrink-0">
                         <ArrowRight className="h-5 w-5" />
                     </Button>
                 </Link>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
                     تعديل الملاحظة
                 </h1>
             </div>
 
             {/* Form */}
             <Card>
-                <CardContent>
+                <CardContent className="pt-6">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <Input
                             label="عنوان الملاحظة"
@@ -135,14 +135,14 @@ export default function EditNotePage() {
                             ]}
                         />
 
-                        <div className="flex justify-end gap-3">
-                            <Link href="/dashboard/notes">
-                                <Button variant="outline" type="button">
+                        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <Link href="/dashboard/notes" className="w-full sm:w-auto">
+                                <Button variant="outline" type="button" className="w-full sm:w-auto">
                                     إلغاء
                                 </Button>
                             </Link>
-                            <Button type="submit" isLoading={saving}>
-                                <Save className="h-4 w-4" />
+                            <Button type="submit" isLoading={saving} className="w-full sm:w-auto">
+                                <Save className="h-4 w-4 ml-2" />
                                 حفظ التعديلات
                             </Button>
                         </div>

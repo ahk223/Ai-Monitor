@@ -7,7 +7,7 @@ import { Color } from "@tiptap/extension-color"
 import Highlight from "@tiptap/extension-highlight"
 import { Bold, Italic, List, ListOrdered, Undo, Redo, Type, Palette, Highlighter, Heading1, Heading2, Heading3, ChevronDown, ChevronRight } from "lucide-react"
 import { Button } from "./button"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Extension } from "@tiptap/core"
 import type { Editor } from "@tiptap/react"
 
@@ -80,19 +80,21 @@ const CollapsibleHeading = Extension.create({
 function CollapsibleHeadingsHandler({ 
     editor, 
     collapsedHeadings, 
-    onToggle 
+    onToggle,
+    containerRef
 }: { 
     editor: Editor | null
     collapsedHeadings: Set<string>
     onToggle: (id: string) => void
+    containerRef: React.RefObject<HTMLDivElement | null>
 }) {
     useEffect(() => {
-        if (!editor) return
+        if (!editor || !containerRef.current) return
 
         const updateHeadings = () => {
             // Use setTimeout to ensure DOM is updated
             setTimeout(() => {
-                const editorElement = document.querySelector('.ProseMirror')
+                const editorElement = containerRef.current?.querySelector('.ProseMirror')
                 if (!editorElement) return
 
                 const headings = editorElement.querySelectorAll('h1, h2, h3')
@@ -120,14 +122,16 @@ function CollapsibleHeadingsHandler({
                     headingElement.style.cursor = 'pointer'
                     headingElement.appendChild(chevron)
 
-                    // Handle click
-                    const handleHeadingClick = (e: Event) => {
+                    // Handle click - remove old handler first
+                    const newHandler = (e: Event) => {
                         e.preventDefault()
                         e.stopPropagation()
                         onToggle(headingId)
                     }
                     
-                    headingElement.onclick = handleHeadingClick
+                    // Remove old click handler
+                    headingElement.onclick = null
+                    headingElement.addEventListener('click', newHandler)
 
                     // Hide/show content after heading
                     if (collapsedHeadings.has(headingId)) {
@@ -168,7 +172,7 @@ function CollapsibleHeadingsHandler({
             editor.off('update', updateHandler)
             editor.off('selectionUpdate', updateHandler)
         }
-    }, [editor, collapsedHeadings, onToggle])
+    }, [editor, collapsedHeadings, onToggle, containerRef])
 
     return null
 }
@@ -178,6 +182,8 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     const [showHighlightPicker, setShowHighlightPicker] = useState(false)
     const [showFontSizeMenu, setShowFontSizeMenu] = useState(false)
     const [collapsedHeadings, setCollapsedHeadings] = useState<Set<string>>(new Set())
+    const containerRef = useRef<HTMLDivElement>(null)
+    const toolbarRef = useRef<HTMLDivElement>(null)
 
     const editor = useEditor({
         extensions: [
@@ -200,7 +206,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
         },
         editorProps: {
             attributes: {
-                class: "prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[200px] p-4",
+                class: "prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[200px] p-3 sm:p-4",
                 placeholder: placeholder || "اكتب هنا...",
             },
         },
@@ -219,14 +225,48 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
         })
     }
 
+    // Make toolbar sticky on scroll
+    useEffect(() => {
+        if (!toolbarRef.current || !containerRef.current) return
+
+        const handleScroll = () => {
+            const container = containerRef.current
+            const toolbar = toolbarRef.current
+            if (!container || !toolbar) return
+
+            const containerRect = container.getBoundingClientRect()
+            const isScrolling = window.scrollY > containerRect.top
+
+            if (isScrolling && containerRect.top < 0) {
+                toolbar.style.position = 'fixed'
+                toolbar.style.top = '0'
+                toolbar.style.right = `${window.innerWidth - containerRect.right}px`
+                toolbar.style.width = `${containerRect.width}px`
+                toolbar.style.borderRadius = '0'
+            } else {
+                toolbar.style.position = 'sticky'
+                toolbar.style.top = '0'
+                toolbar.style.right = 'auto'
+                toolbar.style.width = 'auto'
+                toolbar.style.borderRadius = ''
+            }
+        }
+
+        window.addEventListener('scroll', handleScroll, { passive: true })
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
+
     if (!editor) {
         return null
     }
 
     return (
-        <div className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""} relative flex flex-col`}>
-            {/* Toolbar - Sticky */}
-            <div className="sticky top-0 z-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center gap-1 p-2 flex-wrap rounded-t-xl shadow-sm">
+        <div ref={containerRef} className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""} relative`}>
+            {/* Toolbar - Sticky at top */}
+            <div 
+                ref={toolbarRef}
+                className="sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center gap-1 p-2 flex-wrap rounded-t-xl shadow-md"
+            >
                 {/* Headings */}
                 <Button
                     type="button"
@@ -300,7 +340,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         <Type className="h-4 w-4" />
                     </Button>
                     {showFontSizeMenu && (
-                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[60] p-2 min-w-[120px]">
+                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[60] p-2 min-w-[120px] max-w-[calc(100vw-2rem)]">
                             {["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"].map((size) => (
                                 <button
                                     key={size}
@@ -335,7 +375,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         <Palette className="h-4 w-4" />
                     </Button>
                     {showColorPicker && (
-                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[60] p-2 min-w-[180px]">
+                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[60] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none">
                             <div className="grid grid-cols-5 gap-2">
                                 {["#000000", "#374151", "#6B7280", "#9CA3AF", "#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899"].map((color) => (
                                     <button
@@ -382,7 +422,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         <Highlighter className="h-4 w-4" />
                     </Button>
                     {showHighlightPicker && (
-                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[60] p-2 min-w-[180px]">
+                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-[60] p-2 min-w-[180px] max-w-[calc(100vw-2rem)] sm:max-w-none">
                             <div className="grid grid-cols-5 gap-2">
                                 {["#FEF08A", "#FDE047", "#FCD34D", "#FBBF24", "#FED7AA", "#FCA5A5", "#F9A8D4", "#C4B5FD", "#A5B4FC", "#93C5FD"].map((color) => (
                                     <button
@@ -463,12 +503,17 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
             <div className="min-h-[200px] relative" id="rich-text-editor-container">
                 <EditorContent editor={editor} />
                 {!content && placeholder && (
-                    <div className="absolute top-4 right-4 text-slate-400 pointer-events-none">
+                    <div className="absolute top-3 right-3 sm:top-4 sm:right-4 text-slate-400 pointer-events-none text-sm sm:text-base">
                         {placeholder}
                     </div>
                 )}
                 {/* Collapsible Headings Handler */}
-                <CollapsibleHeadingsHandler editor={editor} collapsedHeadings={collapsedHeadings} onToggle={toggleHeadingCollapse} />
+                <CollapsibleHeadingsHandler 
+                    editor={editor} 
+                    collapsedHeadings={collapsedHeadings} 
+                    onToggle={toggleHeadingCollapse}
+                    containerRef={containerRef}
+                />
             </div>
             
             {/* Click outside to close menus */}
