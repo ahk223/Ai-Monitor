@@ -465,7 +465,12 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                                             const { from, to } = editor.state.selection
                                             if (from !== to) {
                                                 // Text is selected, apply color to selection
-                                                editor.chain().focus().setColor(color).run()
+                                                // Use setTextSelection to maintain selection, then setColor
+                                                editor.chain()
+                                                    .setTextSelection({ from, to })
+                                                    .focus()
+                                                    .setColor(color)
+                                                    .run()
                                             } else {
                                                 // No selection, apply color to next typed text
                                                 editor.chain().focus().setColor(color).run()
