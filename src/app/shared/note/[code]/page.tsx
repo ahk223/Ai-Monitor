@@ -4,13 +4,12 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { db } from "@/lib/firebase"
 import { collection, query, where, getDocs } from "firebase/firestore"
-import { Card, CardContent, Badge } from "@/components/ui"
+import { Card, CardContent, Badge, CollapsibleNoteContent } from "@/components/ui"
 import {
     StickyNote,
     Loader2,
     Lock,
 } from "lucide-react"
-import { linkifyContent } from "@/lib/linkify"
 
 interface Note {
     id: string
@@ -159,10 +158,7 @@ export default function SharedNotePage() {
                 {/* Content */}
                 <Card>
                     <CardContent className="py-6">
-                        <div 
-                            className="prose prose-sm sm:prose-base lg:prose-lg max-w-none dark:prose-invert"
-                            dangerouslySetInnerHTML={{ __html: note.content }}
-                        />
+                        <CollapsibleNoteContent content={note.content} />
                         <p className="mt-6 text-xs text-slate-400">
                             {note.createdAt.toLocaleDateString("ar-SA", {
                                 year: "numeric",

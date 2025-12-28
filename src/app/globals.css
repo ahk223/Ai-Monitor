@@ -179,3 +179,40 @@ input[type="number"] {
 .dark .ProseMirror {
   color: #e2e8f0;
 }
+
+/* TipTap Highlight styles */
+.ProseMirror mark {
+  background-color: #FEF08A;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.dark .ProseMirror mark {
+  background-color: #FCD34D;
+  color: #1e293b;
+}
+
+/* TipTap Heading styles */
+.ProseMirror h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+
+.ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}

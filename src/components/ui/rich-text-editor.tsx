@@ -4,8 +4,10 @@ import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import { TextStyle } from "@tiptap/extension-text-style"
 import { Color } from "@tiptap/extension-color"
-import { Bold, Italic, List, ListOrdered, Undo, Redo } from "lucide-react"
+import Highlight from "@tiptap/extension-highlight"
+import { Bold, Italic, List, ListOrdered, Undo, Redo, Type, Palette, Highlighter, Heading1, Heading2, Heading3 } from "lucide-react"
 import { Button } from "./button"
+import { useState } from "react"
 
 interface RichTextEditorProps {
     content: string
@@ -14,12 +16,55 @@ interface RichTextEditorProps {
     className?: string
 }
 
+// Custom FontSize extension
+const FontSize = TextStyle.extend({
+    addAttributes() {
+        return {
+            ...this.parent?.(),
+            fontSize: {
+                default: null,
+                parseHTML: element => element.style.fontSize,
+                renderHTML: attributes => {
+                    if (!attributes.fontSize) {
+                        return {}
+                    }
+                    return {
+                        style: `font-size: ${attributes.fontSize}`,
+                    }
+                },
+            },
+        }
+    },
+    addCommands() {
+        return {
+            setFontSize: (fontSize: string) => ({ commands }) => {
+                return commands.setMark(this.name, { fontSize })
+            },
+            unsetFontSize: () => ({ commands }) => {
+                return commands.unsetMark(this.name)
+            },
+        }
+    },
+})
+
 export function RichTextEditor({ content, onChange, placeholder, className }: RichTextEditorProps) {
+    const [showColorPicker, setShowColorPicker] = useState(false)
+    const [showHighlightPicker, setShowHighlightPicker] = useState(false)
+    const [showFontSizeMenu, setShowFontSizeMenu] = useState(false)
+
     const editor = useEditor({
         extensions: [
-            StarterKit,
+            StarterKit.configure({
+                heading: {
+                    levels: [1, 2, 3],
+                },
+            }),
             TextStyle,
             Color,
+            Highlight.configure({
+                multicolor: true,
+            }),
+            FontSize,
         ],
         content: content || "",
         onUpdate: ({ editor }) => {
@@ -40,7 +85,41 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
     return (
         <div className={`border-2 border-slate-200 rounded-xl bg-white dark:border-slate-700 dark:bg-slate-900 ${className || ""}`}>
             {/* Toolbar */}
-            <div className="flex items-center gap-1 p-2 border-b border-slate-200 dark:border-slate-700 flex-wrap">
+            <div className="flex items-center gap-1 p-2 border-b border-slate-200 dark:border-slate-700 flex-wrap relative">
+                {/* Headings */}
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                    className={editor.isActive("heading", { level: 1 }) ? "bg-slate-100 dark:bg-slate-800" : ""}
+                    title="عنوان رئيسي"
+                >
+                    <Heading1 className="h-4 w-4" />
+                </Button>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                    className={editor.isActive("heading", { level: 2 }) ? "bg-slate-100 dark:bg-slate-800" : ""}
+                    title="عنوان فرعي"
+                >
+                    <Heading2 className="h-4 w-4" />
+                </Button>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                    className={editor.isActive("heading", { level: 3 }) ? "bg-slate-100 dark:bg-slate-800" : ""}
+                    title="عنوان صغير"
+                >
+                    <Heading3 className="h-4 w-4" />
+                </Button>
+                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+                
+                {/* Text Formatting */}
                 <Button
                     type="button"
                     variant="ghost"
@@ -62,6 +141,124 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     <Italic className="h-4 w-4" />
                 </Button>
                 <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+                
+                {/* Font Size */}
+                <div className="relative">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowFontSizeMenu(!showFontSizeMenu)}
+                        className={showFontSizeMenu ? "bg-slate-100 dark:bg-slate-800" : ""}
+                        title="حجم الخط"
+                    >
+                        <Type className="h-4 w-4" />
+                    </Button>
+                    {showFontSizeMenu && (
+                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2 min-w-[120px]">
+                            {["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"].map((size) => (
+                                <button
+                                    key={size}
+                                    type="button"
+                                    onClick={() => {
+                                        editor.chain().focus().setFontSize(size).run()
+                                        setShowFontSizeMenu(false)
+                                    }}
+                                    className="w-full text-right px-3 py-1.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+                                >
+                                    {size}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                
+                {/* Text Color */}
+                <div className="relative">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowColorPicker(!showColorPicker)}
+                        className={showColorPicker ? "bg-slate-100 dark:bg-slate-800" : ""}
+                        title="لون النص"
+                    >
+                        <Palette className="h-4 w-4" />
+                    </Button>
+                    {showColorPicker && (
+                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2">
+                            <div className="grid grid-cols-4 gap-2">
+                                {["#000000", "#374151", "#6B7280", "#9CA3AF", "#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899"].map((color) => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        onClick={() => {
+                                            editor.chain().focus().setColor(color).run()
+                                            setShowColorPicker(false)
+                                        }}
+                                        className="w-8 h-8 rounded border-2 border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform"
+                                        style={{ backgroundColor: color }}
+                                    />
+                                ))}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    editor.chain().focus().unsetColor().run()
+                                    setShowColorPicker(false)
+                                }}
+                                className="w-full mt-2 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+                            >
+                                إزالة اللون
+                            </button>
+                        </div>
+                    )}
+                </div>
+                
+                {/* Highlight Color */}
+                <div className="relative">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowHighlightPicker(!showHighlightPicker)}
+                        className={editor.isActive("highlight") || showHighlightPicker ? "bg-slate-100 dark:bg-slate-800" : ""}
+                        title="تظليل النص"
+                    >
+                        <Highlighter className="h-4 w-4" />
+                    </Button>
+                    {showHighlightPicker && (
+                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 p-2">
+                            <div className="grid grid-cols-4 gap-2">
+                                {["#FEF08A", "#FDE047", "#FCD34D", "#FBBF24", "#FED7AA", "#FCA5A5", "#F9A8D4", "#C4B5FD", "#A5B4FC", "#93C5FD"].map((color) => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        onClick={() => {
+                                            editor.chain().focus().toggleHighlight({ color }).run()
+                                            setShowHighlightPicker(false)
+                                        }}
+                                        className="w-8 h-8 rounded border-2 border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform"
+                                        style={{ backgroundColor: color }}
+                                    />
+                                ))}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    editor.chain().focus().unsetHighlight().run()
+                                    setShowHighlightPicker(false)
+                                }}
+                                className="w-full mt-2 px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+                            >
+                                إزالة التظليل
+                            </button>
+                        </div>
+                    )}
+                </div>
+                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+                
+                {/* Lists */}
                 <Button
                     type="button"
                     variant="ghost"
@@ -83,6 +280,8 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     <ListOrdered className="h-4 w-4" />
                 </Button>
                 <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+                
+                {/* Undo/Redo */}
                 <Button
                     type="button"
                     variant="ghost"
@@ -114,6 +313,18 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                     </div>
                 )}
             </div>
+            
+            {/* Click outside to close menus */}
+            {(showColorPicker || showHighlightPicker || showFontSizeMenu) && (
+                <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => {
+                        setShowColorPicker(false)
+                        setShowHighlightPicker(false)
+                        setShowFontSizeMenu(false)
+                    }}
+                />
+            )}
         </div>
     )
 }
