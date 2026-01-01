@@ -16,23 +16,6 @@ import type { Editor } from "@tiptap/react"
 const TextDirection = Extension.create({
     name: 'textDirection',
 
-    addAttributes() {
-        return {
-            dir: {
-                default: 'rtl',
-                parseHTML: (element: HTMLElement) => element.getAttribute('dir') || 'rtl',
-                renderHTML: (attributes: { dir?: string }) => {
-                    if (!attributes.dir) {
-                        return {}
-                    }
-                    return {
-                        dir: attributes.dir,
-                    }
-                },
-            },
-        }
-    },
-
     addGlobalAttributes() {
         return [
             {
