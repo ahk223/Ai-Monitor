@@ -57,7 +57,7 @@ const TextDirection = Extension.create({
 
     addCommands() {
         return {
-            setTextDirection: (direction: 'rtl' | 'ltr') => ({ commands }) => {
+            setTextDirection: (direction: 'auto' | 'rtl' | 'ltr') => ({ commands }) => {
                 return commands.updateAttributes('paragraph', { dir: direction })
                     || commands.updateAttributes('heading', { dir: direction })
                     || commands.updateAttributes('listItem', { dir: direction })
