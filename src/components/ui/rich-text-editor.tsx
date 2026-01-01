@@ -20,8 +20,8 @@ const TextDirection = Extension.create({
         return {
             dir: {
                 default: 'rtl',
-                parseHTML: element => element.getAttribute('dir') || 'rtl',
-                renderHTML: attributes => {
+                parseHTML: (element: HTMLElement) => element.getAttribute('dir') || 'rtl',
+                renderHTML: (attributes: { dir?: string }) => {
                     if (!attributes.dir) {
                         return {}
                     }
@@ -40,8 +40,8 @@ const TextDirection = Extension.create({
                 attributes: {
                     dir: {
                         default: 'rtl',
-                        parseHTML: element => element.getAttribute('dir') || 'rtl',
-                        renderHTML: attributes => {
+                        parseHTML: (element: HTMLElement) => element.getAttribute('dir') || 'rtl',
+                        renderHTML: (attributes: { dir?: string }) => {
                             if (!attributes.dir) {
                                 return {}
                             }
