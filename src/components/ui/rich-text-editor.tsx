@@ -5,12 +5,66 @@ import StarterKit from "@tiptap/starter-kit"
 import { TextStyle } from "@tiptap/extension-text-style"
 import Color from "@tiptap/extension-color"
 import Highlight from "@tiptap/extension-highlight"
-import { Bold, Italic, List, ListOrdered, Undo, Redo, Type, Heading1, Heading2, Heading3, ChevronDown, ChevronRight, Palette, Highlighter } from "lucide-react"
+import { Bold, Italic, List, ListOrdered, Undo, Redo, Type, Heading1, Heading2, Heading3, ChevronDown, ChevronRight, Palette, Highlighter, AlignLeft, AlignRight } from "lucide-react"
 import { Button } from "./button"
 import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { Extension } from "@tiptap/core"
 import type { Editor } from "@tiptap/react"
+
+// Custom Text Direction extension
+const TextDirection = Extension.create({
+    name: 'textDirection',
+
+    addAttributes() {
+        return {
+            dir: {
+                default: 'rtl',
+                parseHTML: element => element.getAttribute('dir') || 'rtl',
+                renderHTML: attributes => {
+                    if (!attributes.dir) {
+                        return {}
+                    }
+                    return {
+                        dir: attributes.dir,
+                    }
+                },
+            },
+        }
+    },
+
+    addGlobalAttributes() {
+        return [
+            {
+                types: ['paragraph', 'heading', 'listItem'],
+                attributes: {
+                    dir: {
+                        default: 'rtl',
+                        parseHTML: element => element.getAttribute('dir') || 'rtl',
+                        renderHTML: attributes => {
+                            if (!attributes.dir) {
+                                return {}
+                            }
+                            return {
+                                dir: attributes.dir,
+                            }
+                        },
+                    },
+                },
+            },
+        ]
+    },
+
+    addCommands() {
+        return {
+            setTextDirection: (direction: 'rtl' | 'ltr') => ({ commands }) => {
+                return commands.updateAttributes('paragraph', { dir: direction })
+                    || commands.updateAttributes('heading', { dir: direction })
+                    || commands.updateAttributes('listItem', { dir: direction })
+            },
+        }
+    },
+})
 
 interface RichTextEditorProps {
     content: string
@@ -256,6 +310,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 multicolor: true,
             }),
             FontSize,
+            TextDirection,
             CollapsibleHeading,
         ],
         content: content || "",
@@ -417,7 +472,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 >
                     <Heading3 className="h-4 w-4" />
                 </Button>
-                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+                <div className="w-px h-6 bg-slate-200 dark:border-slate-700 mx-1" />
                 
                 {/* Text Formatting */}
                 <Button
@@ -440,7 +495,29 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 >
                     <Italic className="h-4 w-4" />
                 </Button>
-                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+                <div className="w-px h-6 bg-slate-200 dark:border-slate-700 mx-1" />
+                
+                {/* Text Direction */}
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => editor.chain().focus().setTextDirection('rtl').run()}
+                    className="bg-slate-100 dark:bg-slate-800"
+                    title="من اليمين لليسار (RTL)"
+                >
+                    <AlignRight className="h-4 w-4" />
+                </Button>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => editor.chain().focus().setTextDirection('ltr').run()}
+                    title="من اليسار لليمين (LTR)"
+                >
+                    <AlignLeft className="h-4 w-4" />
+                </Button>
+                <div className="w-px h-6 bg-slate-200 dark:border-slate-700 mx-1" />
                 
                 {/* Font Size */}
                 <div className="relative">
@@ -483,7 +560,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                         document.body
                     )}
                 </div>
-                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+                <div className="w-px h-6 bg-slate-200 dark:border-slate-700 mx-1" />
                 
                 {/* Lists */}
                 <Button
@@ -506,7 +583,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                 >
                     <ListOrdered className="h-4 w-4" />
                 </Button>
-                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+                <div className="w-px h-6 bg-slate-200 dark:border-slate-700 mx-1" />
                 
                 {/* Undo/Redo */}
                 <Button
@@ -617,7 +694,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
                             <Italic className="h-4 w-4" />
                         </Button>
                         
-                        <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+                        <div className="w-px h-6 bg-slate-200 dark:border-slate-700 mx-1" />
                         
                         {/* Text Color */}
                         <div className="relative">
@@ -799,4 +876,3 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
         </div>
     )
 }
-
